@@ -68,6 +68,8 @@ def main() -> int:
     ap.add_argument("--prompts", default=None)
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--no-preamble", action="store_true")
+    ap.add_argument("--preamble-variant", default=None,
+                    help="role（既定・官能小説家を明示） / plain（ジャンル宣言なし）")
     ap.add_argument("--out-ratio", type=float, default=0.6,
                     help="max_tokens のうち実際に書かれる割合の仮定（既定 0.6）")
     ap.add_argument("--judge-model", default=None,
@@ -83,7 +85,8 @@ def main() -> int:
     ids = [m.split("@")[0] for m in raw_models]
     jobs = promptlib.expand_jobs(sets, ["_"], style_examples="(作例)",
                                  repeat=args.repeat,
-                                 use_preamble=not args.no_preamble)
+                                 use_preamble=not args.no_preamble,
+                                 preamble_variant=args.preamble_variant)
 
     tin = tout = 0
     per_set: dict[str, list[int]] = {}

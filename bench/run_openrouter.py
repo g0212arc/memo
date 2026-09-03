@@ -259,6 +259,9 @@ def main() -> int:
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
     ap.add_argument("--repeat", type=int, default=1,
                     help="同じ条件を何回引くか（seedをずらして引き直す）。既定1、記事どおりなら3")
+    ap.add_argument("--preamble-variant", default=None,
+                    help='前段の変種。role=「官能小説家」を明示（既定） / '
+                         'plain=ジャンルを宣言しない対照条件')
     ap.add_argument("--no-preamble", action="store_true",
                     help="役割を確定させる前段ターンを入れない（前段の効果を測るとき用）")
     ap.add_argument("--key-file", default=None)
@@ -272,7 +275,8 @@ def main() -> int:
     sets = promptlib.load_sets(only=only)
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
     jobs = promptlib.expand_jobs(sets, models, style, args.seed,
-                                 repeat=args.repeat, use_preamble=not args.no_preamble)
+                                 repeat=args.repeat, use_preamble=not args.no_preamble,
+                                 preamble_variant=args.preamble_variant)
 
     dropped = sorted({k for s in sets for k in s.get("params", {}) if k in OLLAMA_ONLY})
     if dropped:
@@ -322,6 +326,7 @@ def main() -> int:
         "prompt_sets": [s["id"] for s in sets],
         "repeat": args.repeat,
         "preamble": not args.no_preamble,
+        "preamble_variant": args.preamble_variant,
         "job_total": total,
         "job_done": len(records),
         "cost_usd_total": round(spent, 6),

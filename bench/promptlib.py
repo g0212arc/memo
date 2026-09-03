@@ -71,7 +71,8 @@ SEED_STEP = 1111
 
 def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
                 seed_override: int | None = None, repeat: int = 1,
-                use_preamble: bool = True) -> list[dict]:
+                use_preamble: bool = True,
+                preamble_variant: str | None = None) -> list[dict]:
     """プロンプトセット × シナリオ × モデル × seed を、実行単位に展開する。
 
     repeat: 同じ条件を何回引くか。拒否は運で変わるので、1回で「拒否した」と
@@ -100,7 +101,20 @@ def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
         else:
             seeds = [base + i * SEED_STEP for i in range(max(1, repeat))]
 
-        preamble = s.get("preamble") if use_preamble else None
+        preamble, pre_tag = None, "none"
+        if use_preamble and s.get("preamble"):
+            pre = s["preamble"]
+            default = pre.get("default", "role")
+            want = preamble_variant or default
+            v = (pre.get("variants") or {}).get(want)
+            if v is None:
+                raise SystemExit(
+                    f"[{s['id']}] に前段の変種 {want!r} がありません。"
+                    f"使えるのは: {', '.join(pre.get('variants', {}))}"
+                )
+            preamble = {"user": v["user"], "max_tokens": pre.get("max_tokens", 128),
+                        "variant": want}
+            pre_tag = want if want != default else ""
 
         for sc in s["scenarios"]:
             for seed in seeds:
@@ -108,8 +122,12 @@ def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
                 name = f"{s['seq']}_{s['id'].split('_', 1)[-1]}__{sc['id']}"
                 if len(seeds) > 1 or declared:
                     name += f"_seed{seed}"
+                # 既定の変種はファイル名に出さない（前回と同じ名前を保つため）。
+                # 対照条件だけ名前に出して、混ざらないようにする。
                 if not use_preamble:
                     name += "_nopre"
+                elif pre_tag:
+                    name += f"_pre{pre_tag}"
                 jobs.append({
                     "prompt_id": s["id"],
                     "seq": s["seq"],

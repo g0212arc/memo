@@ -188,6 +188,35 @@ def main() -> int:
                  "lrrcrrrrrrcc"),
            ""]
 
+    # 前段条件ごとの拒否率。「官能小説家と名乗ると通るのか」への答えになる。
+    conds = []
+    for c in ("role", "plain", "none"):
+        if any(x.get("preamble") == c for x in mech.get("summary", [])):
+            conds.append(c)
+    if len(conds) > 1:
+        label = {"role": "role（官能小説家と明示）", "plain": "plain（ジャンル宣言なし）",
+                 "none": "前段なし"}
+        rows = []
+        for r in out_rows:
+            row = [r["model"]]
+            for c in conds:
+                sub = [x for x in groups[r["model"]] if x.get("preamble") == c]
+                if not sub:
+                    row.append("—")
+                    continue
+                ref = sum(1 for x in sub if x.get("refusal"))
+                row.append(f"{ref}/{len(sub)}")
+            rows.append(row)
+        md += ["## 前段条件ごとの拒否率", "",
+               "同じモデル・同じ本編プロンプトで、**前段の文面だけを変えた**結果。"
+               "数字は 拒否した本数/試行数。", "",
+               table(["モデル"] + [label[c] for c in conds], rows,
+                     "l" + "c" * len(conds)),
+               "",
+               "ここに差が出るなら、**モデルの能力ではなく前段の書き方で結果が変わっている**"
+               "ということです。差が出ないなら前段は不要ということなので、"
+               "どちらでも記事に書けるデータになります。", ""]
+
     md += ["## 表現の質", "",
            "日本語が崩れないモデル同士を比べるための軸。"
            "**語彙多様性は低いほど言い回しが単調**、"

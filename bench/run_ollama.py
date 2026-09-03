@@ -171,6 +171,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--repeat", type=int, default=1,
                     help="同じ条件を何回引くか（seedをずらして引き直す）")
+    ap.add_argument("--preamble-variant", default=None,
+                    help='前段の変種。role=「官能小説家」を明示（既定） / '
+                         'plain=ジャンルを宣言しない対照条件')
     ap.add_argument("--no-preamble", action="store_true",
                     help="役割を確定させる前段ターンを入れない")
     args = ap.parse_args()
@@ -180,7 +183,8 @@ def main() -> int:
     sets = promptlib.load_sets(only=only)
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
     jobs = promptlib.expand_jobs(sets, models, style, args.seed,
-                                 repeat=args.repeat, use_preamble=not args.no_preamble)
+                                 repeat=args.repeat, use_preamble=not args.no_preamble,
+                                 preamble_variant=args.preamble_variant)
     if args.limit:
         jobs = jobs[:args.limit]
 
@@ -206,6 +210,7 @@ def main() -> int:
         "prompt_sets": [s["id"] for s in sets],
         "job_total": len(jobs), "job_done": len(records),
         "repeat": args.repeat, "preamble": not args.no_preamble,
+        "preamble_variant": args.preamble_variant,
         "cost_usd_total": 0.0, "runs": records,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n実行 {len(records)} 件 -> {runs_path}")

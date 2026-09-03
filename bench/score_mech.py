@@ -527,7 +527,11 @@ NAME_RE = re.compile(r"^(?P<seq>\d+)?_?(?P<rest>.+)$")
 
 
 def parse_name(stem: str) -> dict:
-    """連番_条件__シナリオ__モデル を分解する。規約外でも落ちない。"""
+    """連番_条件__シナリオ__モデル を分解する。規約外でも落ちない。
+
+    シナリオ側に付く _seedN / _nopre / _preplain も切り出す。
+    前段条件ごとの拒否率を比べるのに使う。
+    """
     parts = stem.split("__")
     head = parts[0]
     m = re.match(r"^(\d+)[_-]?(.*)$", head)
@@ -538,7 +542,20 @@ def parse_name(stem: str) -> dict:
         scenario, model = "", parts[1]
     else:
         scenario, model = "", head
-    return {"seq": seq, "condition": cond or head, "scenario": scenario, "model": model}
+
+    preamble, seed = "role", ""
+    if scenario.endswith("_nopre"):
+        scenario, preamble = scenario[:-6], "none"
+    else:
+        mv = re.search(r"_pre([A-Za-z0-9]+)$", scenario)
+        if mv:
+            scenario, preamble = scenario[:mv.start()], mv.group(1)
+    ms = re.search(r"_seed(\d+)$", scenario)
+    if ms:
+        scenario, seed = scenario[:ms.start()], ms.group(1)
+
+    return {"seq": seq, "condition": cond or head, "scenario": scenario,
+            "model": model, "preamble": preamble, "seed": seed}
 
 
 # ---------------------------------------------------------------- 本体
@@ -572,6 +589,8 @@ def flag_summary(r: dict) -> dict:
         "model": r["model"],
         "condition": r["condition"],
         "scenario": r["scenario"],
+        "preamble": r["preamble"],
+        "seed": r["seed"],
         "chars": r["integrity"]["char_count"],
         "dup_max": r["duplicate"]["max_repeat"],
         "tail_loop": r["duplicate"]["tail_loop"],
