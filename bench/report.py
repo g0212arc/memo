@@ -92,6 +92,47 @@ def agg(rows: list[dict]) -> dict:
     return out
 
 
+# 1ドルあたりの円。実行時に --jpy-rate で上書きできる。
+# 既定値は open.er-api.com から取得した 2026-09-03 時点のレート。
+DEFAULT_JPY_RATE = 159.09
+
+
+def yen(usd: float, rate: float) -> str:
+    """ドルと円を併記する。記事に「いくらかかったか」を書くための形。"""
+    y = usd * rate
+    if y < 1:
+        return f"${usd:.5f}（約{y:.2f}円）"
+    if y < 100:
+        return f"${usd:.4f}（約{y:.1f}円）"
+    return f"${usd:.3f}（約{y:,.0f}円）"
+
+
+def cost_breakdown(runs: dict) -> dict:
+    """実行記録から、モデル別・プロンプト別・1本あたりの費用を出す。"""
+    by_model: dict[str, float] = defaultdict(float)
+    by_prompt: dict[str, float] = defaultdict(float)
+    by_file: dict[str, float] = {}
+    cells: dict[tuple[str, str], float] = defaultdict(float)
+    n_ok = 0
+    for r in runs.get("runs", []):
+        c = r.get("cost_usd") or 0
+        if r.get("error"):
+            continue
+        n_ok += 1
+        m, pid = r.get("model", "?"), r.get("prompt_id", "?")
+        by_model[m] += c
+        by_prompt[pid] += c
+        cells[(m, pid)] += c
+        # 1ジョブが複数ファイル（RPの2ターン）になる場合は等分する
+        files = r.get("files") or []
+        for f in files:
+            by_file[f] = c / len(files)
+    total = sum(by_model.values())
+    return {"by_model": dict(by_model), "by_prompt": dict(by_prompt),
+            "by_file": by_file, "cells": cells, "total": total,
+            "runs_ok": n_ok, "avg": total / n_ok if n_ok else 0}
+
+
 def detail_of(mech: dict, filename: str) -> dict:
     for d in mech.get("detail", []):
         if d["file"] == filename:
@@ -115,7 +156,10 @@ def main() -> int:
     ap.add_argument("--judge", default=None)
     ap.add_argument("--runs", default=None)
     ap.add_argument("--out", default="results/report.md")
+    ap.add_argument("--jpy-rate", type=float, default=DEFAULT_JPY_RATE,
+                    help=f"1ドルあたりの円（既定 {DEFAULT_JPY_RATE}）")
     args = ap.parse_args()
+    rate = args.jpy_rate
 
     mech, judge, runs = load(args.mech), load(args.judge), load(args.runs)
 
@@ -155,20 +199,26 @@ def main() -> int:
     md.append(f"- モデル数: {len(groups)}")
     if judge:
         md.append(f"- 主観採点: {judge.get('judge_model', '(不明)')} による LLM 採点")
+    cb = cost_breakdown(runs) if runs else None
     if cost_total:
-        md.append(f"- API 実費: ${cost_total:.4f}")
+        md.append(f"- API 実費: **{yen(cost_total, rate)}**"
+                  f"（1ドル={rate:.2f}円で換算）")
+        if cb and cb["runs_ok"]:
+            md.append(f"- 1本あたり平均: {yen(cb['avg'], rate)}")
     md.append("")
 
     md += ["## 総合ランキング", "",
-           table(["順", "モデル", "主観点", "機械減点", "合計", "拒否", "速度 t/s", "平均字数"],
+           table(["順", "モデル", "主観点", "機械減点", "合計", "拒否", "速度 t/s",
+                  "平均字数", "実費"],
                  [[i + 1, r["model"], r["subjective"] if r["subjective"] is not None else "—",
                    f'{r["penalty"]:+g}' if r["penalty"] else "0",
                    r["score"],
                    f'{r["agg"]["refusal_n"]}/{r["agg"]["files"]}',
                    r["speed"] if r["speed"] is not None else "—",
-                   r["agg"]["chars_avg"]]
+                   r["agg"]["chars_avg"],
+                   yen(cb["by_model"].get(r["model"], 0), rate) if cb else "—"]
                   for i, r in enumerate(out_rows)],
-                 "rlrrrcrr"),
+                 "rlrrrcrrr"),
            "",
            "主観点は score_judge.py（LLM採点）、機械減点は score_mech.py の検出数に "
            "report.py の PENALTY / PER_HIT を掛けたもの。減点ルールを変えたい場合は "
@@ -187,6 +237,39 @@ def main() -> int:
                   for r in out_rows],
                  "lrrcrrrrrrcc"),
            ""]
+
+    if cb and cb["total"]:
+        md += ["## 費用の内訳", "",
+               f"1ドル = {rate:.2f}円 で換算。**この検証にかかった実費の全額**です。", ""]
+
+        # プロンプトセット別
+        md += ["### プロンプト別", "",
+               table(["プロンプト", "費用"],
+                     [[pid, yen(c, rate)]
+                      for pid, c in sorted(cb["by_prompt"].items(),
+                                           key=lambda x: -x[1])]
+                     + [["**合計**", f"**{yen(cb['total'], rate)}**"]],
+                     "lr"),
+               ""]
+
+        # モデル × プロンプトのマトリクス
+        pids = sorted(cb["by_prompt"])
+        md += ["### モデル × プロンプト", "",
+               table(["モデル"] + pids + ["計"],
+                     [[m] + [f"{cb['cells'].get((m, p), 0) * rate:.1f}円" for p in pids]
+                      + [f"**{cb['by_model'][m] * rate:.1f}円**"]
+                      for m in sorted(cb["by_model"], key=lambda x: -cb["by_model"][x])],
+                     "l" + "r" * (len(pids) + 1)),
+               "",
+               "単位は円。1本ごとの内訳は results/runs.json の cost_usd にあります。", ""]
+
+        # 高かった出力の上位
+        top = sorted(cb["by_file"].items(), key=lambda x: -x[1])[:10]
+        if top:
+            md += ["### 高くついた出力 上位10本", "",
+                   table(["ファイル", "費用"], [[f"`{f}`", yen(c, rate)] for f, c in top],
+                         "lr"),
+                   ""]
 
     # 前段条件ごとの拒否率。「官能小説家と名乗ると通るのか」への答えになる。
     conds = []

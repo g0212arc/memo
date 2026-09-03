@@ -20,10 +20,38 @@ from __future__ import annotations
 import argparse
 import json
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 import promptlib
 from run_openrouter import API, get_key, preflight, request
+
+PROVIDERS_API = "https://openrouter.ai/api/frontend/v1/all-providers"
+
+
+def fetch_provider_policies() -> dict[str, dict]:
+    """提供元ごとの「学習に使うか」「プロンプトを保持するか」を取る。
+
+    NSFW を投げる以上、行き先がどういうポリシーかは知っておきたい。
+    取得できなくても点検自体は続ける（付加情報なので落とさない）。
+    """
+    try:
+        d = json.load(urllib.request.urlopen(PROVIDERS_API, timeout=30))["data"]
+    except Exception:  # noqa: BLE001
+        return {}
+    return {p.get("displayName", ""): (p.get("dataPolicy") or {}) for p in d}
+
+
+def policy_label(pol: dict) -> str:
+    if not pol:
+        return "ポリシー不明"
+    train = "学習する" if pol.get("training") else "学習しない"
+    if pol.get("retainsPrompts"):
+        days = pol.get("retentionDays")
+        keep = f"保持{days}日" if days else "保持あり"
+    else:
+        keep = "保持なし"
+    return f"{train}/{keep}"
 
 
 def check(spec: str, key: str) -> dict:
@@ -66,6 +94,7 @@ def main() -> int:
     preflight(key)
 
     specs = promptlib.load_models(args.models)
+    policies = fetch_provider_policies()
     print(f"\n{len(specs)} モデルを点検します（出力1トークンずつ）\n")
     rows, spent = [], 0.0
     for spec in specs:
@@ -73,7 +102,9 @@ def main() -> int:
         rows.append(r)
         spent += r.get("cost_usd") or 0
         if r["ok"]:
-            print(f"  OK   {spec:<44} 提供元={r.get('served_by')}")
+            pol = policy_label(policies.get(r.get("served_by") or "", {}))
+            r["data_policy"] = pol
+            print(f"  OK   {spec:<44} 提供元={str(r.get('served_by')):<16} {pol}")
         else:
             # 理由は1行に潰す。長い説明でも「なぜ弾かれたか」の先頭が読めればよい。
             reason = " ".join((r["reason"] or "").split())[:150]
@@ -85,6 +116,11 @@ def main() -> int:
                               ensure_ascii=False, indent=2), encoding="utf-8")
     ok = sum(1 for r in rows if r["ok"])
     print(f"\n使えるモデル {ok}/{len(rows)} / 点検の実費 ${spent:.5f} -> {out}")
+    trains = [r["spec"] for r in rows if r.get("data_policy", "").startswith("学習する")]
+    if trains:
+        print("\n注意: 送った内容が学習に使われる提供元:")
+        for t in trains:
+            print(f"  {t}")
     return 0
 
 
