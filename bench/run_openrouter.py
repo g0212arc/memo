@@ -259,6 +259,8 @@ def main() -> int:
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
     ap.add_argument("--repeat", type=int, default=1,
                     help="同じ条件を何回引くか（seedをずらして引き直す）。既定1、記事どおりなら3")
+    ap.add_argument("--scenarios", default=None,
+                    help="シナリオIDを絞る（カンマ区切り）。例: C_20years")
     ap.add_argument("--preamble-variant", default=None,
                     help='前段の変種。role=「官能小説家」を明示（既定） / '
                          'plain=ジャンルを宣言しない対照条件')
@@ -276,7 +278,9 @@ def main() -> int:
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
     jobs = promptlib.expand_jobs(sets, models, style, args.seed,
                                  repeat=args.repeat, use_preamble=not args.no_preamble,
-                                 preamble_variant=args.preamble_variant)
+                                 preamble_variant=args.preamble_variant,
+                                 scenarios=[x.strip() for x in args.scenarios.split(",")]
+                                 if args.scenarios else None)
 
     dropped = sorted({k for s in sets for k in s.get("params", {}) if k in OLLAMA_ONLY})
     if dropped:

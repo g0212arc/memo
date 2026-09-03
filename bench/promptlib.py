@@ -72,7 +72,8 @@ SEED_STEP = 1111
 def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
                 seed_override: int | None = None, repeat: int = 1,
                 use_preamble: bool = True,
-                preamble_variant: str | None = None) -> list[dict]:
+                preamble_variant: str | None = None,
+                scenarios: list[str] | None = None) -> list[dict]:
     """プロンプトセット × シナリオ × モデル × seed を、実行単位に展開する。
 
     repeat: 同じ条件を何回引くか。拒否は運で変わるので、1回で「拒否した」と
@@ -117,6 +118,10 @@ def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
             pre_tag = want if want != default else ""
 
         for sc in s["scenarios"]:
+            # 条件を1つだけ変えて比べたいとき、シナリオ3本すべてを回す必要はない。
+            # 前段の効果測定のような予備実験を安く済ませるための絞り込み。
+            if scenarios and sc["id"] not in scenarios:
+                continue
             for seed in seeds:
                 turns = sc.get("turns") or [sc["user"]]
                 name = f"{s['seq']}_{s['id'].split('_', 1)[-1]}__{sc['id']}"

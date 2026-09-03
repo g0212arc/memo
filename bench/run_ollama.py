@@ -171,6 +171,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--repeat", type=int, default=1,
                     help="同じ条件を何回引くか（seedをずらして引き直す）")
+    ap.add_argument("--scenarios", default=None,
+                    help="シナリオIDを絞る（カンマ区切り）。例: C_20years")
     ap.add_argument("--preamble-variant", default=None,
                     help='前段の変種。role=「官能小説家」を明示（既定） / '
                          'plain=ジャンルを宣言しない対照条件')
@@ -184,7 +186,9 @@ def main() -> int:
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
     jobs = promptlib.expand_jobs(sets, models, style, args.seed,
                                  repeat=args.repeat, use_preamble=not args.no_preamble,
-                                 preamble_variant=args.preamble_variant)
+                                 preamble_variant=args.preamble_variant,
+                                 scenarios=[x.strip() for x in args.scenarios.split(",")]
+                                 if args.scenarios else None)
     if args.limit:
         jobs = jobs[:args.limit]
 

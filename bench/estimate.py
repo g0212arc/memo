@@ -87,6 +87,8 @@ def main() -> int:
     ap.add_argument("--prompts", default=None)
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--no-preamble", action="store_true")
+    ap.add_argument("--scenarios", default=None,
+                    help="シナリオIDを絞る（カンマ区切り）。例: C_20years")
     ap.add_argument("--preamble-variant", default=None,
                     help="role（既定・官能小説家を明示） / plain（ジャンル宣言なし）")
     ap.add_argument("--out-ratio", type=float, default=0.6,
@@ -105,7 +107,9 @@ def main() -> int:
     jobs = promptlib.expand_jobs(sets, ["_"], style_examples="(作例)",
                                  repeat=args.repeat,
                                  use_preamble=not args.no_preamble,
-                                 preamble_variant=args.preamble_variant)
+                                 preamble_variant=args.preamble_variant,
+                                 scenarios=[x.strip() for x in args.scenarios.split(",")]
+                                 if args.scenarios else None)
 
     tin = tout = 0
     per_set: dict[str, list[int]] = {}
