@@ -1,0 +1,7 @@
+# 手元の ollama で回すモデル（1行1モデル）
+# `ollama list` の NAME 列をそのまま貼ってください。
+#
+# 例:
+# melody:latest
+# siren:latest
+# styletune:latest

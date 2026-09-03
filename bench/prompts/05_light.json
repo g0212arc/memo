@@ -1,0 +1,34 @@
+{
+  "id": "05_light",
+  "seq": "05",
+  "label": "軽い指示(1行のみ・seed 3種)",
+  "note": "システムプロンプトなし。重い指示(01)との差を見る。Qwen系は軽い指示のほうが伸びた。",
+  "expect_chars": null,
+  "params": {
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "top_k": 50,
+    "min_p": 0.05,
+    "repeat_penalty": 1.08,
+    "repeat_last_n": 256,
+    "think": false,
+    "seed": 12345
+  },
+  "max_tokens": 4000,
+  "seeds": [
+    101,
+    202,
+    303
+  ],
+  "system": null,
+  "scenarios": [
+    {
+      "id": "light_male",
+      "user": "結城律(29)と後輩の白瀬かなで(25)。終電を逃したかなでを律の部屋に泊める夜。\n官能小説として書いて。"
+    },
+    {
+      "id": "light_female",
+      "user": "芦沢千尋(34)と幼馴染の間宮悠(34)。20年すれ違い続けた二人が同窓会の帰りに結ばれる夜。\n官能小説として書いて。"
+    }
+  ]
+}

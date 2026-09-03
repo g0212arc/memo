@@ -1,0 +1,9 @@
+# 文体規定（喘ぎ声）の作例を1行1件で置くファイル。
+#
+# 使い方:
+#   1. このファイルを style_examples.txt にコピー
+#   2. 前回の検証で使った作例5件を1行ずつ貼る
+#   3. run_openrouter.py / run_ollama.py が {{STYLE_EXAMPLES}} をこの内容に置換する
+#   4. score_mech.py --style-examples wordlists/style_examples.txt でコピペ検出に使う
+#
+# style_examples.txt は .gitignore してあるので、リポジトリには入りません。

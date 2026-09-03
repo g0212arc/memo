@@ -1,0 +1,14 @@
+# 生成物と、外に出したくないもの
+outputs/
+results/
+models.txt
+models_local.txt
+wordlists/style_examples.txt
+
+# APIキーは絶対にコミットしない
+*.key
+.env
+
+# Python
+__pycache__/
+*.pyc

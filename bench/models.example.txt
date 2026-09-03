@@ -1,0 +1,8 @@
+# OpenRouter で回すモデル（1行1モデル、# 以降はコメント）
+# モデルIDは https://openrouter.ai/models の「Model ID」をそのまま貼ってください。
+# 使うときは models.txt にコピーして編集してください（models.txt は git 管理外）。
+#
+# 例:
+# deepseek/deepseek-chat        # 記事で比較対象にしていた系統
+# google/gemini-2.5-flash       # 安い。判定モデルにも使える
+# anthropic/claude-haiku-4.5
