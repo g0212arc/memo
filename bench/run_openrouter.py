@@ -99,7 +99,15 @@ def preflight(key: str) -> dict:
     return info
 
 
-def build_body(job: dict, messages: list[dict], max_tokens: int) -> dict:
+# reasoning の送り方。左から順に試して、通ったものを使う。
+#   off     … 思考を無効化（記事の think:false 相当）
+#   exclude … 思考は動くが本文には出さない（無効化を拒むモデル向け）
+#   none    … reasoning を一切指定しない
+REASONING_MODES = ("off", "exclude", "none")
+
+
+def build_body(job: dict, messages: list[dict], max_tokens: int,
+               reasoning_mode: str = "off") -> dict:
     p = job["params"]
     model_id, provider = promptlib.parse_model(job["model"])
     body = {
@@ -116,9 +124,12 @@ def build_body(job: dict, messages: list[dict], max_tokens: int) -> dict:
         # 実費をレスポンスに含めてもらう。見積りの根拠になる。
         "usage": {"include": True},
     }
-    if p.get("think") is False:
-        # 思考トークンで本文が空になる事故（記事の think false）をクラウド側でも防ぐ
-        body["reasoning"] = {"exclude": True, "enabled": False}
+    if p.get("think") is False and reasoning_mode != "none":
+        # 思考トークンで本文が空になる事故（記事の think false）をクラウド側でも防ぐ。
+        # ただし思考を必須にしているモデルがあるので、その場合は exclude だけに落とす。
+        # 無効化できないモデルは、せめて思考量を最小にする
+        body["reasoning"] = ({"exclude": True, "enabled": False} if reasoning_mode == "off"
+                             else {"exclude": True, "effort": "low"})
     if job.get("format") == "json":
         body["response_format"] = {"type": "json_object"}
     if provider:
@@ -135,7 +146,13 @@ RETRY_WAITS_5XX = (5, 15, 45)
 
 def call(job: dict, messages: list[dict], key: str, max_tokens: int,
          retries: int | None = None) -> dict:
-    body = build_body(job, messages, max_tokens)
+    # モデルごとに、一度通った reasoning の送り方を覚えて使い回す
+    mode = job.setdefault("_reasoning_mode", "off")
+    # 思考を止められないモデルは、思考トークンが max_tokens を食い尽くして
+    # 本文が途中で切れる（実測: 1628tok 中 1419tok が思考、本文393字で打ち切り）。
+    # 止められなかった場合だけ、その分の余裕を足す。
+    budget = max_tokens + (job.get("_reasoning_headroom", 0) if mode != "off" else 0)
+    body = build_body(job, messages, budget, mode)
     max_attempts = (retries + 1) if retries is not None else len(RETRY_WAITS_429) + 1
     last = None
     for attempt in range(max_attempts):
@@ -146,6 +163,19 @@ def call(job: dict, messages: list[dict], key: str, max_tokens: int,
             detail = e.read().decode("utf-8", "replace")[:300]
             last = f"HTTP {e.code}: {detail}"
             # 429（混雑）と5xxだけ待って再試行。400番台の設定ミスは即諦める。
+            # 思考の無効化を拒むモデルは、送り方を1段落として即やり直す。
+            # 「無効化できなかった」は条件の違いなので、記録に残す。
+            if e.code == 400 and "reasoning" in detail.lower():
+                i = REASONING_MODES.index(job.get("_reasoning_mode", "off"))
+                if i + 1 < len(REASONING_MODES):
+                    job["_reasoning_mode"] = REASONING_MODES[i + 1]
+                    print(f"    思考を無効化できないモデル "
+                          f"-> reasoning={job['_reasoning_mode']} で再試行")
+                    budget = max_tokens + (job.get("_reasoning_headroom", 0)
+                                           if job["_reasoning_mode"] != "off" else 0)
+                    body = build_body(job, messages, budget, job["_reasoning_mode"])
+                    continue
+                return {"error": last}
             if e.code == 429:
                 waits = RETRY_WAITS_429
             elif 500 <= e.code < 600:
@@ -179,6 +209,9 @@ def call(job: dict, messages: list[dict], key: str, max_tokens: int,
             "tok_per_s": round(ct / elapsed, 1) if ct and elapsed else None,
             "finish_reason": choice.get("finish_reason"),
             "provider": res.get("provider"),
+            "reasoning_mode": job.get("_reasoning_mode", "off"),
+            "reasoning_tokens": (usage.get("completion_tokens_details") or {})
+                                .get("reasoning_tokens"),
         }
     return {"error": last or "unknown"}
 
@@ -241,6 +274,8 @@ def run_job(job: dict, key: str, out_dir: Path) -> dict:
         "finish_reason": turn_results[0].get("finish_reason") if preamble_info
                          else turn_results[-1].get("finish_reason"),
         "provider": turn_results[-1].get("provider"),
+        "reasoning_mode": turn_results[-1].get("reasoning_mode"),
+        "reasoning_tokens": sum(r.get("reasoning_tokens") or 0 for r in turn_results) or None,
         "preamble": preamble_info,
     }
 
@@ -272,6 +307,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="先頭N件だけ実行する")
     ap.add_argument("--seed", type=int, default=None, help="seed を上書きする")
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
+    ap.add_argument("--reasoning-headroom", type=int, default=4000,
+                    help="思考を無効化できないモデルに足す max_tokens の余裕（既定 4000）")
     ap.add_argument("--repeat", type=int, default=1,
                     help="同じ条件を何回引くか（seedをずらして引き直す）。既定1、記事どおりなら3")
     ap.add_argument("--scenarios", default=None,
@@ -323,6 +360,7 @@ def main() -> int:
                 print(f"\n予算上限 ${args.budget_usd} に達するため、ここで停止します"
                       f"（使用 ${spent:.4f} / 残ジョブ {total - i + 1} 件）")
                 break
+        job["_reasoning_headroom"] = args.reasoning_headroom
         print(f"[{i}/{total}] {job['model']} <- {job['prompt_id']}/{job['scenario']} "
               f"seed={job['params'].get('seed')}")
         r = run_job(job, key, out_dir)
@@ -333,6 +371,8 @@ def main() -> int:
             spent += r.get("cost_usd") or 0
             pre = r.get("preamble") or {}
             mark = " [前段で拒否]" if pre.get("refused") else ""
+            if r.get("reasoning_mode") and r["reasoning_mode"] != "off":
+                mark += f" [思考{r.get('reasoning_tokens') or 0}tok]"
             print(f"    {r['chars']}字 / {r['completion_tokens']}tok / "
                   f"{r['tok_per_s']}t/s / ${r.get('cost_usd') or 0:.5f} "
                   f"/ finish={r.get('finish_reason')}{mark}")
