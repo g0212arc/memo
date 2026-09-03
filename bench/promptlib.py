@@ -17,10 +17,30 @@ HERE = Path(__file__).resolve().parent
 STYLE_PLACEHOLDER = "{{STYLE_EXAMPLES}}"
 
 
+def parse_model(spec: str) -> tuple[str, str | None]:
+    """"モデルID@プロバイダ" を (モデルID, プロバイダタグ) に分ける。
+
+    同じモデルでも提供元によって量子化(fp8/fp4)が違い、出力も変わる。
+    固定しないと呼び出しごとに提供元が変わって比較にならないので、
+    models.txt で "deepseek/deepseek-v4-pro-0813@streamlake" と書けるようにしている。
+    """
+    if "@" in spec:
+        mid, prov = spec.split("@", 1)
+        return mid.strip(), prov.strip() or None
+    return spec.strip(), None
+
+
 def slug(s: str) -> str:
-    """モデルIDをファイル名に使える形にする。deepseek/deepseek-chat -> deepseek-chat"""
-    s = s.split("/")[-1]
-    return re.sub(r"[^0-9A-Za-z._\-]+", "-", s).strip("-")
+    """モデル指定をファイル名に使える形にする。
+
+    deepseek/deepseek-v4-pro-0813@streamlake -> deepseek-v4-pro-0813-streamlake
+    提供元を名前に残さないと、比較用に分けた2本が同じファイル名で衝突する。
+    """
+    mid, prov = parse_model(s)
+    name = mid.split("/")[-1]
+    if prov:
+        name = f"{name}-{prov}"
+    return re.sub(r"[^0-9A-Za-z._\-]+", "-", name).strip("-")
 
 
 def load_style_examples(path: Path | None) -> str:

@@ -12,6 +12,7 @@ RTX 3060 12GB でのローカルLLM検証（NSFW用途）で行った採点を�
 | **機械判定（重複・他言語混入・敬体ドリフト等）** | `score_mech.py` | **不要** |
 | 主観5軸をLLMに採点させる | `score_judge.py` | 要 |
 | 記事に貼れる Markdown 表を作る | `report.py` | 不要 |
+| **実行前に費用を見積もる** | `estimate.py` | **不要** |
 
 Python 3.9+ のみ。**外部ライブラリは使っていません**（`pip install` 不要）。
 
@@ -43,6 +44,9 @@ python report.py --mech results/mech.json --runs results/runs_local.json --out r
 **必ず `--dry-run` から。** 1件だけ実行して、全件の実費を見積もってから本実行します。
 
 ```bash
+cp models.example.txt models.txt           # 回すモデルを書く
+python estimate.py --models models.txt --repeat 3   # キー不要。先に総額を見る
+
 export OPENROUTER_API_KEY=sk-or-...        # Windows: set OPENROUTER_API_KEY=sk-or-...
 python run_openrouter.py --models models.txt --dry-run
 python run_openrouter.py --models models.txt --repeat 3 --budget-usd 1.0
@@ -85,6 +89,23 @@ python run_openrouter.py --models models.txt --repeat 3 --no-preamble --budget-u
 ```
 
 前段の文面は `prompts/*.json` の `preamble.user` にあります。
+
+### 提供元（プロバイダ）を固定しないと、比較にならないことがある
+
+OpenRouter は同じモデルを複数の会社が配信していて、**提供元によって量子化が違います**
+（fp8 / fp4 / 無指定）。固定しないと呼び出しごとに別の提供元へ流れることがあり、
+そうなると「モデルの差」なのか「量子化の差」なのか分かりません。前回の検証で
+量子化を揃えたのと同じ問題です。
+
+`models.txt` で `モデルID@プロバイダ` と書くと固定できます。
+
+```
+deepseek/deepseek-v4-pro-0813@deepseek      # 本家
+deepseek/deepseek-v4-pro-0813@streamlake    # 別提供元。同じ単価で比較できる
+```
+
+固定しなかったモデルについては、実行後に**提供元が途中で変わっていたら警告します**。
+各出力がどこで生成されたかは `results/runs.json` の `provider` に残ります。
 
 ### 見る軸が、ローカルとは変わる
 
@@ -186,6 +207,7 @@ python run_openrouter.py --models models.txt --repeat 3 --no-preamble --budget-u
 - `--limit N` … 先頭N件だけ
 - `--prompts 01_tl` … プロンプトセットを絞る
 - `--repeat 3` … 同じ条件を3回引く（コストも3倍になる点に注意）
+- `estimate.py` … 投げる前に総額を出す（キー不要）
 
 ### 減点ルールを変えたいとき
 

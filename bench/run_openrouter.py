@@ -101,8 +101,9 @@ def preflight(key: str) -> dict:
 
 def build_body(job: dict, messages: list[dict], max_tokens: int) -> dict:
     p = job["params"]
+    model_id, provider = promptlib.parse_model(job["model"])
     body = {
-        "model": job["model"],
+        "model": model_id,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": p.get("temperature"),
@@ -120,6 +121,9 @@ def build_body(job: dict, messages: list[dict], max_tokens: int) -> dict:
         body["reasoning"] = {"exclude": True, "enabled": False}
     if job.get("format") == "json":
         body["response_format"] = {"type": "json_object"}
+    if provider:
+        # 提供元を固定する。フォールバックを許すと別の量子化に流れて比較が崩れる。
+        body["provider"] = {"only": [provider], "allow_fallbacks": False}
     return {k: v for k, v in body.items() if v is not None}
 
 
@@ -227,9 +231,11 @@ def run_job(job: dict, key: str, out_dir: Path) -> dict:
 
 
 def job_meta(job: dict) -> dict:
+    model_id, provider = promptlib.parse_model(job["model"])
     return {
         "model": promptlib.slug(job["model"]),
-        "model_id": job["model"],
+        "model_id": model_id,
+        "provider_pinned": provider,
         "prompt_id": job["prompt_id"],
         "scenario": job["scenario"],
         "seed": job["params"].get("seed"),
@@ -325,6 +331,19 @@ def main() -> int:
     runs_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"\n実行 {len(records)} 件 / 実費 ${spent:.4f} -> {runs_path}")
+
+    # 固定していないモデルは、呼び出しごとに提供元（＝量子化）が変わりうる。
+    # 変わっていたら比較の前提が崩れるので、必ず知らせる。
+    served: dict[str, set] = {}
+    for r in records:
+        if r.get("provider"):
+            served.setdefault(r["model"], set()).add(r["provider"])
+    mixed = {m: v for m, v in served.items() if len(v) > 1}
+    if mixed:
+        print("\n注意: 呼び出し中に提供元が変わったモデルがあります（量子化が違う可能性）:")
+        for m, v in mixed.items():
+            print(f"  {m}: {', '.join(sorted(v))}")
+        print("  比較の前提を揃えるなら models.txt で モデルID@プロバイダ と固定してください。")
     if args.dry_run and records and not records[0].get("error"):
         one = records[0].get("cost_usd") or 0
         full = one * total
