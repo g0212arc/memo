@@ -109,6 +109,12 @@ REASONING_MODES = ("off", "exclude", "none")
 def build_body(job: dict, messages: list[dict], max_tokens: int,
                reasoning_mode: str = "off") -> dict:
     p = job["params"]
+    if job.get("_minimal_params"):
+        # temperature と seed 以外を送らない。提供元によっては top_k / min_p /
+        # repetition_penalty の扱いが怪しく、それが出力の破綻を招くことがある。
+        # 「設定のせいか、モデルのせいか」を切り分けるための条件。
+        p = {"temperature": p.get("temperature"), "seed": p.get("seed"),
+             "think": p.get("think")}
     model_id, provider = promptlib.parse_model(job["model"])
     body = {
         "model": model_id,
@@ -307,6 +313,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="先頭N件だけ実行する")
     ap.add_argument("--seed", type=int, default=None, help="seed を上書きする")
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
+    ap.add_argument("--minimal-params", action="store_true",
+                    help="temperature と seed 以外の生成パラメータを送らない"
+                         "（設定が原因の破綻かを切り分けるとき用）")
     ap.add_argument("--reasoning-headroom", type=int, default=4000,
                     help="思考を無効化できないモデルに足す max_tokens の余裕（既定 4000）")
     ap.add_argument("--repeat", type=int, default=1,
@@ -361,6 +370,7 @@ def main() -> int:
                       f"（使用 ${spent:.4f} / 残ジョブ {total - i + 1} 件）")
                 break
         job["_reasoning_headroom"] = args.reasoning_headroom
+        job["_minimal_params"] = args.minimal_params
         print(f"[{i}/{total}] {job['model']} <- {job['prompt_id']}/{job['scenario']} "
               f"seed={job['params'].get('seed')}")
         r = run_job(job, key, out_dir)

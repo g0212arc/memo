@@ -26,6 +26,7 @@ from pathlib import Path
 # ここを変えれば順位の付け方を変えられる（採点の意図を1箇所に集める）。
 PENALTY = {
     "tail_loop": (-10, "末尾ループ"),
+    "phrase_loop": (-10, "同一句のループ"),
     "refusal": (-10, "拒否"),
     "empty": (-10, "空応答"),
     "person_mix": (-3, "一人称の混在"),
@@ -77,6 +78,8 @@ def agg(rows: list[dict]) -> dict:
     out["files"] = n
     out["chars_avg"] = round(out["chars"] / n) if n else 0
     out["tail_loop"] = any(r.get("tail_loop") for r in rows)
+    out["phrase_loop"] = any(r.get("phrase_loop") for r in rows)
+    out["loop_ratio"] = max((r.get("loop_ratio") or 0) for r in rows) if rows else 0
     out["person_mix"] = any(r.get("person_mix") for r in rows)
     out["truncated"] = any(r.get("truncated") for r in rows)
     out["dup_max"] = max((r.get("dup_max", 0) or 0) for r in rows) if n else 0
@@ -340,10 +343,10 @@ def main() -> int:
 
     # ---- 機械判定の一覧 ----
     d.h(2, "機械判定の一覧")
-    d.table(["モデル", "本数", "重複最大", "末尾ループ", "中国語", "韓国語",
+    d.table(["モデル", "本数", "重複最大", "ループ", "中国語", "韓国語",
              "英単語", "敬体", "医学", "ぼかし", "拒否", "一人称混在"],
             [[r["model"], r["agg"]["files"], r["agg"]["dup_max"],
-              "✕" if r["agg"]["tail_loop"] else "",
+              "✕" if (r["agg"]["tail_loop"] or r["agg"]["phrase_loop"]) else "",
               r["agg"]["cn"] or "", r["agg"]["ko"] or "", r["agg"]["en"] or "",
               r["agg"]["keitai"] or "", r["agg"]["medical"] or "",
               r["agg"]["vague"] or "",
@@ -380,14 +383,15 @@ def main() -> int:
         "**語彙多様性は低いほど言い回しが単調**、"
         "**反復句は同じ比喩を作品内で使い回した数**、"
         "常套句は wordlists/cliche.txt のヒット数。")
-    d.table(["モデル", "語彙多様性", "反復句", "常套句", "比喩/1000字",
+    d.table(["モデル", "語彙多様性", "反復句", "ループ率", "常套句", "比喩/1000字",
              "平均文長", "読点過多文", "助詞重複"],
             [[r["model"], r["agg"]["ttr"], r["agg"]["rep_phrase"] or "",
+              f'{r["agg"]["loop_ratio"]:.0%}' if r["agg"]["loop_ratio"] else "",
               r["agg"]["cliche"] or "", r["agg"]["metaphor_1000"],
               r["agg"]["sent_len_avg"], r["agg"]["comma_heavy"] or "",
               r["agg"]["dup_particles"] or ""]
              for r in out_rows],
-            "lrrrrrrr")
+            "lrrrrrrrr")
 
     reps = []
     for r in out_rows:

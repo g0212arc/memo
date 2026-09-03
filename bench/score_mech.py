@@ -305,7 +305,9 @@ def check_style_copy(text: str, examples: list[str], threshold: float = 0.90) ->
 
 # --------------------------------------- 9-10. 一人称・拒否・途中切れ・字数
 
-FIRST_PERSON = ("私", "僕", "俺", "わたし", "ぼく", "おれ", "自分", "あたし")
+# 「自分」は再帰代名詞で、どの語り手も使う（「自分の手を見た」）。
+# 一人称の取り違えを見る目的には邪魔なので入れない。
+FIRST_PERSON = ("私", "僕", "俺", "わたし", "ぼく", "おれ", "あたし")
 REFUSAL_PATTERNS = (
     "申し訳", "できません", "お答えできません", "I cannot", "I can't",
     "I'm sorry", "I am sorry", "as an AI", "不適切",
@@ -318,9 +320,16 @@ def check_person_mix(text: str) -> dict:
     narration = strip_dialogue(text)
     counts = {p: narration.count(p) for p in FIRST_PERSON}
     used = {p: c for p, c in counts.items() if c >= 2}
+    # 主たる一人称に対して、別の一人称が2割以上使われていたら「混在」とみなす。
+    # 1〜2回の紛れ込み（他人の台詞の引用など）で赤くしない。
+    mixed = False
+    if len(used) >= 2:
+        top = max(used.values())
+        mixed = sorted(used.values())[-2] >= max(2, top * 0.2)
     return {
         "narration_first_person": used,
-        "mixed": len(used) >= 2,
+        "mixed": mixed,
+        "reflexive_jibun": narration.count("自分"),
     }
 
 
@@ -416,9 +425,18 @@ def check_expression(text: str, cliches: list[str]) -> dict:
     hira = len(re.findall(r"[ぁ-ゖ]", body))
     kata = len(re.findall(r"[ァ-ヺ]", body))
 
+    reps = repeated_phrases(text)
+    # 改行のないループ（grok の "millimetre" × 1371 のような）は行単位では拾えない。
+    # 最も長く繰り返された句が本文の何割を占めるかで、水増しを見る。
+    loop_chars = max((r["count"] * r["length"] for r in reps), default=0)
+    loop_ratio = round(min(loop_chars / n_chars, 1.0), 3)
+
     return {
         "vocab_diversity": ttr,
-        "repeated_phrases": repeated_phrases(text),
+        "repeated_phrases": reps,
+        "loop_ratio": loop_ratio,
+        # 本文の4分の1以上が同じ句の繰り返しなら、文章ではなくループ
+        "phrase_loop": loop_ratio >= 0.25,
         "sentence_count": len(sents),
         "sentence_len_avg": round(sum(lengths) / len(lengths), 1) if lengths else 0,
         "sentence_len_max": max(lengths, default=0),
@@ -609,6 +627,8 @@ def flag_summary(r: dict) -> dict:
         "json_ok": r["json_format"]["valid"] if r["json_format"]["is_json"] else None,
         "ttr": r["expression"]["vocab_diversity"],
         "rep_phrase": len(r["expression"]["repeated_phrases"]),
+        "loop_ratio": r["expression"]["loop_ratio"],
+        "phrase_loop": r["expression"]["phrase_loop"],
         "cliche": r["expression"]["cliche_total"],
         "comma_heavy": r["expression"]["comma_heavy_sentences"],
         "sent_len_avg": r["expression"]["sentence_len_avg"],
