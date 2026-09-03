@@ -341,6 +341,105 @@ def check_integrity(text: str, expect_chars: int | None = None) -> dict:
     return result
 
 
+# ------------------------------- 12. 表現の質（クラウドモデル向けの軸）
+
+SENT_SPLIT_RE = re.compile(r"[。！？\n]+")
+METAPHOR_MARKERS = ("まるで", "ような", "ように", "かのよう", "ごとく", "みたいに", "さながら")
+DUP_PARTICLE_RE = re.compile(r"(がが|をを|にに|はは|のの|でで|とと|へへ)(?![ー〜])")
+
+
+def sentences(text: str) -> list[str]:
+    return [s.strip() for s in SENT_SPLIT_RE.split(text) if s.strip()]
+
+
+def _occurrences(body: str, phrase: str) -> list[int]:
+    """重なりも数える出現位置。「ああああ」中の「ああ」を3回として数えたい。"""
+    return [m.start() for m in re.finditer(f"(?={re.escape(phrase)})", body)]
+
+
+def repeated_phrases(text: str, n: int = 10, min_count: int = 3, top: int = 5) -> list[dict]:
+    """同じ言い回しの使い回しを、文字N-gramで拾う。
+
+    ローカルモデルの「同じ段落を190回」とは別物で、こちらは
+    「気の利いた比喩を作品内で何度も再利用する」タイプの単調さを見る。
+    クラウドモデルは日本語が崩れないぶん、単調さはここに出る。
+
+    N-gramをそのまま返すと同じ一文が細切れで何度も報告されるので、
+    出現回数が変わらない限り左右に伸ばして、最長の反復句にまとめる。
+    """
+    body = re.sub(r"\s+", "", text)
+    if len(body) < n * 2:
+        return []
+    counts = Counter(body[i:i + n] for i in range(len(body) - n + 1))
+    cands = [(p, c) for p, c in counts.items() if c >= min_count]
+    cands.sort(key=lambda x: (-x[1], body.find(x[0])))
+
+    picked: list[dict] = []
+    consumed: set[int] = set()
+    for seed, c in cands:
+        pos = _occurrences(body, seed)
+        if not pos or any(i in consumed for p0 in pos for i in range(p0, p0 + n)):
+            continue
+        # 出現回数が減らないところまで右へ、次に左へ伸ばす
+        a, b = pos[0], pos[0] + n
+        while b < len(body) and len(_occurrences(body, body[a:b + 1])) == c:
+            b += 1
+        while a > 0 and len(_occurrences(body, body[a - 1:b])) == c:
+            a -= 1
+        phrase = body[a:b]
+        picked.append({"phrase": phrase, "count": c, "length": len(phrase)})
+        for p0 in _occurrences(body, phrase):
+            consumed.update(range(p0, p0 + len(phrase)))
+        if len(picked) >= top:
+            break
+    return picked
+
+
+def check_expression(text: str, cliches: list[str]) -> dict:
+    """比喩・語彙・文のリズムを測る。日本語が崩れないモデル同士を比べるための軸。"""
+    body = re.sub(r"\s+", "", text)
+    sents = sentences(text)
+    n_chars = max(len(body), 1)
+
+    # 語彙の多様性: 文字2-gramの異なり数 / 延べ数。
+    # 形態素解析なしで、表現の使い回しをおおまかに測る代理指標。
+    grams = [body[i:i + 2] for i in range(len(body) - 1)]
+    ttr = round(len(set(grams)) / len(grams), 4) if grams else 0.0
+
+    comma_counts = [s.count("、") for s in sents]
+    lengths = [len(s) for s in sents]
+
+    metaphor = sum(text.count(m) for m in METAPHOR_MARKERS)
+    cliche_hits = Counter(c for c in cliches for _ in re.finditer(re.escape(c), text))
+
+    kanji = len(re.findall(r"[一-鿿]", body))
+    hira = len(re.findall(r"[ぁ-ゖ]", body))
+    kata = len(re.findall(r"[ァ-ヺ]", body))
+
+    return {
+        "vocab_diversity": ttr,
+        "repeated_phrases": repeated_phrases(text),
+        "sentence_count": len(sents),
+        "sentence_len_avg": round(sum(lengths) / len(lengths), 1) if lengths else 0,
+        "sentence_len_max": max(lengths, default=0),
+        "comma_max": max(comma_counts, default=0),
+        "comma_avg": round(sum(comma_counts) / len(comma_counts), 2) if comma_counts else 0,
+        # 1文に読点5個以上は、記事の elyza（1文に読点6個）と同じ壊れ方
+        "comma_heavy_sentences": sum(1 for c in comma_counts if c >= 5),
+        "metaphor_markers": metaphor,
+        "metaphor_per_1000": round(metaphor / n_chars * 1000, 1),
+        "cliche_total": sum(cliche_hits.values()),
+        "cliche_hits": dict(cliche_hits.most_common(10)),
+        "dup_particles": len(DUP_PARTICLE_RE.findall(text)),
+        "char_mix": {
+            "kanji_pct": round(kanji / n_chars * 100, 1),
+            "hiragana_pct": round(hira / n_chars * 100, 1),
+            "katakana_pct": round(kata / n_chars * 100, 1),
+        },
+        "comma_examples": [s for s in sents if s.count("、") >= 5][:3],
+    }
+
+
 # ------------------------------------------ 11. JSON 構造化出力の遵守
 
 def check_json_output(text: str) -> dict:
@@ -462,6 +561,7 @@ def score_file(path: Path, cfg: dict) -> dict:
         "style_marks": check_style_marks(text, cfg["style_vocab"]),
         "style_copy": check_style_copy(text, cfg["style_examples"]),
         "json_format": check_json_output(text),
+        "expression": check_expression(text, cfg["cliche"]),
     }
 
 
@@ -488,6 +588,13 @@ def flag_summary(r: dict) -> dict:
         "tsu": r["style_marks"]["kata_tsu_insert_count"],
         "copy": r["style_copy"].get("exact_copy", 0) + r["style_copy"].get("near_copy", 0),
         "json_ok": r["json_format"]["valid"] if r["json_format"]["is_json"] else None,
+        "ttr": r["expression"]["vocab_diversity"],
+        "rep_phrase": len(r["expression"]["repeated_phrases"]),
+        "cliche": r["expression"]["cliche_total"],
+        "comma_heavy": r["expression"]["comma_heavy_sentences"],
+        "sent_len_avg": r["expression"]["sentence_len_avg"],
+        "metaphor_1000": r["expression"]["metaphor_per_1000"],
+        "dup_particles": r["expression"]["dup_particles"],
         "refusal": bool(r["integrity"]["refusal"]),
         "truncated": r["integrity"]["truncated"],
         "person_mix": check_person_mix_flag(r),
@@ -512,6 +619,7 @@ def main() -> int:
     wl = Path(args.wordlists) if args.wordlists else here / "wordlists"
     cfg = {
         "medical": load_wordlist(wl / "medical.txt"),
+        "cliche": load_wordlist(wl / "cliche.txt"),
         "vague": load_wordlist(wl / "vague.txt"),
         "direct": load_wordlist(wl / "direct.txt"),
         "style_vocab": load_wordlist(wl / "style_vocab.txt"),

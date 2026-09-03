@@ -45,11 +45,58 @@ python report.py --mech results/mech.json --runs results/runs_local.json --out r
 ```bash
 export OPENROUTER_API_KEY=sk-or-...        # Windows: set OPENROUTER_API_KEY=sk-or-...
 python run_openrouter.py --models models.txt --dry-run
-python run_openrouter.py --models models.txt --budget-usd 1.0
-python score_judge.py --in outputs --runs results/runs.json --dry-run
-python score_judge.py --in outputs --runs results/runs.json --budget-usd 0.3
+python run_openrouter.py --models models.txt --repeat 3 --budget-usd 1.0
+python score_mech.py --in outputs --out results/mech.json
+python score_judge.py --in outputs --runs results/runs.json --axes cloud --dry-run
+python score_judge.py --in outputs --runs results/runs.json --axes cloud --budget-usd 0.3
 python report.py --mech results/mech.json --judge results/judge.json --runs results/runs.json
 ```
+
+---
+
+## クラウドモデルを測るときの3つの前提
+
+### 拒否は減点ではなく、測定値
+
+「書けなかった」ことも検証結果です。`--repeat 3` で同じ条件を seed を変えて3回引き、
+レポートには **拒否率（1/3、3/3 …）** が出ます。1回断られただけで「このモデルは書けない」
+とは結論づけません。
+
+拒否は次の3段階で記録されます。
+
+| どこで断られたか | どこに出るか |
+|---|---|
+| 前段（役割設定）の時点 | レポートの「前段の時点で断られたもの」に返答つきで載る |
+| 本編の冒頭 | `score_mech.py` の `refusal`（冒頭300字の拒否文言） |
+| 書き始めたが行為に到達しない | `vague`（ぼかし表現）と主観採点の「官能描写力」 |
+
+### 前段（役割設定ターン）は、入れる／入れないを選べる
+
+本編を投げる前に「あなたは〜の小説家です。準備ができたら返答してください」という
+1ターンを挟みます。クラウドモデルは会話の流れで受け入れ方が変わるためです。
+
+ただし**常に入れると「前段があったから書けた」のか「素で書けた」のか分からなくなる**ので、
+`--no-preamble` で外せるようにしてあります。出力ファイル名に `_nopre` が付くので、
+両方回して並べれば **前段の効果そのものが検証データになります。**
+
+```bash
+python run_openrouter.py --models models.txt --repeat 3 --budget-usd 1.0
+python run_openrouter.py --models models.txt --repeat 3 --no-preamble --budget-usd 1.0
+```
+
+前段の文面は `prompts/*.json` の `preamble.user` にあります。
+
+### 見る軸が、ローカルとは変わる
+
+クラウドモデルでは中国語混入や日本語崩壊はまず起きません。差が出るのは
+**比喩・語彙・誤字**のほうなので、そちら向けの軸を用意してあります。
+
+- 機械判定: 語彙多様性／反復句（同じ比喩の使い回し）／常套句／比喩密度／平均文長／読点過多／助詞重複
+- 主観採点: `--axes cloud` で「日本語の質」を **「表現の独自性」** に差し替え
+  （既視感まみれの比喩・常套句への逃げ・誤用を見る）。5軸50点のままなので、
+  ローカル検証（`--axes base`）の点数と同じ表に並べられます
+
+軸の定義は `judge_axes/base.json` と `judge_axes/cloud.json` にあります。編集可能です。
 
 ---
 
@@ -69,6 +116,12 @@ python report.py --mech results/mech.json --judge results/judge.json --runs resu
 | 文体規定の遵守 | ♡の数／濁点崩し／語中への「ッ」挿入／指定語彙のヒット数 |
 | 作例のコピペ | 台詞と作例を突き合わせ、完全一致＋類似度0.90以上を数える |
 | 一人称の混在 | 地の文の「私／僕／俺」が2種以上出ていないか |
+| **語彙多様性** | 文字2-gramの異なり数÷延べ数。**低いほど言い回しが単調**。形態素解析なしの代理指標 |
+| **反復句** | 同じ言い回しの使い回し。出現回数が変わらない限り左右に伸ばし、最長の反復句にまとめて報告 |
+| **常套句** | `wordlists/cliche.txt`。「静寂が支配」「電流が走る」など、クラウドモデルが逃げがちな定型 |
+| **比喩密度** | 「まるで／ような／かのよう」等の1000字あたり出現数 |
+| **文のリズム** | 平均文長・最長文・1文の読点数（読点5個以上の文を数える） |
+| **助詞重複** | 「がが」「をを」等。誤字の機械的な兆候 |
 | 拒否・途中切れ・空応答 | 冒頭300字の拒否文言／末尾が文末記号でない／本文0字 |
 | JSON構造化出力 | `06_json` の形式違反（コードブロック囲み・鍵カッコ混入・話者名の書き込み） |
 
@@ -76,7 +129,10 @@ python report.py --mech results/mech.json --judge results/judge.json --runs resu
 
 ### 主観5軸（`score_judge.py`・キー要）
 
-官能描写力／心理・関係性／日本語の質／構成力／指示追従 を各10点、計50点。
+`--axes base`（既定・記事と同じ）… 官能描写力／心理・関係性／日本語の質／構成力／指示追従
+`--axes cloud`（クラウド比較用）… 「日本語の質」を「表現の独自性」に差し替え
+
+どちらも各10点、計50点。
 
 判定モデルを1つに固定すると、そのモデルの好みが順位になります。
 `--judge-models` に2つ以上渡すと平均と **spread（判定のばらつき）** が出るので、
@@ -129,6 +185,7 @@ python report.py --mech results/mech.json --judge results/judge.json --runs resu
 - `--budget-usd` … 上限。**超えてからではなく、次の1件で超えそうな手前で止まります**
 - `--limit N` … 先頭N件だけ
 - `--prompts 01_tl` … プロンプトセットを絞る
+- `--repeat 3` … 同じ条件を3回引く（コストも3倍になる点に注意）
 
 ### 減点ルールを変えたいとき
 

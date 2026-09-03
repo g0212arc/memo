@@ -45,9 +45,22 @@ def load_sets(prompt_dir: Path | None = None, only: list[str] | None = None) -> 
     return sets
 
 
+# 繰り返し実行で seed をずらす幅。連番だと近い分布を引くことがあるので離す。
+SEED_STEP = 1111
+
+
 def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
-                seed_override: int | None = None) -> list[dict]:
-    """プロンプトセット × シナリオ × モデル × seed を、実行単位に展開する。"""
+                seed_override: int | None = None, repeat: int = 1,
+                use_preamble: bool = True) -> list[dict]:
+    """プロンプトセット × シナリオ × モデル × seed を、実行単位に展開する。
+
+    repeat: 同じ条件を何回引くか。拒否は運で変わるので、1回で「拒否した」と
+            結論づけないための回数。seed をずらして引き直す。
+            seeds が宣言済みのセット（05_light）は既に3回引いているので対象外。
+    use_preamble: 役割を確定させる前段ターンを入れるか。
+            前段あり/なしで拒否率が変わるかどうか自体が検証データになるので、
+            既定は入れるが、外して比較できるようにしてある。
+    """
     jobs: list[dict] = []
     for s in sets:
         system = s.get("system")
@@ -60,22 +73,30 @@ def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
                 )
             system = system.replace(STYLE_PLACEHOLDER, style_examples)
 
-        seeds = s.get("seeds") or [seed_override or s.get("params", {}).get("seed", 12345)]
-        if seed_override is not None:
-            seeds = [seed_override] * len(seeds) if s.get("seeds") else [seed_override]
+        declared = s.get("seeds")
+        base = seed_override if seed_override is not None else s.get("params", {}).get("seed", 12345)
+        if declared:
+            seeds = [seed_override] * len(declared) if seed_override is not None else list(declared)
+        else:
+            seeds = [base + i * SEED_STEP for i in range(max(1, repeat))]
+
+        preamble = s.get("preamble") if use_preamble else None
 
         for sc in s["scenarios"]:
             for seed in seeds:
                 turns = sc.get("turns") or [sc["user"]]
                 name = f"{s['seq']}_{s['id'].split('_', 1)[-1]}__{sc['id']}"
-                if len(seeds) > 1 or s.get("seeds"):
+                if len(seeds) > 1 or declared:
                     name += f"_seed{seed}"
+                if not use_preamble:
+                    name += "_nopre"
                 jobs.append({
                     "prompt_id": s["id"],
                     "seq": s["seq"],
                     "label": s["label"],
                     "scenario": sc["id"],
                     "system": system,
+                    "preamble": preamble,
                     "turns": turns,
                     "params": {**s.get("params", {}), "seed": seed},
                     "max_tokens": s.get("max_tokens", 4000),

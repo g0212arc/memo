@@ -43,6 +43,13 @@ HERE = Path(__file__).resolve().parent
 # 黙って落とすと「同じ条件で比較した」と誤解するので、実行時に明示する。
 OLLAMA_ONLY = ("repeat_last_n", "think")
 
+# 前段の返答が拒否だった場合の目印。本編を投げる前に分かるので、記録して先へ進む。
+# 「断られた」こと自体が検証結果なので、エラーにはしない。
+PREAMBLE_REFUSAL = (
+    "申し訳", "できません", "お応えできません", "I cannot", "I can't", "I'm sorry",
+    "不適切", "お手伝いできません",
+)
+
 
 def get_key(key_file: str | None) -> str:
     if key_file:
@@ -161,6 +168,22 @@ def run_job(job: dict, key: str, out_dir: Path) -> dict:
     """1ジョブ（RPは複数ターン）を実行して、テキストを保存する。"""
     messages = [{"role": "system", "content": job["system"]}] if job["system"] else []
     turn_results, texts = [], []
+    preamble_info = None
+
+    # 役割を確定させる前段ターン。ここで断られたら本編を投げる前に分かる。
+    pre = job.get("preamble")
+    if pre:
+        messages.append({"role": "user", "content": pre["user"]})
+        r = call(job, messages, key, pre.get("max_tokens", 128))
+        if r.get("error"):
+            return {**job_meta(job), "error": f"前段で失敗: {r['error']}", "turns_done": 0}
+        messages.append({"role": "assistant", "content": r["text"]})
+        preamble_info = {
+            "reply": r["text"][:200],
+            "refused": any(w in r["text"] for w in PREAMBLE_REFUSAL),
+            "cost_usd": r.get("cost_usd") or 0,
+        }
+        turn_results.append(r)
     for i, turn in enumerate(job["turns"], 1):
         messages.append({"role": "user", "content": turn})
         r = call(job, messages, key, job["max_tokens"])
@@ -182,6 +205,8 @@ def run_job(job: dict, key: str, out_dir: Path) -> dict:
         p.write_text(texts[0], encoding="utf-8")
         written.append(p.name)
 
+    if preamble_info:
+        turn_results = turn_results[1:] + [turn_results[0]]  # 集計には含めるが本文には出さない
     total_cost = sum(r.get("cost_usd") or 0 for r in turn_results)
     total_ct = sum(r.get("completion_tokens") or 0 for r in turn_results)
     total_s = sum(r.get("elapsed_s") or 0 for r in turn_results)
@@ -194,8 +219,10 @@ def run_job(job: dict, key: str, out_dir: Path) -> dict:
         "elapsed_s": round(total_s, 2),
         "tok_per_s": round(total_ct / total_s, 1) if total_ct and total_s else None,
         "cost_usd": round(total_cost, 6),
-        "finish_reason": turn_results[-1].get("finish_reason"),
+        "finish_reason": turn_results[0].get("finish_reason") if preamble_info
+                         else turn_results[-1].get("finish_reason"),
         "provider": turn_results[-1].get("provider"),
+        "preamble": preamble_info,
     }
 
 
@@ -224,6 +251,10 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="先頭N件だけ実行する")
     ap.add_argument("--seed", type=int, default=None, help="seed を上書きする")
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
+    ap.add_argument("--repeat", type=int, default=1,
+                    help="同じ条件を何回引くか（seedをずらして引き直す）。既定1、記事どおりなら3")
+    ap.add_argument("--no-preamble", action="store_true",
+                    help="役割を確定させる前段ターンを入れない（前段の効果を測るとき用）")
     ap.add_argument("--key-file", default=None)
     args = ap.parse_args()
 
@@ -234,7 +265,8 @@ def main() -> int:
     only = [x.strip() for x in args.prompts.split(",")] if args.prompts else None
     sets = promptlib.load_sets(only=only)
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
-    jobs = promptlib.expand_jobs(sets, models, style, args.seed)
+    jobs = promptlib.expand_jobs(sets, models, style, args.seed,
+                                 repeat=args.repeat, use_preamble=not args.no_preamble)
 
     dropped = sorted({k for s in sets for k in s.get("params", {}) if k in OLLAMA_ONLY})
     if dropped:
@@ -270,9 +302,11 @@ def main() -> int:
             print(f"    失敗: {r['error']}")
         else:
             spent += r.get("cost_usd") or 0
+            pre = r.get("preamble") or {}
+            mark = " [前段で拒否]" if pre.get("refused") else ""
             print(f"    {r['chars']}字 / {r['completion_tokens']}tok / "
                   f"{r['tok_per_s']}t/s / ${r.get('cost_usd') or 0:.5f} "
-                  f"/ finish={r.get('finish_reason')}")
+                  f"/ finish={r.get('finish_reason')}{mark}")
         time.sleep(args.sleep)
 
     payload = {
@@ -280,6 +314,8 @@ def main() -> int:
         "key_label": info.get("label"),
         "models": models,
         "prompt_sets": [s["id"] for s in sets],
+        "repeat": args.repeat,
+        "preamble": not args.no_preamble,
         "job_total": total,
         "job_done": len(records),
         "cost_usd_total": round(spent, 6),

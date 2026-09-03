@@ -70,16 +70,33 @@ def by_model(mech: dict) -> dict[str, list[dict]]:
 def agg(rows: list[dict]) -> dict:
     n = len(rows)
     keys = ("chars", "cn", "ko", "en", "keitai", "medical", "vague",
-            "direct", "heart", "dakuten", "tsu", "copy", "dup_max")
+            "direct", "heart", "dakuten", "tsu", "copy", "dup_max",
+            "cliche", "rep_phrase", "comma_heavy", "dup_particles")
     out = {k: sum(r.get(k, 0) or 0 for r in rows) for k in keys}
     out["files"] = n
     out["chars_avg"] = round(out["chars"] / n) if n else 0
     out["tail_loop"] = any(r.get("tail_loop") for r in rows)
-    out["refusal"] = any(r.get("refusal") for r in rows)
     out["person_mix"] = any(r.get("person_mix") for r in rows)
     out["truncated"] = any(r.get("truncated") for r in rows)
     out["dup_max"] = max((r.get("dup_max", 0) or 0) for r in rows) if n else 0
+
+    # 拒否は減点である前に測定値。何回中何回断られたかを残す。
+    out["refusal_n"] = sum(1 for r in rows if r.get("refusal"))
+    out["refusal_rate"] = round(out["refusal_n"] / n, 2) if n else 0
+    out["refusal"] = out["refusal_n"] > 0
+
+    # 表現系は合計ではなく平均で見る（長さに引きずられないように）
+    for k in ("ttr", "sent_len_avg", "metaphor_1000"):
+        vals = [r.get(k) for r in rows if r.get(k) is not None]
+        out[k] = round(sum(vals) / len(vals), 3) if vals else 0
     return out
+
+
+def detail_of(mech: dict, filename: str) -> dict:
+    for d in mech.get("detail", []):
+        if d["file"] == filename:
+            return d
+    return {}
 
 
 def table(headers: list[str], rows: list[list], align: str = "") -> str:
@@ -143,13 +160,15 @@ def main() -> int:
     md.append("")
 
     md += ["## 総合ランキング", "",
-           table(["順", "モデル", "主観点", "機械減点", "合計", "速度 t/s", "平均字数"],
+           table(["順", "モデル", "主観点", "機械減点", "合計", "拒否", "速度 t/s", "平均字数"],
                  [[i + 1, r["model"], r["subjective"] if r["subjective"] is not None else "—",
                    f'{r["penalty"]:+g}' if r["penalty"] else "0",
-                   r["score"], r["speed"] if r["speed"] is not None else "—",
+                   r["score"],
+                   f'{r["agg"]["refusal_n"]}/{r["agg"]["files"]}',
+                   r["speed"] if r["speed"] is not None else "—",
                    r["agg"]["chars_avg"]]
                   for i, r in enumerate(out_rows)],
-                 "rlrrrrr"),
+                 "rlrrrcrr"),
            "",
            "主観点は score_judge.py（LLM採点）、機械減点は score_mech.py の検出数に "
            "report.py の PENALTY / PER_HIT を掛けたもの。減点ルールを変えたい場合は "
@@ -169,6 +188,36 @@ def main() -> int:
                  "lrrcrrrrrrcc"),
            ""]
 
+    md += ["## 表現の質", "",
+           "日本語が崩れないモデル同士を比べるための軸。"
+           "**語彙多様性は低いほど言い回しが単調**、"
+           "**反復句は同じ比喩を作品内で使い回した数**、"
+           "常套句は wordlists/cliche.txt のヒット数。", "",
+           table(["モデル", "語彙多様性", "反復句", "常套句", "比喩/1000字",
+                  "平均文長", "読点過多文", "助詞重複"],
+                 [[r["model"], r["agg"]["ttr"], r["agg"]["rep_phrase"] or "",
+                   r["agg"]["cliche"] or "", r["agg"]["metaphor_1000"],
+                   r["agg"]["sent_len_avg"], r["agg"]["comma_heavy"] or "",
+                   r["agg"]["dup_particles"] or ""]
+                  for r in out_rows],
+                 "lrrrrrrr"),
+           ""]
+
+    # 使い回された言い回しの実例
+    reps = []
+    for r in out_rows:
+        for sm in groups[r["model"]]:
+            for ph in ((detail_of(mech, sm["file"]).get("expression") or {})
+                       .get("repeated_phrases") or []):
+                if ph["count"] >= 3 and ph["length"] >= 12:
+                    reps.append((r["model"], sm["file"], ph))
+    if reps:
+        md += ["### 使い回された言い回し", "",
+               table(["モデル", "回数", "言い回し"],
+                     [[m, ph["count"], f'`{ph["phrase"][:60]}`'] for m, _f, ph in reps[:15]],
+                     "lrl"),
+               ""]
+
     # 文体規定（オホ声）の検証をしたときだけ出す
     if any(r["agg"]["heart"] or r["agg"]["dakuten"] or r["agg"]["copy"] for r in out_rows):
         md += ["## 文体規定の遵守", "",
@@ -180,6 +229,18 @@ def main() -> int:
                "",
                "作例コピペは exact + near（類似度0.90以上）の合計。"
                "多いモデルは文体を再現しているのではなく渡した作例を写している。", ""]
+
+    pre_refused = [r for r in runs.get("runs", [])
+                   if (r.get("preamble") or {}).get("refused")]
+    if pre_refused:
+        md += ["## 前段（役割設定）の時点で断られたもの", "",
+               "本編を投げる前の、役割を確定させるターンで拒否されたケース。"
+               "`--no-preamble` と比べると、前段が効いているかどうかが分かる。", "",
+               table(["モデル", "プロンプト", "返答"],
+                     [[r.get("model"), r.get("prompt_id"),
+                       f'`{(r["preamble"]["reply"] or "")[:70]}`'] for r in pre_refused[:15]],
+                     "lll"),
+               ""]
 
     md += ["## 壊れ方の一覧（実例）", ""]
     detail = {d["file"]: d for d in mech.get("detail", [])}

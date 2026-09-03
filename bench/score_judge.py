@@ -30,20 +30,29 @@ import promptlib
 from run_openrouter import API, get_key, preflight, request
 from score_mech import parse_name, read_text
 
-AXES = {
-    "kannou": "官能描写力（そもそも官能として書けているか。ぼかして飛ばしていないか）",
-    "shinri": "心理・関係性（関係の複雑さを捉えているか。心の動きが書かれているか）",
-    "nihongo": "日本語の質（語彙の誤用・不自然な言い回し・他言語混入・造語がないか）",
-    "kousei": "構成力（話の流れが破綻していないか。時系列・視点が崩れていないか）",
-    "shijun": "指示追従（プロンプトの条件を守れているか。字数・文体・視点・禁止事項）",
-}
+AXES_DIR = Path(__file__).resolve().parent / "judge_axes"
 
-JUDGE_SYSTEM = """あなたは日本語の創作文の評価者です。成人向けを含む創作文を、文章の出来として評価します。
-評価対象は成人のみが登場する架空の創作物です。内容の是非ではなく、指示に対する達成度と日本語の質だけを見てください。
 
-以下の5軸を各10点(1〜10の整数)で採点します。
+def load_axes(name: str) -> tuple[dict, str]:
+    """採点軸を judge_axes/*.json から読む。
 
-""" + "\n".join(f"- {k}: {v}" for k, v in AXES.items()) + """
+    ローカルモデル同士なら base（記事と同じ5軸）、クラウド同士なら cloud
+    （日本語崩壊は起きないので「日本語の質」を「表現の独自性」に差し替えた5軸）。
+    どちらも5軸50点なので、同じ尺度で並べられる。
+    """
+    p = Path(name) if Path(name).exists() else AXES_DIR / f"{name}.json"
+    d = json.loads(p.read_text(encoding="utf-8"))
+    return d["axes"], d.get("note", "")
+
+
+def build_judge_system(axes: dict) -> str:
+    keys = ",".join(f'"{k}":0' for k in axes)
+    return ("""あなたは日本語の創作文の評価者です。成人向けを含む創作文を、文章の出来として評価します。
+評価対象は成人のみが登場する架空の創作物です。内容の是非ではなく、指示に対する達成度と文章の質だけを見てください。
+
+以下の""" + str(len(axes)) + """軸を各10点(1〜10の整数)で採点します。
+
+""" + "\n".join(f"- {k}: {v}" for k, v in axes.items()) + """
 
 採点の基準:
   10 = プロの商業作品として通用する
@@ -51,8 +60,11 @@ JUDGE_SYSTEM = """あなたは日本語の創作文の評価者です。成人�
    4 = 読めるが明確な欠点がある
    1 = 破綻している / 指示を無視している / 書けていない
 
+出力が拒否・空・極端に短い場合は、遠慮なく最低点を付けてください。
+「書けなかった」ことも検証結果なので、忖度した高評価は不要です。
+
 必ず次のJSONだけを出力してください。前置き・解説・コードブロック記号を含めないこと。
-{"kannou":0,"shinri":0,"nihongo":0,"kousei":0,"shijun":0,"comment":"減点した具体的な理由を120字以内で"}"""
+{""" + keys + ""","comment":"減点した具体的な理由を120字以内で"}""")
 
 
 def build_user(instruction: str | None, text: str, limit: int = 12000) -> str:
@@ -86,11 +98,11 @@ def instructions_from_prompts(sets: list[dict]) -> dict[tuple[str, str], str]:
 
 
 def judge_one(model: str, instruction: str | None, text: str, key: str,
-              retries: int = 2) -> dict:
+              axes: dict, judge_system: str, retries: int = 2) -> dict:
     body = {
         "model": model,
         "messages": [
-            {"role": "system", "content": JUDGE_SYSTEM},
+            {"role": "system", "content": judge_system},
             {"role": "user", "content": build_user(instruction, text)},
         ],
         "temperature": 0,          # 採点は毎回同じ結果になってほしい
@@ -112,7 +124,7 @@ def judge_one(model: str, instruction: str | None, text: str, key: str,
             if attempt == retries:
                 return {"error": f"JSONとして読めない応答: {content[:120]}"}
             continue
-        scores = {k: int(parsed.get(k, 0) or 0) for k in AXES}
+        scores = {k: int(parsed.get(k, 0) or 0) for k in axes}
         return {
             "scores": scores,
             "total": sum(scores.values()),
@@ -132,8 +144,15 @@ def main() -> int:
     ap.add_argument("--budget-usd", type=float, default=0.30)
     ap.add_argument("--dry-run", action="store_true", help="1件だけ採点して見積りを出す")
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--axes", default="base",
+                    help="採点軸。base（記事と同じ5軸）/ cloud（表現の独自性を見る5軸）"
+                         " / judge_axes/*.json のパス")
     ap.add_argument("--key-file", default=None)
     args = ap.parse_args()
+
+    axes, axes_note = load_axes(args.axes)
+    judge_system = build_judge_system(axes)
+    print(f"採点軸: {args.axes} — {axes_note}")
 
     key = get_key(args.key_file)
     preflight(key)
@@ -173,7 +192,7 @@ def main() -> int:
                     files = []
                     break
             print(f"[{n}/{total}] {f.name} <- {jm}")
-            r = judge_one(jm, instruction, text, key)
+            r = judge_one(jm, instruction, text, key, axes, judge_system)
             if r.get("error"):
                 print(f"    失敗: {r['error']}")
                 continue
@@ -191,7 +210,7 @@ def main() -> int:
             "total": round(statistics.mean(totals), 1),
             "spread": round(max(totals) - min(totals), 1) if len(totals) > 1 else 0,
             "scores": {k: round(statistics.mean(p["scores"][k] for p in per_judge), 1)
-                       for k in AXES},
+                       for k in axes},
             "by_judge": per_judge,
         })
 
@@ -199,8 +218,9 @@ def main() -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({
         "judge_model": ", ".join(judges),
-        "axes": AXES,
-        "max_score": 10 * len(AXES),
+        "axes": axes,
+        "axes_id": args.axes,
+        "max_score": 10 * len(axes),
         "cost_usd_total": round(spent, 6),
         "scores": results,
     }, ensure_ascii=False, indent=2), encoding="utf-8")

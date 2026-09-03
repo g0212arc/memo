@@ -91,9 +91,26 @@ def call(host: str, job: dict, messages: list[dict], keep_alive: str | None) -> 
     }
 
 
+PREAMBLE_REFUSAL = (
+    "申し訳", "できません", "お応えできません", "I cannot", "I can't", "I'm sorry",
+    "不適切", "お手伝いできません",
+)
+
+
 def run_job(host: str, job: dict, out_dir: Path, keep_alive: str | None) -> dict:
     messages = [{"role": "system", "content": job["system"]}] if job["system"] else []
     results, texts = [], []
+    preamble_info = None
+
+    pre = job.get("preamble")
+    if pre:
+        messages.append({"role": "user", "content": pre["user"]})
+        r = call(host, {**job, "max_tokens": pre.get("max_tokens", 128)}, messages, keep_alive)
+        if r.get("error"):
+            return {**meta(job), "error": f"前段で失敗: {r['error']}", "turns_done": 0}
+        messages.append({"role": "assistant", "content": r["text"]})
+        preamble_info = {"reply": r["text"][:200],
+                         "refused": any(w in r["text"] for w in PREAMBLE_REFUSAL)}
     for i, turn in enumerate(job["turns"], 1):
         messages.append({"role": "user", "content": turn})
         r = call(host, job, messages, keep_alive)
@@ -126,6 +143,7 @@ def run_job(host: str, job: dict, out_dir: Path, keep_alive: str | None) -> dict
         "tok_per_s": round(sum(spd) / len(spd), 1) if spd else None,
         "cost_usd": 0.0,
         "finish_reason": results[-1].get("finish_reason"),
+        "preamble": preamble_info,
     }
 
 
@@ -151,13 +169,18 @@ def main() -> int:
     ap.add_argument("--keep-alive", default=None,
                     help='モデルの常駐時間。"0" にすると1本ごとにVRAMを解放する')
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--repeat", type=int, default=1,
+                    help="同じ条件を何回引くか（seedをずらして引き直す）")
+    ap.add_argument("--no-preamble", action="store_true",
+                    help="役割を確定させる前段ターンを入れない")
     args = ap.parse_args()
 
     models = promptlib.load_models(args.models)
     only = [x.strip() for x in args.prompts.split(",")] if args.prompts else None
     sets = promptlib.load_sets(only=only)
     style = promptlib.load_style_examples(Path(args.style_examples)) if args.style_examples else ""
-    jobs = promptlib.expand_jobs(sets, models, style, args.seed)
+    jobs = promptlib.expand_jobs(sets, models, style, args.seed,
+                                 repeat=args.repeat, use_preamble=not args.no_preamble)
     if args.limit:
         jobs = jobs[:args.limit]
 
@@ -175,12 +198,14 @@ def main() -> int:
         if r.get("error"):
             print(f"    失敗: {r['error']}")
         else:
-            print(f"    {r['chars']}字 / {r['completion_tokens']}tok / {r['tok_per_s']}t/s")
+            mark = " [前段で拒否]" if (r.get("preamble") or {}).get("refused") else ""
+            print(f"    {r['chars']}字 / {r['completion_tokens']}tok / {r['tok_per_s']}t/s{mark}")
 
     runs_path.write_text(json.dumps({
         "provider": "ollama", "host": args.host, "models": models,
         "prompt_sets": [s["id"] for s in sets],
         "job_total": len(jobs), "job_done": len(records),
+        "repeat": args.repeat, "preamble": not args.no_preamble,
         "cost_usd_total": 0.0, "runs": records,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n実行 {len(records)} 件 -> {runs_path}")
