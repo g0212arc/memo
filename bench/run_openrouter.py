@@ -313,6 +313,9 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="先頭N件だけ実行する")
     ap.add_argument("--seed", type=int, default=None, help="seed を上書きする")
     ap.add_argument("--sleep", type=float, default=1.0, help="呼び出し間隔の秒数")
+    ap.add_argument("--give-up-after", type=int, default=2,
+                    help="同じモデルが連続でこの回数失敗したら、そのモデルは残りを飛ばす"
+                         "（既定 2。0 で無効）")
     ap.add_argument("--minimal-params", action="store_true",
                     help="temperature と seed 以外の生成パラメータを送らない"
                          "（設定が原因の破綻かを切り分けるとき用）")
@@ -361,7 +364,15 @@ def main() -> int:
 
     records, spent = [], 0.0
     total = len(jobs)
+    # 提供元が混んでいるモデルは、1本あたり数分を待ち時間に溶かす。
+    # 連続で落ちたらそのモデルは諦めて、残りのモデルに時間を回す。
+    consecutive: dict[str, int] = {}
+    dead: set[str] = set()
     for i, job in enumerate(jobs, 1):
+        if job["model"] in dead:
+            records.append({**job_meta(job), "error": "skipped: 連続失敗のため打ち切り",
+                            "skipped": True})
+            continue
         # 手前で止める: 1件の平均実費を使って、次の1件で超えるなら実行しない
         if records and spent > 0:
             avg = spent / len([r for r in records if not r.get("error")] or [1])
@@ -377,7 +388,15 @@ def main() -> int:
         records.append(r)
         if r.get("error"):
             print(f"    失敗: {r['error']}")
+            n = consecutive.get(job["model"], 0) + 1
+            consecutive[job["model"]] = n
+            if args.give_up_after and n >= args.give_up_after:
+                dead.add(job["model"])
+                remaining = sum(1 for j in jobs[i:] if j["model"] == job["model"])
+                print(f"    {job['model']} は {n} 連続で失敗。"
+                      f"残り {remaining} 本を飛ばします。")
         else:
+            consecutive[job["model"]] = 0
             spent += r.get("cost_usd") or 0
             pre = r.get("preamble") or {}
             mark = " [前段で拒否]" if pre.get("refused") else ""
@@ -400,11 +419,16 @@ def main() -> int:
         "job_done": len(records),
         "cost_usd_total": round(spent, 6),
         "ollama_only_params_dropped": dropped,
+        "gave_up_on": sorted(dead),
         "runs": records,
     }
     runs_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print(f"\n実行 {len(records)} 件 / 実費 ${spent:.4f} -> {runs_path}")
+    skipped = [r for r in records if r.get("skipped")]
+    print(f"\n実行 {len(records) - len(skipped)} 件 / スキップ {len(skipped)} 件 "
+          f"/ 実費 ${spent:.4f} -> {runs_path}")
+    if dead:
+        print(f"打ち切ったモデル: {', '.join(sorted(dead))}")
 
     # 固定していないモデルは、呼び出しごとに提供元（＝量子化）が変わりうる。
     # 変わっていたら比較の前提が崩れるので、必ず知らせる。
