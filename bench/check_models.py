@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+check_models.py — models.txt の全モデルが、そのキーで実際に使えるか確かめる。
+
+本番を回してから「このモデルだけ弾かれていた」と気づくのを防ぐための事前点検。
+1モデルにつき出力1トークンだけ要求するので、費用はほぼゼロ（合計で$0.001未満）。
+
+見るのは3つ:
+  - そのキー／アカウントで呼べるか（データポリシーやガードレールで弾かれないか）
+  - @プロバイダ で固定した指定が通るか
+  - 実際にどの提供元が応答したか（固定していないモデルの確認用）
+
+使い方
+  python check_models.py --key-file ~/or.key --models models.txt
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import urllib.error
+from pathlib import Path
+
+import promptlib
+from run_openrouter import API, get_key, preflight, request
+
+
+def check(spec: str, key: str) -> dict:
+    model_id, provider = promptlib.parse_model(spec)
+    body = {
+        "model": model_id,
+        "messages": [{"role": "user", "content": "こんにちは"}],
+        "max_tokens": 1,
+        "usage": {"include": True},
+    }
+    if provider:
+        body["provider"] = {"only": [provider], "allow_fallbacks": False}
+    try:
+        res = request(f"{API}/chat/completions", key, body, timeout=90)
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        try:
+            msg = json.loads(raw)["error"]["message"]
+        except Exception:  # noqa: BLE001
+            msg = raw[:200]
+        return {"spec": spec, "ok": False, "code": e.code, "reason": msg.strip()}
+    except Exception as e:  # noqa: BLE001
+        return {"spec": spec, "ok": False, "code": None, "reason": str(e)[:200]}
+    return {
+        "spec": spec,
+        "ok": True,
+        "served_by": res.get("provider"),
+        "cost_usd": (res.get("usage") or {}).get("cost") or 0,
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="モデルの利用可否を事前点検する")
+    ap.add_argument("--models", required=True)
+    ap.add_argument("--key-file", default=None)
+    ap.add_argument("--out", default="results/model_check.json")
+    args = ap.parse_args()
+
+    key = get_key(args.key_file)
+    preflight(key)
+
+    specs = promptlib.load_models(args.models)
+    print(f"\n{len(specs)} モデルを点検します（出力1トークンずつ）\n")
+    rows, spent = [], 0.0
+    for spec in specs:
+        r = check(spec, key)
+        rows.append(r)
+        spent += r.get("cost_usd") or 0
+        if r["ok"]:
+            print(f"  OK   {spec:<44} 提供元={r.get('served_by')}")
+        else:
+            # 理由は1行に潰す。長い説明でも「なぜ弾かれたか」の先頭が読めればよい。
+            reason = " ".join((r["reason"] or "").split())[:150]
+            print(f"  NG   {spec:<44} [{r.get('code')}] {reason}")
+
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({"cost_usd_total": round(spent, 6), "results": rows},
+                              ensure_ascii=False, indent=2), encoding="utf-8")
+    ok = sum(1 for r in rows if r["ok"])
+    print(f"\n使えるモデル {ok}/{len(rows)} / 点検の実費 ${spent:.5f} -> {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

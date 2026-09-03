@@ -34,6 +34,25 @@ def fetch_pricing() -> dict[str, dict]:
     return {m["id"]: m for m in d}
 
 
+def fetch_endpoint_pricing(model_id: str, provider_tag: str) -> tuple[float, float, str] | None:
+    """@プロバイダ で固定したときの、その提供元の単価と量子化を取る。
+
+    モデル一覧の単価は代表値なので、提供元を固定すると実額がずれる
+    （Gemini の flex は半額、Kimi の fp4 と bf16 は別単価、など）。
+    """
+    url = f"{MODELS_API}/{model_id}/endpoints"
+    try:
+        d = json.load(urllib.request.urlopen(url, timeout=30))["data"]
+    except Exception:  # noqa: BLE001
+        return None
+    for ep in d.get("endpoints", []):
+        if ep.get("tag") == provider_tag:
+            pr = ep.get("pricing", {})
+            return (float(pr.get("prompt", 0)), float(pr.get("completion", 0)),
+                    str(ep.get("quantization")))
+    return None
+
+
 def toks(text: str) -> int:
     return int(len(text) / CHARS_PER_TOKEN)
 
@@ -108,24 +127,32 @@ def main() -> int:
     print()
 
     rows, total = [], 0.0
-    for raw, mid in zip(raw_models, ids):
+    for raw in raw_models:
+        mid, prov = promptlib.parse_model(raw)
         m = pricing.get(mid)
         if not m:
-            rows.append((raw, None, None, None))
+            rows.append((raw, None, None, None, ""))
             continue
-        p = m.get("pricing", {})
-        pin, pout = float(p.get("prompt", 0)), float(p.get("completion", 0))
+        quant = ""
+        ep = fetch_endpoint_pricing(mid, prov) if prov else None
+        if ep:
+            pin, pout, quant = ep
+        else:
+            p = m.get("pricing", {})
+            pin, pout = float(p.get("prompt", 0)), float(p.get("completion", 0))
+            if prov:
+                quant = "(タグ不一致)"
         cost = tin * pin + tout * pout
         total += cost
-        rows.append((raw, pin * 1e6, pout * 1e6, cost))
+        rows.append((raw, pin * 1e6, pout * 1e6, cost, quant))
 
-    print(f"{'モデル':<44}{'入$/M':>8}{'出$/M':>8}{'概算':>10}")
-    for raw, pin, pout, cost in rows:
+    print(f"{'モデル':<44}{'入$/M':>8}{'出$/M':>8}{'量子化':>10}{'概算':>10}")
+    for raw, pin, pout, cost, quant in rows:
         if cost is None:
-            print(f"{raw:<44}{'':>8}{'':>8}{'見つからない':>10}")
+            print(f"{raw:<44}{'':>8}{'':>8}{'':>10}{'見つからない':>10}")
         else:
-            print(f"{raw:<44}{pin:>8.3f}{pout:>8.3f}{'$%.3f' % cost:>10}")
-    print(f"{'':<44}{'':>8}{'合計':>8}{'$%.3f' % total:>10}")
+            print(f"{raw:<44}{pin:>8.3f}{pout:>8.3f}{quant:>10}{'$%.3f' % cost:>10}")
+    print(f"{'':<44}{'':>8}{'':>8}{'合計':>10}{'$%.3f' % total:>10}")
 
     if args.judge_model:
         jm = pricing.get(args.judge_model)
