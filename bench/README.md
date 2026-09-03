@@ -11,7 +11,7 @@ RTX 3060 12GB でのローカルLLM検証（NSFW用途）で行った採点を�
 | OpenRouter のクラウドモデルを同じ条件で回す | `run_openrouter.py` | 要 |
 | **機械判定（重複・他言語混入・敬体ドリフト等）** | `score_mech.py` | **不要** |
 | 主観5軸をLLMに採点させる | `score_judge.py` | 要 |
-| 記事に貼れる Markdown 表を作る | `report.py` | 不要 |
+| 記事に貼れる **HTML**（表つき）を作る | `report.py` | 不要 |
 | **実行前に費用を見積もる** | `estimate.py` | **不要** |
 
 Python 3.9+ のみ。**外部ライブラリは使っていません**（`pip install` 不要）。
@@ -225,8 +225,16 @@ deepseek/deepseek-v4-pro-0813@streamlake    # 別提供元。同じ単価で比�
 `report.py` は実費をドルと円の併記で出します。
 
 ```bash
-python report.py --mech results/mech.json --runs results/runs.json --jpy-rate 159.09
+python report.py --mech results/mech.json --runs results/runs.json \
+    --out results/report.html --jpy-rate 159.09 --also-markdown
 ```
+
+出力形式は `--out` の拡張子で決まります（`.html` / `.md`）。既定は HTML。
+`--also-markdown` を付けると同じ内容の .md も並べて出ます。
+
+**はてなブログに貼るとき**は、生成された HTML を開いて `<table>` 以下をコピーし、
+**HTML編集モード**に貼ってください。レポート側の CSS は貼り付け先には付いていかないので、
+ブログのデザインがそのまま適用されます。
 
 出るもの:
 

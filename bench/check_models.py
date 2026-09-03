@@ -60,7 +60,9 @@ def check(spec: str, key: str, retry_429: bool = True) -> dict:
     body = {
         "model": model_id,
         "messages": [{"role": "user", "content": "こんにちは"}],
-        "max_tokens": 1,
+        # 1 にすると弾く提供元がある（Meta は max_output_tokens >= 16 を要求）。
+        # 点検で落ちて「使えないモデル」と誤判定するので、通る最小値にしておく。
+        "max_tokens": 16,
         "usage": {"include": True},
     }
     if provider:
