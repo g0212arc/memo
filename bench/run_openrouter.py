@@ -127,27 +127,42 @@ def build_body(job: dict, messages: list[dict], max_tokens: int) -> dict:
     return {k: v for k, v in body.items() if v is not None}
 
 
+# 429（提供元の混雑）は待てば通ることが多いので、長めに粘る。
+# 提供元が1社しかないモデル（qwen3.8-flash など）は特にここで決まる。
+RETRY_WAITS_429 = (15, 45, 120, 240)
+RETRY_WAITS_5XX = (5, 15, 45)
+
+
 def call(job: dict, messages: list[dict], key: str, max_tokens: int,
-         retries: int = 2) -> dict:
+         retries: int | None = None) -> dict:
     body = build_body(job, messages, max_tokens)
+    max_attempts = (retries + 1) if retries is not None else len(RETRY_WAITS_429) + 1
     last = None
-    for attempt in range(retries + 1):
+    for attempt in range(max_attempts):
         t0 = time.time()
         try:
             res = request(f"{API}/chat/completions", key, body)
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:300]
             last = f"HTTP {e.code}: {detail}"
-            # 429（レート制限）と5xxだけ待って再試行。400番台の設定ミスは即諦める。
-            if e.code == 429 or 500 <= e.code < 600:
-                wait = 2 ** attempt * 3
-                print(f"    再試行まで {wait}s ({last})")
-                time.sleep(wait)
-                continue
-            return {"error": last}
+            # 429（混雑）と5xxだけ待って再試行。400番台の設定ミスは即諦める。
+            if e.code == 429:
+                waits = RETRY_WAITS_429
+            elif 500 <= e.code < 600:
+                waits = RETRY_WAITS_5XX
+            else:
+                return {"error": last}
+            if attempt >= len(waits):
+                return {"error": last}
+            wait = waits[attempt]
+            print(f"    混雑のため {wait}s 待って再試行 ({attempt + 1}/{len(waits)})")
+            time.sleep(wait)
+            continue
         except (urllib.error.URLError, TimeoutError) as e:
             last = f"network: {e}"
-            time.sleep(2 ** attempt * 3)
+            if attempt >= len(RETRY_WAITS_5XX):
+                return {"error": last}
+            time.sleep(RETRY_WAITS_5XX[attempt])
             continue
 
         elapsed = time.time() - t0

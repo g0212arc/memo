@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -54,7 +55,7 @@ def policy_label(pol: dict) -> str:
     return f"{train}/{keep}"
 
 
-def check(spec: str, key: str) -> dict:
+def check(spec: str, key: str, retry_429: bool = True) -> dict:
     model_id, provider = promptlib.parse_model(spec)
     body = {
         "model": model_id,
@@ -67,6 +68,10 @@ def check(spec: str, key: str) -> dict:
     try:
         res = request(f"{API}/chat/completions", key, body, timeout=90)
     except urllib.error.HTTPError as e:
+        if e.code == 429 and retry_429:
+            # 点検で429、本番では通る…という紛らわしさを避けるため、一度だけ待って確認する
+            time.sleep(20)
+            return check(spec, key, retry_429=False)
         raw = e.read().decode("utf-8", "replace")
         try:
             msg = json.loads(raw)["error"]["message"]
