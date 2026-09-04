@@ -102,6 +102,10 @@ def agg(rows: list[dict]) -> dict:
 # 既定値は open.er-api.com から取得した 2026-09-03 時点のレート。
 DEFAULT_JPY_RATE = 159.09
 
+# 散文として比べられるプロンプト。RP（短い応答）と JSON（構造化出力）は
+# 字数も語彙も前提が違うので、散文の指標に混ぜると平均が壊れる。
+PROSE_SEQS = ("01", "02", "03", "03b", "05")
+
 
 def yen(usd: float, rate: float) -> str:
     """ドルと円を併記する。記事に「いくらかかったか」を書くための形。"""
@@ -296,6 +300,9 @@ def main() -> int:
     ap.add_argument("--also-markdown", action="store_true",
                     help="HTML と同じ内容の .md も並べて出す")
     ap.add_argument("--title", default="ローカルLLM検証 レポート")
+    ap.add_argument("--rank-on", default="01",
+                    help="総合ランキングの集計に使うプロンプトの連番（既定 01）。"
+                         "all で全部を混ぜる")
     ap.add_argument("--tier", choices=("free", "paid"), default="free",
                     help="free=判定結果と根拠の断片だけ（既定） / "
                          "paid=各出力の冒頭と、壊れた箇所の長い抜粋も載せる")
@@ -317,8 +324,21 @@ def main() -> int:
     cb = cost_breakdown(runs) if runs else None
     groups = by_model(mech)
 
-    out_rows = []
-    for model, rows in groups.items():
+    # ランキングは1つのプロンプトで採点する。性質の違うものを混ぜると、
+    # 「4000字指定」と「300字指定」の平均字数が並んで無意味な数字になる。
+    def rank_rows(rows: list[dict]) -> list[dict]:
+        if args.rank_on == "all":
+            return rows
+        return [r for r in rows if r.get("seq") == args.rank_on]
+
+    out_rows, no_data = [], []
+    for model, rows_all in groups.items():
+        rows = rank_rows(rows_all)
+        if not rows:
+            # 別のプロンプトのデータで代用すると、基準の違うものが同じ表に並ぶ。
+            # 黙って混ぜるより、載せないほうがよい。
+            no_data.append(model)
+            continue
         a = agg(rows)
         pen, reasons = mech_penalty(a)
         js = judge_by_model.get(model, [])
@@ -349,7 +369,14 @@ def main() -> int:
     d.ul(info)
 
     # ---- 総合ランキング ----
+    ranked_on = ("全プロンプトを混ぜて集計" if args.rank_on == "all"
+                 else f"プロンプト {args.rank_on} のみで集計")
     d.h(2, "総合ランキング")
+    d.p(f"**{ranked_on}。** 字数指定も文体も違うプロンプトを混ぜると"
+        "平均字数や減点が意味を失うため、ランキングは1つのプロンプトで採点している"
+        "（`--rank-on` で変更できる）。他のセクションはそれぞれの対象範囲で集計する。")
+    if no_data:
+        d.p(f"※ このプロンプトのデータが無いため未掲載: {', '.join(sorted(no_data))}")
     d.table(["順", "モデル", "主観点", "機械減点", "合計", "拒否", "速度 t/s", "平均字数", "実費"],
             [[i + 1, r["model"],
               r["subjective"] if r["subjective"] is not None else "—",
@@ -365,8 +392,14 @@ def main() -> int:
         "report.py の PENALTY / PER_HIT を掛けたもの。"
         "減点ルールを変えたい場合は report.py の先頭を編集してください。")
 
-    # ---- 機械判定の一覧 ----
+    # ---- 機械判定の一覧（散文プロンプトのみ）----
+    prose = {m: [r for r in rows if r.get("seq") in PROSE_SEQS]
+             for m, rows in groups.items()}
+    prose_rows = [{"model": r["model"], "agg": agg(prose[r["model"]])}
+                  for r in out_rows if prose.get(r["model"])]
     d.h(2, "機械判定の一覧")
+    d.p("散文のプロンプト（①②③⑤）だけを集計。"
+        "RP と JSON は前提が違うので、それぞれ専用のセクションで見る。")
     d.table(["モデル", "本数", "重複最大", "ループ", "中国語", "韓国語",
              "英単語", "敬体", "医学", "ぼかし", "拒否", "一人称混在"],
             [[r["model"], r["agg"]["files"], r["agg"]["dup_max"],
@@ -376,7 +409,7 @@ def main() -> int:
               r["agg"]["vague"] or "",
               f'{r["agg"]["refusal_n"]}' if r["agg"]["refusal_n"] else "",
               "✕" if r["agg"]["person_mix"] else ""]
-             for r in out_rows],
+             for r in prose_rows],
             "lrrcrrrrrrcc")
 
     # ---- 前段条件ごとの拒否率 ----
@@ -414,7 +447,7 @@ def main() -> int:
               r["agg"]["cliche"] or "", r["agg"]["metaphor_1000"],
               r["agg"]["sent_len_avg"], r["agg"]["comma_heavy"] or "",
               r["agg"]["dup_particles"] or ""]
-             for r in out_rows],
+             for r in prose_rows],
             "lrrrrrrrr")
 
     reps = []

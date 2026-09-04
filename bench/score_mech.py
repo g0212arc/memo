@@ -795,6 +795,8 @@ def flag_summary(r: dict) -> dict:
     return {
         "file": r["file"],
         "model": r["model"],
+        # ランキングをプロンプト単位で集計するために必要
+        "seq": r["seq"],
         "condition": r["condition"],
         "scenario": r["scenario"],
         "preamble": r["preamble"],
