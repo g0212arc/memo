@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+organize.py — 出力テキストを、モデル名のフォルダに振り分ける。
+
+判定ツールはファイル名から条件を読むので outputs/ は平置きのままにしておき、
+人が読むためのコピーを別ディレクトリに作る。元は消さない。
+
+  outputs/01_tl__C_20years_seed12345__grok-4.6-xai-zdr.txt
+    -> outputs_by_model/grok-4.6-xai-zdr/01_tl__C_20years_seed12345.txt
+
+使い方
+  python organize.py                          # モデル名で分ける
+  python organize.py --by prompt              # プロンプトで分ける
+  python organize.py --zip out.zip            # まとめて zip も作る
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import zipfile
+from pathlib import Path
+
+from score_mech import parse_name
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="出力をフォルダに振り分ける")
+    ap.add_argument("--in", dest="inp", default="outputs")
+    ap.add_argument("--out", default="outputs_by_model")
+    ap.add_argument("--by", choices=("model", "prompt"), default="model",
+                    help="model=モデル名でフォルダ分け（既定） / prompt=プロンプトで分ける")
+    ap.add_argument("--zip", default=None, help="この名前で zip も作る")
+    ap.add_argument("--clean", action="store_true", help="出力先を作り直す")
+    args = ap.parse_args()
+
+    src, dst = Path(args.inp), Path(args.out)
+    files = sorted(f for f in src.glob("*.txt") if f.is_file())
+    if not files:
+        print(f"対象がありません: {src}")
+        return 1
+    if args.clean and dst.exists():
+        shutil.rmtree(dst)
+
+    counts: dict[str, int] = {}
+    for f in files:
+        meta = parse_name(f.stem)
+        folder = meta["model"] if args.by == "model" else f'{meta["seq"]}_{meta["condition"]}'
+        # フォルダ名に使った情報はファイル名から落として、二重に持たせない
+        stem = f.stem
+        if args.by == "model":
+            stem = stem.rsplit("__", 1)[0]
+            if meta["turn"]:
+                stem += f'_turn{meta["turn"]}'
+        else:
+            stem = stem.split("__", 1)[-1]
+        out = dst / folder
+        out.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, out / f"{stem}.txt")
+        counts[folder] = counts.get(folder, 0) + 1
+
+    print(f"{len(files)} 本を {len(counts)} フォルダに振り分けました -> {dst}")
+    for k in sorted(counts):
+        print(f"  {k:<40}{counts[k]:>4} 本")
+
+    if args.zip:
+        z = Path(args.zip)
+        with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
+            for f in sorted(dst.rglob("*.txt")):
+                zf.write(f, f.relative_to(dst.parent))
+        print(f"\nzip: {z} ({z.stat().st_size / 1024 / 1024:.1f} MB)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
