@@ -246,6 +246,29 @@ python report.py --mech results/mech.json --runs results/runs.json \
 （OpenRouter が実際に課金した額で、こちらの概算ではありません）。
 `--jpy-rate` の既定は 159.09 円（2026-09-03 時点）。**レートは必ず指定し直してください。**
 
+### 記事の無料範囲と有料範囲で出し分ける
+
+判定結果は無料で出し、素材（プロンプトと生成された文章）は有料にする、という
+記事構成を想定した出し分けができます。
+
+```bash
+# 無料範囲: 判定結果の表と、数字の根拠になる短い断片だけ
+python report.py --mech results/mech.json --runs results/runs.json \
+    --out results/report.html --tier free
+
+# 有料範囲その1: 上に加えて、壊れた出力の冒頭400字を載せた版
+python report.py --mech results/mech.json --runs results/runs.json \
+    --out results/report_full.html --tier paid
+
+# 有料範囲その2: プロンプト全文 ＋ 生成された文章の全文（付録）
+python prompts_doc.py --out results/appendix.html --with-outputs outputs
+```
+
+**20字程度の根拠断片は無料側に残すことを勧めます。**
+「ループ率94%」のような数字は、`「指の腹が熱く、 millimetre 単位で近づく」×1371回`
+という現物が添えられて初めて読者が信用できるためです。
+全文4000字は有料、根拠の断片は無料、という線引きが自然だと思います。
+
 ### 提供元のデータポリシー
 
 `check_models.py` は、応答した提供元が **プロンプトを学習に使うか／保持するか** も表示します。

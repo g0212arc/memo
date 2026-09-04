@@ -22,6 +22,8 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+from score_mech import read_text
+
 # 機械判定の減点ルール。記事の「機械判定項目」をそのまま点数化したもの。
 # ここを変えれば順位の付け方を変えられる（採点の意図を1箇所に集める）。
 PENALTY = {
@@ -294,6 +296,9 @@ def main() -> int:
     ap.add_argument("--also-markdown", action="store_true",
                     help="HTML と同じ内容の .md も並べて出す")
     ap.add_argument("--title", default="ローカルLLM検証 レポート")
+    ap.add_argument("--tier", choices=("free", "paid"), default="free",
+                    help="free=判定結果と根拠の断片だけ（既定） / "
+                         "paid=各出力の冒頭と、壊れた箇所の長い抜粋も載せる")
     ap.add_argument("--jpy-rate", type=float, default=DEFAULT_JPY_RATE,
                     help=f"1ドルあたりの円（既定 {DEFAULT_JPY_RATE}）")
     args = ap.parse_args()
@@ -331,6 +336,9 @@ def main() -> int:
 
     d = Doc()
     d.h(1, args.title)
+    if args.tier == "paid":
+        d.p("※この版には、生成された文章の抜粋を長めに含む。"
+            "数字と根拠の断片だけの版は `--tier free` で出せる。")
     info = [f"判定ファイル数: {mech.get('file_count', 0)}", f"モデル数: {len(groups)}"]
     if judge:
         info.append(f"主観採点: {judge.get('judge_model', '(不明)')}"
@@ -487,6 +495,14 @@ def main() -> int:
             if worst and worst[0]["count"] >= 3:
                 items.append(f'**重複行**: `{worst[0]["line"]}` × {worst[0]["count"]}回')
             d.ul(items)
+            if args.tier == "paid":
+                # 判定JSONを作ったあとに出力を移動していることがある。
+                # 抜粋は付加情報なので、読めなければ黙って飛ばす。
+                src_path = Path(mech.get("source", "outputs")) / sm["file"]
+                if src_path.exists():
+                    body = read_text(src_path)
+                    if body:
+                        d.pre(body[:400].rstrip() + ("…" if len(body) > 400 else ""))
             shown += 1
             if shown >= 30:
                 break

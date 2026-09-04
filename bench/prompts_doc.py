@@ -19,6 +19,7 @@ from pathlib import Path
 
 import promptlib
 from report import Doc
+from score_mech import read_text
 
 HERE = Path(__file__).resolve().parent
 
@@ -34,6 +35,11 @@ def main() -> int:
     ap.add_argument("--out", default="results/prompts.html")
     ap.add_argument("--title", default="検証に使ったプロンプト一式")
     ap.add_argument("--style-examples", default="wordlists/style_examples.txt")
+    ap.add_argument("--with-outputs", default=None,
+                    help="生成された文章の全文も載せる（有料記事の付録用）。"
+                         "出力ディレクトリを指定する")
+    ap.add_argument("--outputs-limit", type=int, default=0,
+                    help="載せる本数の上限（0で全部）")
     args = ap.parse_args()
 
     style = promptlib.load_style_examples(Path(args.style_examples))
@@ -79,6 +85,24 @@ def main() -> int:
                     block(d, f'シナリオ `{sc["id"]}` — {i}ターン目{mark}', t)
             else:
                 block(d, f'シナリオ `{sc["id"]}`{mark}', sc["user"])
+
+    if args.with_outputs:
+        outdir = Path(args.with_outputs)
+        files = sorted(f for f in outdir.glob("*.txt") if f.is_file())
+        if args.outputs_limit:
+            files = files[:args.outputs_limit]
+        d.h(2, "生成された文章（全文）")
+        d.p(f"上のプロンプトを投げて実際に返ってきたもの。**{len(files)} 本**。"
+            "판定の数字がどの文章から出たのかを、そのまま確認できる。")
+        # プロンプトごとにまとめる。ファイル名は「連番_条件__シナリオ__モデル」。
+        groups: dict[str, list[Path]] = {}
+        for f in files:
+            groups.setdefault(f.stem.split("__")[0], []).append(f)
+        for head in sorted(groups):
+            d.h(3, head)
+            for f in groups[head]:
+                d.h(4, f.stem.split("__", 1)[-1])
+                d.pre(read_text(f).rstrip())
 
     d.h(2, "注記")
     d.ul([
