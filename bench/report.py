@@ -475,6 +475,50 @@ def main() -> int:
         d.p("**喘ぎ声の台詞行**が③の要件そのもの（指定した発話が実際に出るか）。台詞行のうち ♡・濁点崩し・指定語彙のいずれかを含むものを数えている。作例コピペは exact + near（類似度0.90以上）の合計。"
             "多いモデルは文体を再現しているのではなく渡した作例を写している。")
 
+    # ---- seed によるばらつき ----
+    # 同じ条件で seed だけ変えた3本を1組として、振れ幅を出す。
+    # 「この差は本物か、引き直せば消える程度か」を読者が判断できるようにする。
+    spread_rows = []
+    for r in out_rows:
+        sets_: dict[tuple, list[dict]] = defaultdict(list)
+        for x in groups[r["model"]]:
+            sets_[(x.get("seq"), x.get("scenario"), x.get("preamble"))].append(x)
+        draws = [v for v in sets_.values() if len(v) >= 2]
+        if not draws:
+            continue
+        char_spreads, pen_spreads, flaky = [], [], 0
+        for grp in draws:
+            cs = [x.get("chars") or 0 for x in grp]
+            m = sum(cs) / len(cs)
+            if m:
+                char_spreads.append((max(cs) - min(cs)) / m)
+            ps = [mech_penalty(x)[0] for x in grp]
+            pen_spreads.append(max(ps) - min(ps))
+            # 事故が「出た回でだけ出る」なら、それは引き直しで消える事故
+            for key in ("tail_loop", "phrase_loop", "refusal", "truncated"):
+                hits = sum(1 for x in grp if x.get(key))
+                if 0 < hits < len(grp):
+                    flaky += 1
+        spread_rows.append([
+            r["model"], len(draws),
+            f'{sum(char_spreads) / len(char_spreads):.0%}' if char_spreads else "—",
+            f'{max(pen_spreads):+g}' if pen_spreads and max(pen_spreads) else "0",
+            flaky or "",
+        ])
+    if spread_rows:
+        d.h(2, "seed によるばらつき")
+        d.p("同じモデル・同じプロンプトで **seed だけ変えた3本**を1組として測った振れ幅。"
+            "**字数の振れ幅**は組内の (最大-最小)/平均 の平均、"
+            "**減点の振れ幅**は組内で最も開いた点差。"
+            "**不安定な事故**は、ループ・拒否・途中切れが"
+            "「3本のうち一部でだけ起きた」組の数。")
+        d.table(["モデル", "組数", "字数の振れ幅", "減点の振れ幅", "不安定な事故"],
+                spread_rows, "lrrrc")
+        d.p("**この振れ幅より小さい差は、モデルの差とは言えない。**"
+            "3本しか引いていないので、あくまで目安として読むこと。"
+            "「不安定な事故」が付いたモデルは、壊れることもあれば壊れないこともある"
+            "＝1本だけ見て結論を出してはいけない。")
+
     # ---- プロンプト間の比較 ----
     def by_seq(model: str, seq: str) -> list[dict]:
         return [x for x in groups[model] if x.get("seq") == seq]
