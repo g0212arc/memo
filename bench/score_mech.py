@@ -433,6 +433,59 @@ def check_roleplay(text: str, cfg: dict) -> dict:
     }
 
 
+PART_RE = re.compile(r"^[\s#*]*第\s*([1-4一二三四])\s*部", re.M)
+KANJI_NUM = {"一": 1, "二": 2, "三": 3, "四": 4}
+
+
+def check_structure(text: str, cfg: dict) -> dict:
+    """字数指定と部構成をどれだけ守れたか。
+
+    「4000字以上」「第3部を省略するな」と書いてあるのに従わないのは、
+    書けなかったのではなく指示を無視したということ。両方を分けて測る。
+    """
+    body = re.sub(r"\s+", "", text)
+    n = len(body)
+    want = cfg.get("min_chars") or 0
+    spec = cfg.get("parts") or []
+
+    # 部の見出しを拾い、その位置で本文を区切る
+    marks = []
+    for m in PART_RE.finditer(text):
+        g = m.group(1)
+        marks.append((KANJI_NUM.get(g, int(g) if g.isdigit() else 0), m.start()))
+    marks = [x for x in marks if x[0]]
+
+    parts = []
+    if marks:
+        marks.sort(key=lambda x: x[1])
+        for i, (num, pos) in enumerate(marks):
+            end = marks[i + 1][1] if i + 1 < len(marks) else len(text)
+            got = len(re.sub(r"\s+", "", text[pos:end]))
+            spec_i = next((p for p in spec if p["name"] == f"第{num}部"), None)
+            parts.append({
+                "part": f"第{num}部",
+                "label": (spec_i or {}).get("label", ""),
+                "chars": got,
+                "want": (spec_i or {}).get("chars"),
+                "ok": got >= (spec_i or {}).get("chars", 0),
+            })
+
+    found = {p["part"] for p in parts}
+    missing = [p["name"] for p in spec if p["name"] not in found]
+    return {
+        "chars": n,
+        "min_chars": want,
+        "chars_ratio": round(n / want, 2) if want else None,
+        "chars_ok": n >= want if want else None,
+        "parts_marked": len(parts),
+        "parts_missing": missing,
+        # 見出しを書かずに本文だけ返すモデルもいる。その場合は部の判定はできない
+        "parts_measurable": bool(parts),
+        "parts": parts,
+        "short_parts": [p["part"] for p in parts if p["want"] and not p["ok"]],
+    }
+
+
 def load_prompt_checks() -> dict:
     """prompts/*.json の checks を読む。プロンプト固有の判定はそこに書いてある。"""
     out = {}
@@ -693,6 +746,9 @@ def score_file(path: Path, cfg: dict) -> dict:
         "style_copy": check_style_copy(text, cfg["style_examples"]),
         "json_format": check_json_output(text),
         "expression": check_expression(text, cfg["cliche"]),
+        "structure": (check_structure(text, cfg["prompt_checks"][meta["seq"]])
+                      if (cfg.get("prompt_checks") or {}).get(meta["seq"], {})
+                      .get("kind") == "structure" else None),
         "roleplay": (check_roleplay(text, cfg["prompt_checks"][meta["seq"]])
                      if (cfg.get("prompt_checks") or {}).get(meta["seq"], {})
                      .get("kind") == "roleplay" else None),
@@ -734,6 +790,11 @@ def flag_summary(r: dict) -> dict:
         "sent_len_avg": r["expression"]["sentence_len_avg"],
         "metaphor_1000": r["expression"]["metaphor_per_1000"],
         "dup_particles": r["expression"]["dup_particles"],
+        "st_chars_ok": (r["structure"] or {}).get("chars_ok"),
+        "st_ratio": (r["structure"] or {}).get("chars_ratio"),
+        "st_parts": (r["structure"] or {}).get("parts_marked"),
+        "st_missing": len((r["structure"] or {}).get("parts_missing") or []) or None,
+        "st_short": len((r["structure"] or {}).get("short_parts") or []) or None,
         "rp_possessed": (r["roleplay"] or {}).get("possessed"),
         "rp_stolen": (r["roleplay"] or {}).get("stole_user_lines"),
         "rp_meta": len((r["roleplay"] or {}).get("meta_hits") or []) or None,

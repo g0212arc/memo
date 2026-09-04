@@ -429,6 +429,38 @@ def main() -> int:
         d.table(["モデル", "回数", "言い回し"],
                 [[m, ph["count"], f'`{ph["phrase"][:60]}`'] for m, ph in reps[:15]], "lrl")
 
+    # ---- 字数と構成の遵守 ----
+    st_rows = []
+    for r in out_rows:
+        subs = [x for x in groups[r["model"]] if x.get("st_ratio") is not None]
+        if not subs:
+            continue
+        n = len(subs)
+        ratios = [x["st_ratio"] for x in subs]
+        marked = [x for x in subs if (x.get("st_parts") or 0) > 0]
+        st_rows.append([
+            r["model"], n,
+            f'{sum(1 for x in subs if x.get("st_chars_ok"))}/{n}',
+            f'{sum(ratios) / n:.0%}',
+            f'{min(ratios):.0%}',
+            f'{len(marked)}/{n}',
+            sum(x.get("st_missing") or 0 for x in marked) or "",
+            sum(x.get("st_short") or 0 for x in marked) or "",
+        ])
+    if st_rows:
+        d.h(2, "字数と構成の遵守")
+        d.p("①のプロンプトは **4000字以上**と、**第1部800字/第2部800字/"
+            "第3部1800字/第4部600字**の4部構成を指定している。それをどれだけ守れたか。")
+        d.table(["モデル", "本数", "4000字達成", "平均達成率", "最低達成率",
+                 "部見出しあり", "欠けた部", "字数不足の部"], st_rows, "lrcrrcrr")
+        d.p("**部見出しあり**は、本文に「第1部」等を書いたものの数。"
+            "書かないモデルは部ごとの判定ができないので、"
+            "**欠けた部**と**字数不足の部**は見出しを書いたものだけを数えている。"
+            "指示では第3部（本編・1800字）が山場だが、"
+            "ここを削って先に進むのが一番よくある破り方。"
+            "なお**ループで壊れた出力は達成率が水増しされる**ので、"
+            "「表現の質」のループ率と一緒に読むこと。")
+
     # ---- ロールプレイの禁止事項 ----
     rp_rows = []
     for r in out_rows:
