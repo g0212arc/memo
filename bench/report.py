@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
@@ -98,9 +99,20 @@ def agg(rows: list[dict]) -> dict:
     return out
 
 
-# 1ドルあたりの円。実行時に --jpy-rate で上書きできる。
-# 既定値は open.er-api.com から取得した 2026-09-03 時点のレート。
-DEFAULT_JPY_RATE = 159.09
+# 1ドルあたりの円。既定では実行時に取りに行く。
+# 決め打ちにすると必ず古くなる（実際に1日で 159.09 -> 156.02 と動いた）。
+FX_API = "https://open.er-api.com/v6/latest/USD"
+FALLBACK_JPY_RATE = 156.0        # 取得できなかったときだけ使う
+
+
+def fetch_jpy_rate() -> tuple[float, str]:
+    """USD/JPY を取得する。失敗しても落とさない（レポートは出したい）。"""
+    try:
+        with urllib.request.urlopen(FX_API, timeout=15) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        return float(d["rates"]["JPY"]), d.get("time_last_update_utc", "")
+    except Exception:  # noqa: BLE001
+        return FALLBACK_JPY_RATE, "取得できず（既定値）"
 
 # 散文として比べられるプロンプト。RP（短い応答）と JSON（構造化出力）は
 # 字数も語彙も前提が違うので、散文の指標に混ぜると平均が壊れる。
@@ -306,10 +318,14 @@ def main() -> int:
     ap.add_argument("--tier", choices=("free", "paid"), default="free",
                     help="free=判定結果と根拠の断片だけ（既定） / "
                          "paid=各出力の冒頭と、壊れた箇所の長い抜粋も載せる")
-    ap.add_argument("--jpy-rate", type=float, default=DEFAULT_JPY_RATE,
-                    help=f"1ドルあたりの円（既定 {DEFAULT_JPY_RATE}）")
+    ap.add_argument("--jpy-rate", type=float, default=None,
+                    help="1ドルあたりの円。省略すると実行時に取得する")
     args = ap.parse_args()
-    rate = args.jpy_rate
+    if args.jpy_rate:
+        rate, rate_src = args.jpy_rate, "指定値"
+    else:
+        rate, rate_src = fetch_jpy_rate()
+        print(f"為替レート: 1ドル = {rate:.2f} 円（{rate_src}）")
 
     mech, judge, runs = load(args.mech), load(args.judge), load(args.runs)
 
@@ -364,7 +380,8 @@ def main() -> int:
         info.append(f"主観採点: {judge.get('judge_model', '(不明)')}"
                     f"（{judge.get('axes_id', 'base')} 軸・{judge.get('max_score', 50)}点満点）")
     if cb and cb["total"]:
-        info.append(f"API 実費: **{yen(cb['total'], rate)}**（1ドル={rate:.2f}円で換算）")
+        info.append(f"API 実費: **{yen(cb['total'], rate)}**"
+                    f"（1ドル={rate:.2f}円で換算・{rate_src}）")
         info.append(f"1本あたり平均: {yen(cb['avg'], rate)}")
     d.ul(info)
 
@@ -665,7 +682,8 @@ def main() -> int:
     # ---- 費用 ----
     if cb and cb["total"]:
         d.h(2, "費用の内訳")
-        d.p(f"1ドル = {rate:.2f}円 で換算。**この検証にかかった実費の全額**です。"
+        d.p(f"1ドル = {rate:.2f}円（{rate_src}）で換算。"
+            f"**この検証にかかった実費の全額**です。"
             "金額は OpenRouter が実際に課金した額で、概算ではありません。")
         d.h(3, "プロンプト別")
         d.table(["プロンプト", "費用"],
