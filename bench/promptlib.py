@@ -87,6 +87,11 @@ def expand_jobs(sets: list[dict], models: list[str], style_examples: str = "",
     for s in sets:
         system = s.get("system")
         if system and STYLE_PLACEHOLDER in system:
+            # セット自身が作例ファイルを指定していればそれを使う。
+            # 「解説つきの作例」と「音の一覧だけ」を同じ実行で比べたいため。
+            own = s.get("style_examples_file")
+            if own:
+                style_examples = load_style_examples(HERE / own)
             if not style_examples:
                 # 作例が無いままだとプレースホルダのまま送ってしまう。黙って壊れるより落とす。
                 raise SystemExit(
