@@ -1,5 +1,6 @@
 # 生成物と、外に出したくないもの
-outputs/
+# 生成物（本文そのもの）は入れない。退避用の outputs_stage0/ 等も含めて全部。
+outputs*/
 results/
 models.txt
 models_local.txt
