@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import statistics
+import urllib.error
 import time
 from pathlib import Path
 
@@ -106,13 +107,24 @@ def judge_one(model: str, instruction: str | None, text: str, key: str,
             {"role": "user", "content": build_user(instruction, text)},
         ],
         "temperature": 0,          # 採点は毎回同じ結果になってほしい
-        "max_tokens": 400,
+        # 400 では足りなかった。思考トークンと日本語コメントで使い切って
+        # JSON が途中で切れ、実測で 51% が失敗した（そのぶんも課金される）。
+        "max_tokens": 1500,
+        # 思考を止められない判定モデルがある（gemini-3.8-flash もそう）。
+        # 無効化は要求せず、本文に出さないことだけ指定して max_tokens で吸収する。
+        "reasoning": {"exclude": True},
         "response_format": {"type": "json_object"},
         "usage": {"include": True},
     }
     for attempt in range(retries + 1):
         try:
             res = request(f"{API}/chat/completions", key, body)
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:200]
+            if attempt == retries:
+                return {"error": f"HTTP {e.code}: {detail}"}
+            time.sleep(2 ** attempt * 3)
+            continue
         except Exception as e:  # noqa: BLE001 - 失敗は記録して次へ進む
             if attempt == retries:
                 return {"error": str(e)[:200]}
@@ -175,6 +187,16 @@ def main() -> int:
     elif args.limit:
         files = files[:args.limit]
 
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def save(rs: list, cost: float) -> None:
+        """1件ごとに書き出す。途中で止めても、そこまでの採点は残る。"""
+        out_path.write_text(json.dumps({
+            "judge_model": ", ".join(judges), "axes": axes, "axes_id": args.axes,
+            "max_score": 10 * len(axes), "cost_usd_total": round(cost, 6),
+            "scores": rs}, ensure_ascii=False, indent=2), encoding="utf-8")
+
     results, spent = [], 0.0
     total = len(files) * len(judges)
     n = 0
@@ -213,6 +235,7 @@ def main() -> int:
                        for k in axes},
             "by_judge": per_judge,
         })
+        save(results, spent)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
