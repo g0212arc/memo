@@ -29,8 +29,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="出力をフォルダに振り分ける")
     ap.add_argument("--in", dest="inp", default="outputs")
     ap.add_argument("--out", default="outputs_by_model")
-    ap.add_argument("--by", choices=("model", "prompt"), default="model",
-                    help="model=モデル名でフォルダ分け（既定） / prompt=プロンプトで分ける")
+    ap.add_argument("--by", choices=("model", "prompt", "nested"), default="model",
+                    help="model=モデル名 / prompt=プロンプト / "
+                         "nested=モデル/プロンプト/試行 の3階層（既定 model）")
     ap.add_argument("--zip", default=None, help="この名前で zip も作る")
     ap.add_argument("--clean", action="store_true", help="出力先を作り直す")
     args = ap.parse_args()
@@ -46,19 +47,30 @@ def main() -> int:
     counts: dict[str, int] = {}
     for f in files:
         meta = parse_name(f.stem)
-        folder = meta["model"] if args.by == "model" else f'{meta["seq"]}_{meta["condition"]}'
-        # フォルダ名に使った情報はファイル名から落として、二重に持たせない
-        stem = f.stem
-        if args.by == "model":
-            stem = stem.rsplit("__", 1)[0]
+        prompt = f'{meta["seq"]}_{meta["condition"]}'
+        if args.by == "nested":
+            # モデル / プロンプト / 試行 の3階層。
+            # 試行は seed（05は宣言済みseed、他は引き直しのseed）で分ける。
+            trial = f'seed{meta["seed"]}' if meta["seed"] else "seed_default"
+            if meta["preamble"] not in ("role", ""):
+                trial += f'_{meta["preamble"]}'
+            folder = f'{meta["model"]}/{prompt}/{trial}'
+            stem = meta["scenario"] or prompt
+            if meta["turn"]:
+                stem += f'_turn{meta["turn"]}'
+        elif args.by == "model":
+            folder = meta["model"]
+            stem = f.stem.rsplit("__", 1)[0]
             if meta["turn"]:
                 stem += f'_turn{meta["turn"]}'
         else:
-            stem = stem.split("__", 1)[-1]
+            folder = prompt
+            stem = f.stem.split("__", 1)[-1]
         out = dst / folder
         out.mkdir(parents=True, exist_ok=True)
         shutil.copy2(f, out / f"{stem}.txt")
-        counts[folder] = counts.get(folder, 0) + 1
+        top = folder.split("/")[0]
+        counts[top] = counts.get(top, 0) + 1
 
     print(f"{len(files)} 本を {len(counts)} フォルダに振り分けました -> {dst}")
     for k in sorted(counts):
