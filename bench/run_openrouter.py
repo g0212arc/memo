@@ -105,6 +105,10 @@ def preflight(key: str) -> dict:
 #   none    … reasoning を一切指定しない
 REASONING_MODES = ("off", "exclude", "none")
 
+# 一度わかった「そのモデルで通る reasoning の送り方」をモデル単位で覚えておく。
+# ジョブごとに発見し直すと、モデル1つにつき毎回 400 を1本捨てることになる。
+_REASONING_BY_MODEL: dict[str, str] = {}
+
 
 def build_body(job: dict, messages: list[dict], max_tokens: int,
                reasoning_mode: str = "off") -> dict:
@@ -153,7 +157,9 @@ RETRY_WAITS_5XX = (5, 15, 45)
 def call(job: dict, messages: list[dict], key: str, max_tokens: int,
          retries: int | None = None) -> dict:
     # モデルごとに、一度通った reasoning の送り方を覚えて使い回す
-    mode = job.setdefault("_reasoning_mode", "off")
+    if "_reasoning_mode" not in job:
+        job["_reasoning_mode"] = _REASONING_BY_MODEL.get(job["model"], "off")
+    mode = job["_reasoning_mode"]
     # 思考を止められないモデルは、思考トークンが max_tokens を食い尽くして
     # 本文が途中で切れる（実測: 1628tok 中 1419tok が思考、本文393字で打ち切り）。
     # 止められなかった場合だけ、その分の余裕を足す。
@@ -175,6 +181,7 @@ def call(job: dict, messages: list[dict], key: str, max_tokens: int,
                 i = REASONING_MODES.index(job.get("_reasoning_mode", "off"))
                 if i + 1 < len(REASONING_MODES):
                     job["_reasoning_mode"] = REASONING_MODES[i + 1]
+                    _REASONING_BY_MODEL[job["model"]] = job["_reasoning_mode"]
                     print(f"    思考を無効化できないモデル "
                           f"-> reasoning={job['_reasoning_mode']} で再試行")
                     budget = max_tokens + (job.get("_reasoning_headroom", 0)
