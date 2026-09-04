@@ -73,7 +73,7 @@ def agg(rows: list[dict]) -> dict:
     n = len(rows)
     keys = ("chars", "cn", "ko", "en", "keitai", "medical", "vague",
             "direct", "heart", "dakuten", "tsu", "copy", "dup_max",
-            "cliche", "rep_phrase", "comma_heavy", "dup_particles")
+            "cliche", "rep_phrase", "comma_heavy", "dup_particles", "moan_lines")
     out = {k: sum(r.get(k, 0) or 0 for r in rows) for k in keys}
     out["files"] = n
     out["chars_avg"] = round(out["chars"] / n) if n else 0
@@ -170,6 +170,11 @@ class Doc:
             self.blocks.append(("ul", items))
         return self
 
+    def pre(self, text: str) -> "Doc":
+        """整形済みの塊。プロンプト本文のように、そのまま読ませたいものに使う。"""
+        self.blocks.append(("pre", text))
+        return self
+
     def table(self, headers: list[str], rows: list[list], align: str = "") -> "Doc":
         self.blocks.append(("table", headers, rows, align or "l" * len(headers)))
         return self
@@ -190,6 +195,8 @@ class Doc:
                 out += [b[1], ""]
             elif b[0] == "ul":
                 out += [f"- {i}" for i in b[1]] + [""]
+            elif b[0] == "pre":
+                out += ["```text", b[1], "```", ""]
             elif b[0] == "table":
                 _, headers, rows, align = b
                 out.append("| " + " | ".join(headers) + " |")
@@ -225,6 +232,10 @@ class Doc:
             "th,td{border:1px solid #ccc;padding:6px 10px;white-space:nowrap}",
             "th{background:#f2f2f2;font-weight:600}",
             "tr:nth-child(even) td{background:#fafafa}",
+            "pre{background:#f6f6f6;border:1px solid #ddd;border-left:4px solid #999;"
+            "padding:12px 14px;white-space:pre-wrap;word-break:break-word;"
+            "font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86rem;"
+            "line-height:1.6;overflow-x:auto}",
             "code{background:#f0f0f0;padding:1px 5px;border-radius:3px;"
             "font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;"
             "white-space:normal}",
@@ -235,7 +246,8 @@ class Doc:
             "h1{border-color:#666}h2{border-color:#444}",
             "th,td{border-color:#444}th{background:#2a2a2a}",
             "tr:nth-child(even) td{background:#232323}",
-            "code{background:#2a2a2a}",
+            "code{background:#2a2a2a}pre{background:#242424;border-color:#444;"
+            "border-left-color:#777}",
             ".note{background:#332d10;border-color:#8a7500}}",
             "</style>", "</head>", "<body>",
             '<div class="note">はてなブログに貼るときは、<strong>HTML編集モード</strong>で '
@@ -251,6 +263,10 @@ class Doc:
                 out.append("<ul>")
                 out += [f"<li>{self._inline_html(i)}</li>" for i in b[1]]
                 out.append("</ul>")
+            elif b[0] == "pre":
+                esc = (b[1].replace("&", "&amp;").replace("<", "&lt;")
+                       .replace(">", "&gt;"))
+                out.append(f"<pre>{esc}</pre>")
             elif b[0] == "table":
                 _, headers, rows, align = b
                 out.append("<table>")
@@ -408,12 +424,12 @@ def main() -> int:
     # ---- 文体規定 ----
     if any(r["agg"]["heart"] or r["agg"]["dakuten"] for r in out_rows):
         d.h(2, "文体規定の遵守")
-        d.table(["モデル", "♡", "濁点崩し", "語中ッ", "作例コピペ"],
-                [[r["model"], r["agg"]["heart"], r["agg"]["dakuten"],
-                  r["agg"]["tsu"], r["agg"]["copy"]]
+        d.table(["モデル", "喘ぎ声の台詞行", "♡", "濁点崩し", "語中ッ", "作例コピペ"],
+                [[r["model"], r["agg"]["moan_lines"], r["agg"]["heart"],
+                  r["agg"]["dakuten"], r["agg"]["tsu"], r["agg"]["copy"]]
                  for r in out_rows if r["agg"]["heart"] or r["agg"]["dakuten"]],
-                "lrrrr")
-        d.p("作例コピペは exact + near（類似度0.90以上）の合計。"
+                "lrrrrr")
+        d.p("**喘ぎ声の台詞行**が③の要件そのもの（指定した発話が実際に出るか）。台詞行のうち ♡・濁点崩し・指定語彙のいずれかを含むものを数えている。作例コピペは exact + near（類似度0.90以上）の合計。"
             "多いモデルは文体を再現しているのではなく渡した作例を写している。")
 
     # ---- 費用 ----

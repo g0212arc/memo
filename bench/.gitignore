@@ -4,7 +4,9 @@ outputs*/
 results/
 models.txt
 models_local.txt
-wordlists/style_examples.txt
+# 作例は記事と一緒に公開する前提なので追跡する。
+# 自分の作例に差し替えたい場合は下の行のコメントを外す。
+# wordlists/style_examples.txt
 
 # APIキーは絶対にコミットしない
 *.key

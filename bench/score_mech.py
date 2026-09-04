@@ -259,7 +259,20 @@ KATA_TSU_IN_HIRAGANA_RE = re.compile(r"[ぁ-ん]ッ")    # ひらがなの語中
 
 def check_style_marks(text: str, vocab: list[str]) -> dict:
     dialogue = extract_dialogue(text)
+
+    # 「指定した発話がちゃんと出るか」が③の要件そのものなので直接数える。
+    # 地の文に混ぜず、独立した台詞行として出ているかを見たいので、行単位で判定する。
+    moan_lines = 0
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith(("「", "『")):
+            continue
+        if (HEART_RE.search(line) or DAKUTEN_RE.search(line)
+                or any(w in line for w in vocab)):
+            moan_lines += 1
+
     return {
+        "moan_lines": moan_lines,
         "heart_count": len(HEART_RE.findall(text)),
         "dakuten_break_count": len(DAKUTEN_RE.findall(text)),
         "kata_tsu_insert_count": len(KATA_TSU_IN_HIRAGANA_RE.findall(text)),
@@ -620,6 +633,7 @@ def flag_summary(r: dict) -> dict:
         "medical": r["medical"]["medical_total"],
         "vague": r["vague"]["vague_total"],
         "direct": r["direct"]["direct_total"],
+        "moan_lines": r["style_marks"]["moan_lines"],
         "heart": r["style_marks"]["heart_count"],
         "dakuten": r["style_marks"]["dakuten_break_count"],
         "tsu": r["style_marks"]["kata_tsu_insert_count"],
