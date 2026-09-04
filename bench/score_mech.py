@@ -363,6 +363,89 @@ def check_integrity(text: str, expect_chars: int | None = None) -> dict:
     return result
 
 
+# ----------------------------------------- 13. ロールプレイの禁止事項
+
+# 演技から出てしまった発言。プロンプトで明示的に禁じている。
+META_PATTERNS = (
+    "いかがでしょうか", "いかがですか", "という展開", "展開はいかが",
+    "続けますか", "続けましょうか", "どうしますか", "ご希望", "ご要望",
+    "ロールプレイ", "アシスタント", "AIとして", "（※", "(※",
+    "お聞かせください", "次のターン",
+)
+# 場面を勝手に畳んだ痕跡
+CLOSING_PATTERNS = (
+    "こうして二人は", "こうして、二人は", "そして二人は", "幕を閉じ",
+    "翌朝", "その後、二人", "永遠に", "〜完〜", "（完）",
+)
+HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s", re.M)
+
+
+def check_roleplay(text: str, cfg: dict) -> dict:
+    """RP で禁じた振る舞いを数える。
+
+    一番効くのは「ユーザーが演じるキャラを勝手に動かす」。
+    相手役の一人称が台詞に出てきたら、その台詞は本来ユーザーが書くもの。
+    """
+    user = cfg.get("user_character") or {}
+    u_names = [n for n in ([user.get("name", "")] + list(user.get("aliases") or [])) if n]
+    u_first = user.get("first_person") or ""
+    narration = strip_dialogue(text)
+
+    # 1) ユーザー側キャラの台詞を書いてしまった
+    stolen, stolen_ex = 0, []
+    for line in text.splitlines():
+        t = line.strip()
+        if not t:
+            continue
+        named = any(t.startswith(n) and "「" in t for n in u_names)
+        # 悠真の一人称は「俺」。台詞に「私」が出たら、それは澪の台詞。
+        spoken = t.startswith("「") and bool(u_first) and u_first in t
+        if named or spoken:
+            stolen += 1
+            if len(stolen_ex) < 3:
+                stolen_ex.append(t[:60])
+
+    # 2) ユーザー側キャラの内心を地の文で書いた
+    inner_verbs = ("と思った", "と感じた", "胸が", "心臓が", "気づいた", "悟った",
+                   "嬉しかった", "不安だった", "恥ずかし", "安堵")
+    inner, inner_ex = 0, []
+    for sent in re.split(r"[。\n]", narration):
+        if any(n in sent for n in u_names) and any(v in sent for v in inner_verbs):
+            inner += 1
+            if len(inner_ex) < 3:
+                inner_ex.append(sent.strip()[:60])
+
+    lo, hi = (cfg.get("reply_chars") or [200, 600])[:2]
+    n = len(re.sub(r"\s+", "", text))
+
+    return {
+        "chars": n,
+        "target_chars": [lo, hi],
+        "length_ok": lo <= n <= hi,
+        "stole_user_lines": stolen,
+        "stole_user_examples": stolen_ex,
+        "wrote_user_inner": inner,
+        "wrote_user_inner_examples": inner_ex,
+        "meta_hits": [m for m in META_PATTERNS if m in text],
+        "closed_the_scene": [c for c in CLOSING_PATTERNS if c in text],
+        "headings": len(HEADING_RE.findall(text)),
+        "possessed": bool(stolen or inner),
+    }
+
+
+def load_prompt_checks() -> dict:
+    """prompts/*.json の checks を読む。プロンプト固有の判定はそこに書いてある。"""
+    out = {}
+    for p in sorted((Path(__file__).resolve().parent / "prompts").glob("*.json")):
+        try:
+            j = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if j.get("checks"):
+            out[j["seq"]] = j["checks"]
+    return out
+
+
 # ------------------------------- 12. 表現の質（クラウドモデル向けの軸）
 
 SENT_SPLIT_RE = re.compile(r"[。！？\n]+")
@@ -610,6 +693,9 @@ def score_file(path: Path, cfg: dict) -> dict:
         "style_copy": check_style_copy(text, cfg["style_examples"]),
         "json_format": check_json_output(text),
         "expression": check_expression(text, cfg["cliche"]),
+        "roleplay": (check_roleplay(text, cfg["prompt_checks"][meta["seq"]])
+                     if (cfg.get("prompt_checks") or {}).get(meta["seq"], {})
+                     .get("kind") == "roleplay" else None),
     }
 
 
@@ -648,6 +734,11 @@ def flag_summary(r: dict) -> dict:
         "sent_len_avg": r["expression"]["sentence_len_avg"],
         "metaphor_1000": r["expression"]["metaphor_per_1000"],
         "dup_particles": r["expression"]["dup_particles"],
+        "rp_possessed": (r["roleplay"] or {}).get("possessed"),
+        "rp_stolen": (r["roleplay"] or {}).get("stole_user_lines"),
+        "rp_meta": len((r["roleplay"] or {}).get("meta_hits") or []) or None,
+        "rp_closed": len((r["roleplay"] or {}).get("closed_the_scene") or []) or None,
+        "rp_length_ok": (r["roleplay"] or {}).get("length_ok"),
         "refusal": bool(r["integrity"]["refusal"]),
         "truncated": r["integrity"]["truncated"],
         "person_mix": check_person_mix_flag(r),
@@ -679,6 +770,7 @@ def main() -> int:
         "allow_english": {w.lower() for w in load_wordlist(wl / "allow_english.txt")},
         "style_examples": load_wordlist(Path(args.style_examples)) if args.style_examples else [],
         "expect_chars": args.expect_chars,
+        "prompt_checks": load_prompt_checks(),
     }
 
     src = Path(args.inp)

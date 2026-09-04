@@ -429,6 +429,41 @@ def main() -> int:
         d.table(["モデル", "回数", "言い回し"],
                 [[m, ph["count"], f'`{ph["phrase"][:60]}`'] for m, ph in reps[:15]], "lrl")
 
+    # ---- ロールプレイの禁止事項 ----
+    rp_rows = []
+    for r in out_rows:
+        subs = [x for x in groups[r["model"]] if x.get("rp_possessed") is not None]
+        if not subs:
+            continue
+        n = len(subs)
+        rp_rows.append([
+            r["model"], n,
+            f'{sum(1 for x in subs if x.get("rp_possessed"))}/{n}',
+            sum(x.get("rp_stolen") or 0 for x in subs) or "",
+            sum(x.get("rp_meta") or 0 for x in subs) or "",
+            sum(x.get("rp_closed") or 0 for x in subs) or "",
+            f'{sum(1 for x in subs if x.get("rp_length_ok"))}/{n}',
+        ])
+    if rp_rows:
+        d.h(2, "ロールプレイの禁止事項")
+        d.p("④で明示的に禁じた振る舞いの検出数。**憑依**は"
+            "「ユーザーが演じるキャラの台詞や内心を、モデルが書いてしまった」回数。"
+            "小説用のプロンプトとは正反対の能力なので、ここだけ順位が入れ替わることがある。")
+        d.table(["モデル", "本数", "憑依", "台詞の代筆", "メタ発言", "勝手に完結", "字数が指定内"],
+                rp_rows, "lrcrrrc")
+        # 実例（無料範囲でも根拠が要る）
+        ex = []
+        for r in out_rows:
+            for sm in groups[r["model"]]:
+                rp = detail_of(mech, sm["file"]).get("roleplay") or {}
+                for e in (rp.get("stole_user_examples") or [])[:1]:
+                    ex.append([r["model"], "台詞の代筆", f"`{e}`"])
+                for e in (rp.get("wrote_user_inner_examples") or [])[:1]:
+                    ex.append([r["model"], "内心の代筆", f"`{e}`"])
+        if ex:
+            d.h(3, "憑依の実例")
+            d.table(["モデル", "種別", "本文"], ex[:15], "lll")
+
     # ---- 文体規定 ----
     if any(r["agg"]["heart"] or r["agg"]["dakuten"] for r in out_rows):
         d.h(2, "文体規定の遵守")
@@ -439,6 +474,84 @@ def main() -> int:
                 "lrrrrr")
         d.p("**喘ぎ声の台詞行**が③の要件そのもの（指定した発話が実際に出るか）。台詞行のうち ♡・濁点崩し・指定語彙のいずれかを含むものを数えている。作例コピペは exact + near（類似度0.90以上）の合計。"
             "多いモデルは文体を再現しているのではなく渡した作例を写している。")
+
+    # ---- プロンプト間の比較 ----
+    def by_seq(model: str, seq: str) -> list[dict]:
+        return [x for x in groups[model] if x.get("seq") == seq]
+
+    def avg(rows: list[dict], key: str):
+        vals = [r.get(key) for r in rows if r.get(key) is not None]
+        return round(sum(vals) / len(vals), 2) if vals else None
+
+    seqs = {x.get("seq") for x in mech.get("summary", [])}
+
+    # 02（作例なし）→ 03（解説つき作例）→ 03b（実例のみ）
+    if {"02", "03"} <= seqs or {"02", "03b"} <= seqs:
+        cols = [c for c in ("02", "03", "03b") if c in seqs]
+        name = {"02": "02 作例なし", "03": "03 解説つき作例", "03b": "03b 実例のみ"}
+        rows = []
+        for r in out_rows:
+            row = [r["model"]]
+            for c in cols:
+                sub = by_seq(r["model"], c)
+                if not sub:
+                    row.append("—")
+                    continue
+                moan = sum(x.get("moan_lines") or 0 for x in sub) / len(sub)
+                copy = sum(x.get("copy") or 0 for x in sub)
+                row.append(f'{moan:.0f}行' + (f' / 写し{copy}' if copy else ""))
+            rows.append(row)
+        d.h(2, "作例を渡した効果と、渡し方の効果")
+        d.p("数字は**喘ぎ声の台詞行の平均本数**（要件は15行）。"
+            "`写し` は渡した作例をそのまま書いた回数。"
+            "**02→03 が作例を渡した効果、03→03b が渡し方の効果**（"
+            "ルールを言語化して渡すのと、実例だけ大量に見せるのと、どちらが効くか）。")
+        d.table(["モデル"] + [name[c] for c in cols], rows, "l" + "c" * len(cols))
+
+    # 01_tl（重い指示）と 05_light（1行だけ）
+    if {"01", "05"} <= seqs:
+        rows = []
+        for r in out_rows:
+            a, b = by_seq(r["model"], "01"), by_seq(r["model"], "05")
+            if not (a and b):
+                continue
+            rows.append([r["model"],
+                         avg(a, "chars"), avg(b, "chars"),
+                         avg(a, "ttr"), avg(b, "ttr"),
+                         avg(a, "cliche"), avg(b, "cliche")])
+        if rows:
+            d.h(2, "重い指示と軽い指示")
+            d.p("**01_tl**（構成と字数を細かく指定・約2500字のシステムプロンプト）と "
+                "**05_light**（1行だけ・システムプロンプトなし）の比較。"
+                "前回のローカル検証では Qwen 系が軽い指示のほうが伸びた。"
+                "同じ現象が規模の大きいモデルでも起きるかを見る。")
+            d.table(["モデル", "字数(重)", "字数(軽)", "語彙多様性(重)", "語彙多様性(軽)",
+                     "常套句(重)", "常套句(軽)"], rows, "lrrrrrr")
+
+    # 同じモデルを別の提供元で回した比較
+    prov_groups: dict[str, list[tuple[str, str]]] = defaultdict(list)
+    for r in runs.get("runs", []):
+        if r.get("model_id") and r.get("provider_pinned"):
+            pair = (r["provider_pinned"], r["model"])
+            if pair not in prov_groups[r["model_id"]]:
+                prov_groups[r["model_id"]].append(pair)
+    prov_groups = {k: v for k, v in prov_groups.items() if len(v) > 1}
+    if prov_groups:
+        d.h(2, "同じモデル・違う提供元")
+        d.p("OpenRouter は同じモデルを複数の会社が配信していて、量子化が違うことがある。"
+            "**モデルの差ではなく提供元の差が、出力にどれだけ出るか**。")
+        rows = []
+        for mid, pairs in prov_groups.items():
+            for prov, model in pairs:
+                sub = groups.get(model) or []
+                if not sub:
+                    continue
+                rows.append([mid.split("/")[-1], prov, len(sub),
+                             avg(sub, "chars"), avg(sub, "ttr"),
+                             avg(sub, "sent_len_avg"), avg(sub, "comma_heavy"),
+                             sum(1 for x in sub if x.get("refusal"))])
+        d.table(["モデル", "提供元", "本数", "平均字数", "語彙多様性",
+                 "平均文長", "読点過多文", "拒否"], rows, "llrrrrrc")
 
     # ---- 費用 ----
     if cb and cb["total"]:
