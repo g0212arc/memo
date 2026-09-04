@@ -260,6 +260,18 @@ KATA_TSU_IN_HIRAGANA_RE = re.compile(r"[ぁ-ん]ッ")    # ひらがなの語中
 def check_style_marks(text: str, vocab: list[str]) -> dict:
     dialogue = extract_dialogue(text)
 
+    # ②は作例を渡さないので ♡ も濁点も出ない。素の喘ぎ声も数えられるようにする。
+    # 漢字を含まず、母音・小書き仮名・伸ばし・感嘆で占められた短い台詞行を
+    # 「非言語的な発話」とみなす。「あっ……んっ」「はぁ、ぁ……っ」など。
+    voice_lines = 0
+    for line in text.splitlines():
+        t = line.strip().strip("「」『』")
+        if not t or len(t) > 40 or re.search(r"[一-鿿]", t):
+            continue
+        vocal = len(re.findall(r"[ぁ-んァ-ヶーッっ゛♡～〜…‥、。！？!?\s]", t))
+        if vocal / len(t) >= 0.9 and re.search(r"[あぁいぃうぅえぇおぉんっッ]", t):
+            voice_lines += 1
+
     # 「指定した発話がちゃんと出るか」が③の要件そのものなので直接数える。
     # 地の文に混ぜず、独立した台詞行として出ているかを見たいので、行単位で判定する。
     moan_lines = 0
@@ -273,6 +285,7 @@ def check_style_marks(text: str, vocab: list[str]) -> dict:
 
     return {
         "moan_lines": moan_lines,
+        "voice_lines": voice_lines,
         "heart_count": len(HEART_RE.findall(text)),
         "dakuten_break_count": len(DAKUTEN_RE.findall(text)),
         "kata_tsu_insert_count": len(KATA_TSU_IN_HIRAGANA_RE.findall(text)),
@@ -321,9 +334,17 @@ def check_style_copy(text: str, examples: list[str], threshold: float = 0.90) ->
 # 「自分」は再帰代名詞で、どの語り手も使う（「自分の手を見た」）。
 # 一人称の取り違えを見る目的には邪魔なので入れない。
 FIRST_PERSON = ("私", "僕", "俺", "わたし", "ぼく", "おれ", "あたし")
-REFUSAL_PATTERNS = (
-    "申し訳", "できません", "お答えできません", "I cannot", "I can't",
-    "I'm sorry", "I am sorry", "as an AI", "不適切",
+# 拒否の判定は、単語ではなく「断りの構文」で見る。
+# 作中の「すみません……」「申し訳なさそうに俯く」を拒否と数えてしまうと、
+# ちゃんと書けているモデルほど拒否率が上がるという逆転が起きる（実際に起きた）。
+REFUSAL_RE = re.compile(
+    r"(申し訳(ありません|ございません|ないの)|恐れ入りま|残念ですが)[^。]{0,40}"
+    r"(できません|いたしかねます|応じ(られません|ることができません)|お受けできません)"
+    r"|(お応え|お手伝い|ご要望にお応え|執筆|生成|作成)[^。]{0,10}"
+    r"(できません|いたしかねます|応じることができません)"
+    r"|I (cannot|can't|won't) (help|assist|comply|write|create)"
+    r"|I'm (sorry|unable)[^.]{0,40}(cannot|can't|unable)"
+    r"|as an AI[^.]{0,40}(cannot|can't)"
 )
 SENTENCE_END = "。」』！？….!?\")"
 
@@ -348,12 +369,19 @@ def check_person_mix(text: str) -> dict:
 
 def check_integrity(text: str, expect_chars: int | None = None) -> dict:
     body = text.strip()
-    head = body[:300]
     visible = re.sub(r"\s", "", body)
+
+    # 台詞を外した地の文の冒頭だけを見る。作中の謝罪を拾わないため。
+    head = re.sub(r"\s+", "", strip_dialogue(body))[:200]
+    m = REFUSAL_RE.search(head)
+    # 断ったうえで4000字書く、ということは無い。短いことも条件にする。
+    refused = bool(m) and len(visible) < 1000
     result = {
         "char_count": len(visible),
         "line_count": len([l for l in body.splitlines() if l.strip()]),
-        "refusal": [p for p in REFUSAL_PATTERNS if p in head],
+        "refusal": [m.group(0)[:60]] if refused else [],
+        # 断り文句はあるが本文も書いた場合。条件を緩めた別物として記録する。
+        "declined_but_wrote": bool(m) and not refused,
         "truncated": bool(body) and body[-1] not in SENTENCE_END,
         "empty": len(visible) == 0,
     }
@@ -776,6 +804,7 @@ def flag_summary(r: dict) -> dict:
         "vague": r["vague"]["vague_total"],
         "direct": r["direct"]["direct_total"],
         "moan_lines": r["style_marks"]["moan_lines"],
+        "voice_lines": r["style_marks"]["voice_lines"],
         "heart": r["style_marks"]["heart_count"],
         "dakuten": r["style_marks"]["dakuten_break_count"],
         "tsu": r["style_marks"]["kata_tsu_insert_count"],
