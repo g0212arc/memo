@@ -1,16 +1,34 @@
-# 提供元を固定した構成（量子化を揃え、単価も確定させる）
-google/gemini-3.8-flash@google-ai-studio       # flexは半額だが429で不安定。標準ティア
-z-ai/glm-5.3-flash@z-ai/fp8                    # 本家 Z.AI の fp8
-deepseek/deepseek-v4-flash-0731@baidu/fp8      # fp8。fp4 提供元を避ける
-deepseek/deepseek-v4-pro-0813@streamlake       # 比較対象1
-deepseek/deepseek-v4-pro-0813@alibaba          # 比較対象2（本家DeepSeekは要ポリシー変更）
-x-ai/grok-4.6@xai/zdr                          # zdr=ゼロデータ保持。同単価
-moonshotai/kimi-k3@deepinfra/bf16              # bf16。既定だと fp4 に流れる
+# OpenRouter で回すモデル（1行1モデル、# 以降はコメント）
+# 使うときは models.txt にコピーしてください（models.txt は git 管理外）:
+#   cp models.example.txt models.txt
+#
+# 書式:  モデルID              … OpenRouter に提供元を任せる
+#        モデルID@プロバイダ    … 提供元を固定する（フォールバックなし）
+#
+# 同じモデルでも提供元によって量子化(fp8/fp4)が違い、出力も変わります。
+# 固定しないと呼び出しごとに提供元が変わって比較にならないことがあるので、
+# 厳密に比べたいものは @ で固定してください。提供元の一覧は
+#   curl https://openrouter.ai/api/v1/models/<モデルID>/endpoints
+# で確認できます。実際に呼べるかは check_models.py で事前に点検できます。
 
-# 現在使えないもの
-# qwen/qwen3.8-flash                           # 提供元がAlibaba1社のみ、429継続
-# meta/muse-spark-1.3-contributor              # 要プライバシー設定変更
-# meta/muse-spark-1.2-contributor              # 要プライバシー設定変更
-# deepseek/deepseek-v4-pro-0813@deepseek       # 要プライバシー設定変更
+meta/muse-spark-1.3-contributor@meta            # 要: 有料モデルの学習許可
+meta/muse-spark-1.2-contributor@meta            # 要: 有料モデルの学習許可
+google/gemini-3.8-flash@google-ai-studio        # flexは半額だが429で不安定。標準ティア
+z-ai/glm-5.3-flash@z-ai/fp8                     # 本家 Z.AI の fp8
+qwen/qwen3.8-flash@alibaba                      # 提供元がAlibaba1社のみ。429が続く
 
-# deepseek/deepseek-v4-flash-0731 は提供元を固定しないこと（上流のレート制限のため）
+# DeepSeek V4 Pro 0813 は提供元ごとの比較用に3本。本家は要・学習許可。
+deepseek/deepseek-v4-pro-0813@deepseek
+deepseek/deepseek-v4-pro-0813@streamlake
+deepseek/deepseek-v4-pro-0813@alibaba
+
+# このモデルだけ提供元を固定しない。429 の中身が
+# 「deepseek/deepseek-v4-flash-0731 is temporarily rate-limited upstream」で、
+# baidu / open-inference / akashml のどこに固定しても取れなかった。
+# 固定を外すと OpenRouter が空いた提供元に回すので通る。
+# 量子化は揃わなくなるが、4セット連続でスキップされて1本も取れないよりはよい。
+# どの提供元が応答したかは results/runs_*.json の provider に残る。
+deepseek/deepseek-v4-flash-0731
+
+x-ai/grok-4.6@xai/zdr                           # zdr=ゼロデータ保持。同単価
+moonshotai/kimi-k3@deepinfra/bf16               # bf16。既定だと fp4 に流れる
