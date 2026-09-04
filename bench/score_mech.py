@@ -738,6 +738,13 @@ def parse_name(stem: str) -> dict:
     else:
         scenario, model = "", head
 
+    # RP は 1ターン目/2ターン目を別ファイルにするので、モデル名に _turn1 が付く。
+    # そのままだと同じモデルが2つに割れるので、ターン番号として切り出す。
+    turn = ""
+    mt = re.search(r"_turn(\d+)$", model)
+    if mt:
+        model, turn = model[:mt.start()], mt.group(1)
+
     preamble, seed = "role", ""
     if scenario.endswith("_nopre"):
         scenario, preamble = scenario[:-6], "none"
@@ -750,7 +757,7 @@ def parse_name(stem: str) -> dict:
         scenario, seed = scenario[:ms.start()], ms.group(1)
 
     return {"seq": seq, "condition": cond or head, "scenario": scenario,
-            "model": model, "preamble": preamble, "seed": seed}
+            "model": model, "preamble": preamble, "seed": seed, "turn": turn}
 
 
 # ---------------------------------------------------------------- 本体
@@ -792,6 +799,7 @@ def flag_summary(r: dict) -> dict:
         "scenario": r["scenario"],
         "preamble": r["preamble"],
         "seed": r["seed"],
+        "turn": r["turn"],
         "chars": r["integrity"]["char_count"],
         "dup_max": r["duplicate"]["max_repeat"],
         "tail_loop": r["duplicate"]["tail_loop"],
