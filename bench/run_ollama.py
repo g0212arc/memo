@@ -43,6 +43,10 @@ def post(host: str, path: str, payload: dict, timeout: int = 1800) -> dict:
 def build_options(job: dict) -> dict:
     p = job["params"]
     return {
+        # VRAMに載せる層数とコンテキスト長。大きいモデルを一部CPUに逃がすときに要る。
+        # 省略すれば ollama が自動で決めるので、既定は None にしてある。
+        "num_gpu": job.get("_num_gpu"),
+        "num_ctx": job.get("_num_ctx"),
         "temperature": p.get("temperature"),
         "top_p": p.get("top_p"),
         "top_k": p.get("top_k"),
@@ -166,6 +170,12 @@ def main() -> int:
     ap.add_argument("--runs", default="results/runs_local.json")
     ap.add_argument("--style-examples", default=None)
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--num-gpu", type=int, default=None,
+                    help="VRAMに載せる層数。省略すると ollama が自動で決める。"
+                         "31Bクラスを12GBで回すときは 24〜34 あたりから試す")
+    ap.add_argument("--num-ctx", type=int, default=None,
+                    help="コンテキスト長。長いほどKVキャッシュがVRAMを食う。"
+                         "①TL(6000トークン生成)なら 8192 程度")
     ap.add_argument("--keep-alive", default=None,
                     help='モデルの常駐時間。"0" にすると1本ごとにVRAMを解放する')
     ap.add_argument("--limit", type=int, default=None)
@@ -199,6 +209,7 @@ def main() -> int:
     print(f"モデル {len(models)} 種 × プロンプト {len(sets)} セット = ジョブ {len(jobs)} 件")
     records = []
     for i, job in enumerate(jobs, 1):
+        job["_num_gpu"], job["_num_ctx"] = args.num_gpu, args.num_ctx
         print(f"[{i}/{len(jobs)}] {job['model']} <- {job['prompt_id']}/{job['scenario']} "
               f"seed={job['params'].get('seed')}")
         r = run_job(args.host, job, out_dir, args.keep_alive)
@@ -207,7 +218,9 @@ def main() -> int:
             print(f"    失敗: {r['error']}")
         else:
             mark = " [前段で拒否]" if (r.get("preamble") or {}).get("refused") else ""
-            print(f"    {r['chars']}字 / {r['completion_tokens']}tok / {r['tok_per_s']}t/s{mark}")
+            mins = (r.get("elapsed_s") or 0) / 60
+            print(f"    {r['chars']}字 / {r['completion_tokens']}tok / "
+                  f"{r['tok_per_s']}t/s / {mins:.1f}分{mark}")
 
     runs_path.write_text(json.dumps({
         "provider": "ollama", "host": args.host, "models": models,
