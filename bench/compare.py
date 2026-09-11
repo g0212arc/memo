@@ -58,9 +58,14 @@ def fmt(v, nd: int) -> str:
 
 
 def delta(a, b, higher_better, nd) -> str:
-    """差分。良くなったか悪くなったかが一目で分かるように矢印を付ける。"""
+    """差分。良くなったか悪くなったかが一目で分かるように矢印を付ける。
+
+    表に出しているのは丸めた値なので、差分も丸めた値から計算する。
+    そうしないと「2 → 2 なのに +0 ✕」のように、表の中で辻褄が合わなくなる。
+    """
     if a is None or b is None:
         return "—"
+    a, b = round(a, nd), round(b, nd)
     d = b - a
     if abs(d) < 10 ** -(nd + 1):
         return "±0"

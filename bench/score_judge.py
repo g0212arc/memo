@@ -61,6 +61,7 @@ def build_judge_system(axes: dict) -> str:
    4 = 読めるが明確な欠点がある
    1 = 破綻している / 指示を無視している / 書けていない
 
+字数は【計測済みの事実】として与えられる。自分で数えず、その値だけを根拠にすること。
 出力が拒否・空・極端に短い場合は、遠慮なく最低点を付けてください。
 「書けなかった」ことも検証結果なので、忖度した高評価は不要です。
 
@@ -72,7 +73,15 @@ def build_user(instruction: str | None, text: str, limit: int = 12000) -> str:
     body = text[:limit]
     cut = "\n（※長いため先頭のみ）" if len(text) > limit else ""
     head = f"【与えた指示】\n{instruction}\n\n" if instruction else "【与えた指示】\n（記録なし）\n\n"
-    return f"{head}【モデルの出力】\n{body}{cut}"
+    # 判定モデルに字数を数えさせると捏造する。実測で31件中28件が20%以上ずれ、
+    # すべて過小だった（最大 -87%）。字数指定のあるプロンプトでは、
+    # 存在しない「字数不足」で全モデルが減点される。だから数えた値を渡す。
+    n = len(re.sub(r"\s+", "", text))
+    meta = (f"【計測済みの事実】\n"
+            f"この出力の字数は {n:,} 字（空白を除く）。**これは機械で数えた確定値である。**\n"
+            f"字数はこちらで測ってあるので、あなたが数えたり見積もったりしないこと。\n"
+            f"字数の過不足を理由に減点する場合は、必ずこの数字を使うこと。\n\n")
+    return f"{head}{meta}【モデルの出力】\n{body}{cut}"
 
 
 def extract_json(s: str) -> dict | None:
