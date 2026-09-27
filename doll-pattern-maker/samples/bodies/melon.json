@@ -1,0 +1,31 @@
+{
+  "schema": "doll-body/v1",
+  "name": "甜瓜体",
+  "maker": "",
+  "source": "メーカーの採寸画像（甜瓜体数据图）",
+  "measurements": {
+    "height_with_head": { "value": 24.5, "raw_label": "身高(含头)" },
+    "height": { "value": 18.7, "raw_label": "身高(不含头)" },
+    "head_circ": { "value": 22.7, "raw_label": "头围" },
+    "neck_circ": { "value": 5.2, "raw_label": "脖围" },
+    "shoulder_width": { "value": 5.0, "raw_label": "肩宽" },
+    "chest_circ": { "value": 10.3, "raw_label": "胸围" },
+    "waist_circ": { "value": 10.1, "raw_label": "腰围" },
+    "hip_circ": { "value": 14.5, "raw_label": "臀围" },
+    "thigh_circ": { "value": 8.3, "raw_label": "大腿围(最粗)" },
+    "calf_circ": { "value": 6.0, "raw_label": "小腿围(最粗)" },
+    "outer_leg_length": { "value": 10.6, "raw_label": "外腿长" },
+    "inseam": { "value": 9.0, "raw_label": "内腿长" },
+    "upper_arm_circ": { "value": 4.2, "raw_label": "大臂围(最粗)" },
+    "forearm_circ": { "value": 4.2, "raw_label": "小臂围(最粗)" },
+    "arm_length": { "value": 6.0, "raw_label": "臂长" },
+    "foot_length": { "value": 2.8, "raw_label": "脚长" },
+    "foot_width": { "value": 1.5, "raw_label": "脚宽" },
+    "wrist_joint_circ": { "value": 2.7, "raw_label": "手球圆周长" },
+    "wrist_joint_diam": { "value": 0.8, "raw_label": "手球直径" },
+    "ankle_joint_circ": { "value": 4.5, "raw_label": "脚球圆周长" },
+    "ankle_joint_diam": { "value": 1.4, "raw_label": "脚球直径" }
+  },
+  "unmapped": [],
+  "ambiguities": []
+}

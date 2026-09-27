@@ -1,0 +1,25 @@
+{
+  "schema": "doll-body/v1",
+  "name": "甘蔗三代",
+  "maker": "糖果星系 BonBonGalaxy",
+  "source": "メーカー公式の採寸画像（PVC 倉庫データ）",
+  "measurements": {
+    "height_with_head": { "value": 32, "raw_label": "含头身高" },
+    "height": { "value": 27, "raw_label": "不含头身高" },
+    "head_circ": { "value": 17.7, "raw_label": "头围" },
+    "neck_circ": { "value": 5.4, "raw_label": "脖围" },
+    "shoulder_width": { "value": 5.5, "raw_label": "肩宽" },
+    "chest_circ": { "value": 11.4, "raw_label": "胸围" },
+    "waist_circ": { "value": 9.6, "raw_label": "腰围" },
+    "hip_circ": { "value": 13.8, "raw_label": "臀围" },
+    "arm_length": { "value": 8.4, "raw_label": "臂长" },
+    "outer_leg_length": { "value": 17.5, "raw_label": "外腿长" },
+    "inseam": { "value": 16.5, "raw_label": "内腿长" },
+    "thigh_circ": { "value": 8.3, "raw_label": "大腿围" },
+    "calf_circ": { "value": 6.5, "raw_label": "小腿围" },
+    "foot_length": { "value": 4.6, "raw_label": "脚长", "variants": [{ "label": "大脚", "value": 4.6 }, { "label": "小脚", "value": 3.8 }] },
+    "foot_width": { "value": 2.2, "raw_label": "脚宽", "variants": [{ "label": "大脚", "value": 2.2 }, { "label": "小脚", "value": 1.9 }] }
+  },
+  "unmapped": [],
+  "ambiguities": []
+}

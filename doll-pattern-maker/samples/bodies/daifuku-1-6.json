@@ -1,0 +1,27 @@
+{
+  "schema": "doll-body/v1",
+  "name": "大福体 特六",
+  "maker": "JQ老师",
+  "source": "小红书の採寸画像（大福体 特六尺寸数据）",
+  "measurements": {
+    "height": { "value": 26.5, "raw_label": "身高" },
+    "arm_length": { "value": 9, "raw_label": "手臂长" },
+    "inseam": { "value": 16, "raw_label": "裆到脚底腿长" },
+    "neck_circ": { "value": 4, "raw_label": "脖围" },
+    "shoulder_width": { "value": 6, "raw_label": "肩宽" },
+    "chest_circ": { "value": 15.2, "raw_label": "胸围", "variants": [{ "label": "胸1", "value": 15.2 }, { "label": "胸2", "value": 14.1 }, { "label": "胸3", "value": 13.3 }, { "label": "胸4", "value": 12.3 }] },
+    "waist_circ": { "value": 10.3, "raw_label": "腰围" },
+    "hip_circ": { "value": 17.7, "raw_label": "臀围" },
+    "thigh_circ": { "value": 10.6, "raw_label": "大腿围" },
+    "calf_circ": { "value": 6.6, "raw_label": "小腿围" },
+    "upper_arm_circ": { "value": 4.7, "raw_label": "手臂围" },
+    "foot_length": { "value": 3, "raw_label": "脚长" },
+    "foot_width": { "value": 1.3, "raw_label": "脚宽" }
+  },
+  "unmapped": [],
+  "ambiguities": [
+    "全項目に「≈」が付いていた（数値だけにした）",
+    "身高が頭込みか頭なしか表記がない（画像の計測線は首の上から足裏まで）",
+    "胸围の4値は胸パーツの違いと思われるが、パーツ名の表記はない"
+  ]
+}
