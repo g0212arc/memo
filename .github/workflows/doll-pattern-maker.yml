@@ -1,0 +1,53 @@
+name: doll-pattern-maker
+
+on:
+  push:
+    paths:
+      - 'doll-pattern-maker/**'
+      - '.github/workflows/doll-pattern-maker.yml'
+  pull_request:
+    paths:
+      - 'doll-pattern-maker/**'
+  # GitHub Pages への公開は手動で実行する（Settings → Pages で Source を GitHub Actions にしてから）
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'GitHub Pages に公開する'
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    working-directory: doll-pattern-maker/app
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: doll-pattern-maker/app/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - if: github.event_name == 'workflow_dispatch' && inputs.deploy
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doll-pattern-maker/app/dist
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ドール服パターンメーカー</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>ドール服パターンメーカー</h1>
+      <span class="phase">フェーズ1: Tシャツ</span>
+    </header>
+    <main class="app">
+      <aside class="panel" id="panel"></aside>
+      <section class="preview">
+        <div class="toolbar" id="toolbar"></div>
+        <div class="messages" id="messages"></div>
+        <div class="canvas" id="canvas"></div>
+      </section>
+    </main>
+
+    <dialog id="import-dialog">
+      <form method="dialog" class="dialog-body">
+        <h2>採寸を取り込む</h2>
+        <ol class="steps">
+          <li>
+            下のボタンで指示文をコピーし、採寸画像（メーカーの画像や手書きメモ）と一緒に Claude アプリへ送ります。
+            <div><button type="button" id="copy-prompt">指示文をコピー</button> <span id="copy-status"></span></div>
+          </li>
+          <li>Claude の返答を<strong>そのまま全部</strong>下に貼り付けます。</li>
+        </ol>
+        <textarea id="import-text" rows="10" placeholder="ここに貼り付け"></textarea>
+        <div id="import-result"></div>
+        <div class="dialog-actions">
+          <button type="button" id="do-import" class="primary">取り込む</button>
+          <button value="close">閉じる</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

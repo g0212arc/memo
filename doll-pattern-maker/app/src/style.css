@@ -1,0 +1,289 @@
+:root {
+  --bg: #f6f5f3;
+  --panel: #ffffff;
+  --text: #222;
+  --muted: #6b6b6b;
+  --line: #ddd;
+  --accent: #b03060;
+  --maker: #2f6f3e;
+  --measured: #2060b0;
+  --estimated: #b36b00;
+  --warn-bg: #fff5e0;
+  --err-bg: #fde8ea;
+  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.app-header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.phase {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  min-height: calc(100vh - 46px);
+}
+
+.panel {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 12px 16px 40px;
+  overflow-y: auto;
+  max-height: calc(100vh - 46px);
+}
+
+.panel h2 {
+  font-size: 14px;
+  margin: 18px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+
+.row label {
+  font-size: 13px;
+}
+
+select,
+input[type='number'],
+textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 4px 6px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+}
+
+input[type='number'] {
+  width: 76px;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+table.measure {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+table.measure td {
+  padding: 3px 2px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+table.measure td.name {
+  width: 42%;
+}
+
+table.measure tr.missing td.name {
+  color: #c00;
+  font-weight: bold;
+}
+
+.help {
+  color: var(--muted);
+  font-size: 11px;
+  display: block;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.badge.maker {
+  background: var(--maker);
+}
+
+.badge.measured {
+  background: var(--measured);
+}
+
+.badge.estimated {
+  background: var(--estimated);
+}
+
+.badge.missing {
+  background: #c00;
+}
+
+tr.estimated input {
+  border-color: var(--estimated);
+  background: #fffaf0;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar .zoom {
+  margin-left: auto;
+  font-size: 13px;
+}
+
+.messages {
+  padding: 8px 16px 0;
+  font-size: 13px;
+}
+
+.msg {
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.msg.warn {
+  background: var(--warn-bg);
+}
+
+.msg.err {
+  background: var(--err-bg);
+}
+
+.msg.info {
+  background: #eef3f8;
+}
+
+.msg ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.canvas {
+  overflow: auto;
+  padding: 16px;
+}
+
+.canvas svg {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+dialog {
+  width: min(720px, 94vw);
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+}
+
+.dialog-body {
+  padding: 16px 20px;
+}
+
+.dialog-body h2 {
+  margin-top: 0;
+  font-size: 17px;
+}
+
+.dialog-body textarea {
+  width: 100%;
+}
+
+.steps {
+  font-size: 14px;
+  padding-left: 20px;
+}
+
+.steps li {
+  margin-bottom: 8px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* スマホ: 閲覧と PDF 保存が中心。編集パネルは下にたたむ */
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    order: 2;
+    max-height: none;
+    border-right: none;
+    border-top: 1px solid var(--line);
+  }
+
+  .preview {
+    order: 1;
+  }
+
+  .toolbar .zoom {
+    margin-left: 0;
+  }
+}
