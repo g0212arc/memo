@@ -1,0 +1,7 @@
+# ビルドコンテキストは doll-pattern-maker/。コンテナに入れる必要のないものを除く
+**/node_modules
+app/dist
+*.md
+deploy/*.sh
+deploy/*.md
+deploy/nginx-site.conf

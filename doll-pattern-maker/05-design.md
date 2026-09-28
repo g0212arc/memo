@@ -11,7 +11,7 @@
 | 画面 | フレームワークなし（素の DOM 操作） | 画面が小さく、依存を増やさないため |
 | PDF | jsPDF | 線をベクターで描け、mm 単位で原寸を指定できる |
 | テスト | Vitest | 型紙の計算（推定・作図・縫い代）を自動で確認する |
-| 公開 | GitHub Pages（GitHub Actions でビルド） | 無料、サーバー不要、スマホから URL で開ける |
+| 公開 | 自分の VPS（docker compose + nginx:alpine） | 静的ファイルだけなので軽い。スマホから URL で開ける |
 
 ## 2. フォルダ構成
 
@@ -108,8 +108,10 @@ draftTshirt(body: 解決済み採寸値, params: Tシャツのパラメータ) �
 
 ## 7. 公開
 
-- `.github/workflows/doll-pattern-maker.yml`: `doll-pattern-maker/` を変更して push するとテストとビルドを実行
-- GitHub Pages への公開は Actions 画面から手動で実行（事前に Settings → Pages で Source を「GitHub Actions」にする）
+- 自分の VPS に docker compose で置く（nginx:alpine のコンテナ1つ、127.0.0.1:8200、メモリ上限 64MB）。ホストの nginx が https://tcpattern.duckdns.org で受けて転送する
+- 手順は [deploy/README.md](deploy/README.md)。更新は VPS で `deploy.sh` を実行
+- `.github/workflows/doll-pattern-maker.yml` は、`doll-pattern-maker/` を変更して push するとテストとビルドを実行する（公開はしない）
+- 当初は GitHub Pages を予定していたが、VPS があるため変更（デフォルトブランチや非公開リポジトリの制約を避けられる）
 
 ## 8. フェーズ1でやらないこと（後のフェーズ）
 

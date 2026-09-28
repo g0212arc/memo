@@ -1,5 +1,6 @@
 name: doll-pattern-maker
 
+# テストとビルドだけを行う。公開は VPS で deploy.sh を実行する（doll-pattern-maker/deploy/README.md）
 on:
   push:
     paths:
@@ -8,13 +9,6 @@ on:
   pull_request:
     paths:
       - 'doll-pattern-maker/**'
-  # GitHub Pages への公開は手動で実行する（Settings → Pages で Source を GitHub Actions にしてから）
-  workflow_dispatch:
-    inputs:
-      deploy:
-        description: 'GitHub Pages に公開する'
-        type: boolean
-        default: true
 
 defaults:
   run:
@@ -33,21 +27,3 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - if: github.event_name == 'workflow_dispatch' && inputs.deploy
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: doll-pattern-maker/app/dist
-
-  deploy:
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
