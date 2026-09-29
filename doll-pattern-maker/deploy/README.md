@@ -99,7 +99,64 @@ certbot の後に行った場合、443 側の server ブロックにも `auth_ba
 
 ---
 
-## 更新
+## push で自動デプロイ（GitHub Actions）
+
+`doll-pattern-maker/` を変更して `claude/pattern-maker-doll-support-ee7mua` に push すると、
+テストとビルドが通った後に GitHub Actions が VPS に SSH で入り、`deploy.sh` を実行する。
+
+```
+push → [test] npm test / build → [deploy] ssh deploy@VPS → deploy.sh（取得・ビルド・入れ替え・動作確認）
+```
+
+- GitHub に預けるのは**この用途専用の鍵**。VPS の `authorized_keys` で `restrict,command="…deploy.sh"` を付けるので、
+  この鍵で入っても `deploy.sh` しか実行できない（シェルもポート転送も使えない）
+- シークレットが未設定の間は、deploy ジョブは何もせずに成功扱いで終わる
+
+### 設定手順（手元の PC で。sudo は不要）
+
+**1. 専用の鍵を作る**
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/gha_tcpattern -N "" -C "github-actions-tcpattern"
+```
+
+**2. VPS に「deploy.sh しか実行できない鍵」として登録する**
+
+```bash
+printf 'restrict,command="%s" %s\n' \
+  /home/deploy/apps/doll-pattern-maker/doll-pattern-maker/deploy/deploy.sh \
+  "$(cat ~/.ssh/gha_tcpattern.pub)" | ssh vps 'cat >> ~/.ssh/authorized_keys'
+```
+
+**3. 動作確認**（deploy.sh が走って `OK` が出れば成功）
+
+```bash
+ssh -i ~/.ssh/gha_tcpattern -o IdentitiesOnly=yes deploy@160.251.176.139
+```
+
+**4. GitHub にシークレットを登録する**
+
+g0212arc/memo → Settings → Secrets and variables → Actions → New repository secret で3つ登録する。
+
+| 名前 | 値 | 値の出し方 |
+|---|---|---|
+| `VPS_HOST` | `160.251.176.139` | — |
+| `VPS_SSH_KEY` | 秘密鍵の中身（`-----BEGIN` から `END-----` まで全部） | `cat ~/.ssh/gha_tcpattern` |
+| `VPS_KNOWN_HOSTS` | VPS のホスト鍵 | `ssh-keyscan -t ed25519 160.251.176.139` |
+
+**5. 試す**
+
+`doll-pattern-maker/` の何かを変更して push し、GitHub の Actions タブで `deploy` が緑になることを確認する。
+
+### 注意
+
+- 秘密鍵 `~/.ssh/gha_tcpattern` は GitHub に登録したら手元から消してもよい（再登録するときは作り直す）
+- 自動デプロイをやめるときは、VPS の `~/.ssh/authorized_keys` から `github-actions-tcpattern` の行を消す
+- リポジトリに push できる人は VPS 上でビルドを動かせることになる（自分だけのリポジトリなら問題ない）
+
+---
+
+## 手動で更新
 
 push した後、VPS で:
 

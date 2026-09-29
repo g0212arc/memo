@@ -1,6 +1,6 @@
 name: doll-pattern-maker
 
-# テストとビルドだけを行う。公開は VPS で deploy.sh を実行する（doll-pattern-maker/deploy/README.md）
+# テストとビルド → 通れば VPS に反映（手順: doll-pattern-maker/deploy/README.md「push で自動デプロイ」）
 on:
   push:
     paths:
@@ -10,13 +10,12 @@ on:
     paths:
       - 'doll-pattern-maker/**'
 
-defaults:
-  run:
-    working-directory: doll-pattern-maker/app
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: doll-pattern-maker/app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +26,29 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/pattern-maker-doll-support-ee7mua'
+    runs-on: ubuntu-latest
+    # デプロイが重ならないよう1つずつ実行する
+    concurrency:
+      group: vps-deploy
+      cancel-in-progress: false
+    steps:
+      - name: VPS で deploy.sh を実行
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$KNOWN_HOSTS" ] || [ -z "$HOST" ]; then
+            echo "::notice::VPS_SSH_KEY / VPS_KNOWN_HOSTS / VPS_HOST が未設定のため、デプロイをスキップしました"
+            exit 0
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # VPS 側でこの鍵は deploy.sh しか実行できない（authorized_keys の command= 制限）
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes "deploy@${HOST}"
