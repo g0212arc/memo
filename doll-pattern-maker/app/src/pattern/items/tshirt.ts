@@ -41,7 +41,7 @@ export const TSHIRT_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [
   { key: 'hip_circ', hard: true },
   { key: 'neck_circ', hard: false },
   { key: 'shoulder_width', hard: true },
-  { key: 'arm_length', hard: true },
+  { key: 'arm_length', hard: false },
   { key: 'back_length', hard: false },
   { key: 'front_length', hard: false },
   { key: 'armhole_circ', hard: false },

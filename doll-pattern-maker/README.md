@@ -16,7 +16,7 @@
 | [05-design.md](05-design.md) | フェーズ1の設計（技術構成、作図手順、推定式、出力） |
 | [app/](app/) | アプリ本体（使い方は app/README.md） |
 | [deploy/](deploy/) | VPS へのデプロイ（docker compose）と手順書 |
-| [samples/bodies/](samples/bodies/) | 採寸表7体（中国の5体 ＋ SDM女・MDD）を JSON 化した参考サンプル（テストデータ兼用） |
+| [samples/bodies/](samples/bodies/) | 採寸表14体を JSON 化した参考サンプル（テストデータ兼用）。JSON を置くだけでアプリに読み込まれる |
 
 ---
 

@@ -43,9 +43,13 @@ export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBod
 
   // 首回り（襟ぐりの大きさに直結するので、推定したら必ず実測をすすめる）
   if (!has('neck_circ') && has('chest_circ')) {
-    est('neck_circ', val('chest_circ') * 0.33, '胸囲 × 0.33');
+    // サンプル14体で胸囲の 0.26〜0.52 倍、中央値が約 0.36
+    est('neck_circ', val('chest_circ') * 0.36, '胸囲 × 0.36');
     res.warnings.push('首回りを胸囲から推定しました。ボディによる差が大きく、襟ぐりの大きさに直結するので、実測をおすすめします。');
   }
+
+  // 腕の長さ（サンプルで頭なし身長の 0.31〜0.35 倍に収まる）
+  if (has('height')) est('arm_length', val('height') * 0.33, '頭なし身長 × 0.33');
 
   // 首の長さ
   if (has('height')) est('neck_length', val('height') * 0.055, '頭なし身長 × 0.055');
