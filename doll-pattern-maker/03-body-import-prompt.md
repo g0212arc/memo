@@ -25,21 +25,21 @@
 - 返答は JSON のコードブロックだけにする
 
 # 対応表（キー: 中国語の表記例）
-height_with_head: 含头身高, 身高(含头)
-height: 不含头身高, 身高(不含头), 身高不含头 ※頭込みか不明な「身高」は height に入れ ambiguities に書く
-head_circ: 头围
-neck_circ: 脖围
-shoulder_width: 肩宽
-chest_circ: 胸围
-waist_circ: 腰围 ※ウエストのこと
-hip_circ: 臀围
-back_length: 背长
+height_with_head: 含头身高, 身高(含头), 身長（頭込み）
+height: 不含头身高, 身高(不含头), 身高不含头, 身長（頭なし） ※頭込みか不明な「身高」「身長」は height に入れ ambiguities に書く
+head_circ: 头围, 頭囲
+neck_circ: 脖围, 首回り, 首囲
+shoulder_width: 肩宽, 肩幅
+chest_circ: 胸围, バスト, 胸囲
+waist_circ: 腰围, ウエスト ※ウエストのこと
+hip_circ: 臀围, ヒップ
+back_length: 背长, 背丈
 front_length: 前长
 armhole_circ: 袖窿围, 臂根围
 neck_length: 脖长, 颈长, 首の長さ
 waist_to_hip: 腰臀距, 臀高差, 腰丈
 rise: 立裆, 裆深, 股上
-arm_length: 臂长, 手臂长
+arm_length: 臂长, 手臂长, 腕の長さ, 袖丈
 upper_arm_circ: 上臂围, 大臂围, 手臂围
 forearm_circ: 小臂围
 wrist_circ: 手腕围
@@ -47,14 +47,14 @@ hand_length: 手长
 wrist_joint_diam: 手球, 手球直径
 wrist_joint_circ: 手球圆周长
 outer_leg_length: 外腿长, 腿长含脚
-inseam: 内腿长, 裆至脚底, 裆到脚底腿长
+inseam: 内腿长, 裆至脚底, 裆到脚底腿长, 股下
 navel_to_sole: 肚脐至脚底
-thigh_circ: 大腿围
-calf_circ: 小腿围
+thigh_circ: 大腿围, 太もも
+calf_circ: 小腿围, ふくらはぎ
 knee_height: 膝高, 膝の高さ
 ankle_circ: 脚踝围
-foot_length: 脚长
-foot_width: 脚宽
+foot_length: 脚长, 足, 足の長さ
+foot_width: 脚宽, 足幅
 foot_height: 脚高
 ankle_joint_diam: 脚球, 脚球直径
 ankle_joint_circ: 脚球圆周长
@@ -78,5 +78,6 @@ ankle_joint_circ: 脚球圆周长
 ---
 
 ## メモ
+- アプリの「指示文をコピー」は `app/src/model/schema.ts` から毎回組み立てるので、アプリ側が常に最新。このページは控え
 - 対応表は [02-measurement-schema.md](02-measurement-schema.md) と常に一致させる（実装時はツールがこのプロンプトを生成し、ずれが起きないようにする）
 - [samples/bodies/](samples/bodies/) の5体は、このルールで手作業で書き写したもの。プロンプトの出力と比べる正解データとしても使う

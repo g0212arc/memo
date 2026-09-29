@@ -41,6 +41,12 @@ export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBod
     est('height', val('height_with_head') * 0.8, '頭込み身長 × 0.8');
   }
 
+  // 首回り（襟ぐりの大きさに直結するので、推定したら必ず実測をすすめる）
+  if (!has('neck_circ') && has('chest_circ')) {
+    est('neck_circ', val('chest_circ') * 0.33, '胸囲 × 0.33');
+    res.warnings.push('首回りを胸囲から推定しました。ボディによる差が大きく、襟ぐりの大きさに直結するので、実測をおすすめします。');
+  }
+
   // 首の長さ
   if (has('height')) est('neck_length', val('height') * 0.055, '頭なし身長 × 0.055');
 
