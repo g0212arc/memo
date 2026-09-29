@@ -14,6 +14,7 @@
 | [03-body-import-prompt.md](03-body-import-prompt.md) | 採寸画像を Claude アプリで JSON 化するための定型プロンプト |
 | [04-items.md](04-items.md) | 4アイテム（Tシャツ・ノースリーブタートルネック・ハーフパンツ・スカート）の作り方 |
 | [05-design.md](05-design.md) | フェーズ1の設計（技術構成、作図手順、推定式、出力） |
+| [06-provenance.md](06-provenance.md) | 作図の根拠（一般的な製図知識と独自の値の区別）と、権利まわりの考え方 |
 | [app/](app/) | アプリ本体（使い方は app/README.md） |
 | [deploy/](deploy/) | VPS へのデプロイ（docker compose）と手順書 |
 | [samples/bodies/](samples/bodies/) | 採寸表15体を JSON 化した参考サンプル（テストデータ兼用）。JSON を置くだけでアプリに読み込まれる |
