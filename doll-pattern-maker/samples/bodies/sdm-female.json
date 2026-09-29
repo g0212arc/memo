@@ -4,20 +4,51 @@
   "maker": "",
   "source": "採寸表（SDM 女・MDD の比較表）",
   "measurements": {
-    "height_with_head": { "value": 42, "raw_label": "身長" },
-    "head_circ": { "value": 19, "raw_label": "頭囲" },
-    "shoulder_width": { "value": 6.2, "raw_label": "肩幅" },
-    "chest_circ": { "value": 18, "raw_label": "バスト" },
-    "waist_circ": { "value": 14, "raw_label": "ウエスト" },
-    "hip_circ": { "value": 18.8, "raw_label": "ヒップ" },
-    "arm_length": { "value": 14, "raw_label": "袖丈" },
-    "inseam": { "value": 20, "raw_label": "股下" },
-    "foot_length": { "value": 5.5, "raw_label": "足" }
+    "height_with_head": {
+      "value": 42,
+      "raw_label": "身長"
+    },
+    "head_circ": {
+      "value": 19,
+      "raw_label": "頭囲"
+    },
+    "shoulder_width": {
+      "value": 6.2,
+      "raw_label": "肩幅"
+    },
+    "neck_circ": {
+      "value": 7.5,
+      "raw_label": "首回り",
+      "source": "measured"
+    },
+    "chest_circ": {
+      "value": 18,
+      "raw_label": "バスト"
+    },
+    "waist_circ": {
+      "value": 14,
+      "raw_label": "ウエスト"
+    },
+    "hip_circ": {
+      "value": 18.8,
+      "raw_label": "ヒップ"
+    },
+    "arm_length": {
+      "value": 14,
+      "raw_label": "袖丈"
+    },
+    "inseam": {
+      "value": 20,
+      "raw_label": "股下"
+    },
+    "foot_length": {
+      "value": 5.5,
+      "raw_label": "足"
+    }
   },
   "unmapped": [],
   "ambiguities": [
     "身長が頭込みか表記がない（公称身長の慣例から頭込みとして扱った）",
-    "「袖丈」は腕の長さ（肩先〜手首）として扱った",
-    "首回りの記載がない（ツールで推定）"
+    "「袖丈」は腕の長さ（肩先〜手首）として扱った"
   ]
 }
