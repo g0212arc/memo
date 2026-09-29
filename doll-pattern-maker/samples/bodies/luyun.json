@@ -1,0 +1,83 @@
+{
+  "schema": "doll-body/v1",
+  "name": "ルユン（ノワドール）",
+  "maker": "ノワドール",
+  "source": "1/4ドールボディ サイズ比較表（7種）",
+  "measurements": {
+    "height": {
+      "value": 38.4,
+      "raw_label": "身長（ヘッドなし）"
+    },
+    "height_with_head": {
+      "value": 43.5,
+      "raw_label": "全高（ヘッド込み）"
+    },
+    "neck_circ": {
+      "value": 6.8,
+      "raw_label": "首囲"
+    },
+    "shoulder_width": {
+      "value": 9.5,
+      "raw_label": "肩幅"
+    },
+    "chest_circ": {
+      "value": 18,
+      "raw_label": "胸囲"
+    },
+    "waist_circ": {
+      "value": 14.3,
+      "raw_label": "腰囲"
+    },
+    "hip_circ": {
+      "value": 19.5,
+      "raw_label": "臀囲"
+    },
+    "upper_arm_circ": {
+      "value": 6,
+      "raw_label": "上腕囲"
+    },
+    "forearm_circ": {
+      "value": 5.3,
+      "raw_label": "前腕囲"
+    },
+    "arm_length": {
+      "value": 12.5,
+      "raw_label": "腕長"
+    },
+    "wrist_joint_diam": {
+      "value": 1.2,
+      "raw_label": "手球直径"
+    },
+    "thigh_circ": {
+      "value": 11.3,
+      "raw_label": "太腿囲"
+    },
+    "calf_circ": {
+      "value": 7.5,
+      "raw_label": "ふくらはぎ囲"
+    },
+    "foot_length": {
+      "value": 5.6,
+      "raw_label": "足長"
+    },
+    "foot_width": {
+      "value": 2.2,
+      "raw_label": "足幅"
+    },
+    "ankle_joint_diam": {
+      "value": 1.4,
+      "raw_label": "足球直径"
+    }
+  },
+  "unmapped": [
+    {
+      "raw_label": "脚長",
+      "value": 19.2
+    }
+  ],
+  "ambiguities": [
+    "表の「腰囲」はウエストとして扱った（臀囲が別にあり、値もウエストの大きさ）",
+    "「脚長」は足首までの長さと思われ、股下とは別物のため取り込まず、その他に回した",
+    "足球直径は「約1.4」（「約」を外した）"
+  ]
+}

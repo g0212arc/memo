@@ -1,0 +1,78 @@
+{
+  "schema": "doll-body/v1",
+  "name": "飛練体2.0",
+  "maker": "",
+  "source": "1/4ドールボディ サイズ比較表（7種）",
+  "measurements": {
+    "height": {
+      "value": 43,
+      "raw_label": "身長（ヘッドなし）"
+    },
+    "neck_circ": {
+      "value": 7,
+      "raw_label": "首囲"
+    },
+    "shoulder_width": {
+      "value": 11,
+      "raw_label": "肩幅"
+    },
+    "chest_circ": {
+      "value": 21,
+      "raw_label": "胸囲"
+    },
+    "waist_circ": {
+      "value": 14.5,
+      "raw_label": "腰囲"
+    },
+    "hip_circ": {
+      "value": 20.2,
+      "raw_label": "臀囲"
+    },
+    "upper_arm_circ": {
+      "value": 8,
+      "raw_label": "上腕囲"
+    },
+    "arm_length": {
+      "value": 15,
+      "raw_label": "腕長"
+    },
+    "hand_length": {
+      "value": 5,
+      "raw_label": "手長"
+    },
+    "wrist_joint_diam": {
+      "value": 1.3,
+      "raw_label": "手球直径"
+    },
+    "thigh_circ": {
+      "value": 11.5,
+      "raw_label": "太腿囲"
+    },
+    "calf_circ": {
+      "value": 8.8,
+      "raw_label": "ふくらはぎ囲"
+    },
+    "foot_length": {
+      "value": 5.6,
+      "raw_label": "足長"
+    },
+    "foot_width": {
+      "value": 2.4,
+      "raw_label": "足幅"
+    },
+    "ankle_joint_diam": {
+      "value": 1.7,
+      "raw_label": "足球直径"
+    }
+  },
+  "unmapped": [
+    {
+      "raw_label": "脚長",
+      "value": 27
+    }
+  ],
+  "ambiguities": [
+    "表の「腰囲」はウエストとして扱った（臀囲が別にあり、値もウエストの大きさ）",
+    "「脚長」は足首までの長さと思われ、股下とは別物のため取り込まず、その他に回した"
+  ]
+}
