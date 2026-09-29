@@ -14,6 +14,7 @@ const ORDER = [
   'melon',
   'sdm-female',
   'mdd',
+  'mdd-mochiashi',
   'luyun',
   'dasi-male-slim',
   'torakujira',

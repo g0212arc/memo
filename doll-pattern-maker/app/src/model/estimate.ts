@@ -51,6 +51,12 @@ export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBod
   // 腕の長さ（サンプルで頭なし身長の 0.31〜0.35 倍に収まる）
   if (has('height')) est('arm_length', val('height') * 0.33, '頭なし身長 × 0.33');
 
+  // 肩幅（サンプル12体で胸囲の 0.38〜0.57 倍、中央値約 0.53。肩線の長さに直結するので実測をすすめる）
+  if (!has('shoulder_width') && has('chest_circ')) {
+    est('shoulder_width', val('chest_circ') * 0.53, '胸囲 × 0.53');
+    res.warnings.push('肩幅を胸囲から推定しました。肩線の長さに直結するので、実測をおすすめします（背中側で左右の肩先の間）。');
+  }
+
   // 首の長さ
   if (has('height')) est('neck_length', val('height') * 0.055, '頭なし身長 × 0.055');
 

@@ -1,40 +1,40 @@
 {
   "schema": "doll-body/v1",
-  "name": "MDD",
+  "name": "MDD もちあし",
   "maker": "ボークス",
   "source": "Volks 公式サイト（MDD ベースボディ2.0 Body Data）",
   "measurements": {
     "height_with_head": {
-      "value": 43.5,
+      "value": 43.0,
       "raw_label": "A. 身長"
     },
     "neck_circ": {
       "value": 8,
-      "raw_label": "首回り",
+      "raw_label": "首回り（MDD と同じ値を仮に入れた）",
       "source": "measured"
     },
     "chest_circ": {
-      "value": 15.5,
-      "raw_label": "B. 胸囲（S胸）"
+      "value": 18.8,
+      "raw_label": "B. 胸囲（L胸）"
     },
     "waist_circ": {
       "value": 13.5,
       "raw_label": "C. ウエスト"
     },
     "hip_circ": {
-      "value": 19.0,
+      "value": 22.0,
       "raw_label": "D. ヒップ"
     },
     "inseam": {
-      "value": 21.0,
+      "value": 20.5,
       "raw_label": "E. 股下"
     },
     "thigh_circ": {
-      "value": 12.0,
+      "value": 13.8,
       "raw_label": "F. 太もも"
     },
     "calf_circ": {
-      "value": 8.5,
+      "value": 10.5,
       "raw_label": "G. ふくらはぎ"
     },
     "foot_length": {
@@ -50,6 +50,7 @@
   "ambiguities": [
     "身長は「約」付き（「約」を外した）。頭込みの全高として扱った",
     "肩幅・腕の長さは公式の表にない（ツールで推定）",
-    "胸囲は S胸 の値"
+    "胸囲は L胸 の値",
+    "首回りは MDD（8cm）と同じ値を仮に入れた。実測を推奨"
   ]
 }
