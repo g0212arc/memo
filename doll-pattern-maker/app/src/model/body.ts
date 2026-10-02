@@ -24,6 +24,12 @@ export interface Unmapped {
   note?: string;
 }
 
+/** 同じボディの別タイプ（例: MDD の標準ともちあし）。measurements は基本の値を上書きする分だけ */
+export interface BodyType {
+  label: string;
+  measurements: Partial<Record<MeasurementKey, Measurement>>;
+}
+
 export interface Body {
   schema: 'doll-body/v1';
   id: string;
@@ -33,6 +39,8 @@ export interface Body {
   /** カテゴリ（特六〜叔体）。ない場合は身長から仮のカテゴリを出す */
   category?: Category;
   measurements: Partial<Record<MeasurementKey, Measurement>>;
+  /** タイプ（2つ以上あるときだけ画面に選択欄を出す）。1つ目は基本の値そのまま */
+  types?: BodyType[];
   unmapped: Unmapped[];
   ambiguities: string[];
   /** 組み込みサンプル（編集不可） */
@@ -125,6 +133,40 @@ export function parseImport(text: string): ImportResult {
   return res;
 }
 
+function parseMeasurements(
+  mRaw: Record<string, unknown>,
+  unmapped: Unmapped[],
+  warnings: string[],
+  suffix = '',
+): Partial<Record<MeasurementKey, Measurement>> {
+  const out: Partial<Record<MeasurementKey, Measurement>> = {};
+  for (const [key, val] of Object.entries(mRaw)) {
+    if (!isMeasurementKey(key)) {
+      const n = val && typeof val === 'object' ? toNumber((val as Record<string, unknown>).value) : toNumber(val);
+      unmapped.push({ raw_label: key + suffix, value: n ?? undefined, note: '未知のキー' });
+      warnings.push(`未知の項目「${key}」${suffix}は取り込まず、その他の項目に回しました。`);
+      continue;
+    }
+    const m = normalizeMeasurement(val);
+    if (!m) {
+      warnings.push(`「${DEF_BY_KEY[key].ja}」${suffix}の値が数値として読めませんでした。`);
+      continue;
+    }
+    if (m.value <= 0) {
+      warnings.push(`「${DEF_BY_KEY[key].ja}」${suffix}が 0 以下なので取り込みませんでした。`);
+      continue;
+    }
+    out[key] = m;
+  }
+  return out;
+}
+
+/** タイプを選んだときの採寸値（基本の値をタイプの値で上書き） */
+export function measurementsOf(body: Body, typeIndex = 0): Body['measurements'] {
+  const t = body.types?.[typeIndex];
+  return t ? { ...body.measurements, ...t.measurements } : body.measurements;
+}
+
 export function normalizeBody(raw: unknown): { body: Body; warnings: string[] } | string {
   if (!raw || typeof raw !== 'object') return 'ボディのデータ形式ではありません。';
   const o = raw as Record<string, unknown>;
@@ -162,23 +204,18 @@ export function normalizeBody(raw: unknown): { body: Body; warnings: string[] } 
     }
   }
 
-  for (const [key, val] of Object.entries(mRaw as Record<string, unknown>)) {
-    if (!isMeasurementKey(key)) {
-      const n = val && typeof val === 'object' ? toNumber((val as Record<string, unknown>).value) : toNumber(val);
-      body.unmapped.push({ raw_label: key, value: n ?? undefined, note: '未知のキー' });
-      warnings.push(`未知の項目「${key}」は取り込まず、その他の項目に回しました。`);
-      continue;
+  body.measurements = parseMeasurements(mRaw as Record<string, unknown>, body.unmapped, warnings);
+
+  if (Array.isArray(o.types)) {
+    const types: BodyType[] = [];
+    for (const t of o.types) {
+      if (!t || typeof t !== 'object') continue;
+      const tt = t as Record<string, unknown>;
+      const label = typeof tt.label === 'string' && tt.label.trim() ? tt.label.trim() : `タイプ${types.length + 1}`;
+      const tm = tt.measurements && typeof tt.measurements === 'object' ? (tt.measurements as Record<string, unknown>) : {};
+      types.push({ label, measurements: parseMeasurements(tm, body.unmapped, warnings, `（${label}）`) });
     }
-    const m = normalizeMeasurement(val);
-    if (!m) {
-      warnings.push(`「${DEF_BY_KEY[key].ja}」の値が数値として読めませんでした。`);
-      continue;
-    }
-    if (m.value <= 0) {
-      warnings.push(`「${DEF_BY_KEY[key].ja}」が 0 以下なので取り込みませんでした。`);
-      continue;
-    }
-    body.measurements[key] = m;
+    if (types.length > 1) body.types = types;
   }
 
   warnings.push(...plausibilityWarnings(body));

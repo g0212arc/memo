@@ -1,6 +1,6 @@
 // 画面の組み立て。状態が変わるたびに全体を描き直す（画面が小さいので単純さを優先）。
 
-import { Body, newId, parseImport } from './model/body';
+import { Body, measurementsOf, newId, parseImport } from './model/body';
 import { resolveBody, ResolvedBody } from './model/estimate';
 import { DEF_BY_KEY, MEASUREMENTS, MeasurementKey } from './model/schema';
 import { buildImportPrompt } from './model/prompt';
@@ -23,6 +23,7 @@ const saved = loadState();
 const st: UiState = {
   bodyId: saved.bodyId && bodies.some((b) => b.id === saved.bodyId) ? saved.bodyId : bodies[0].id,
   variants: saved.variants ?? {},
+  types: saved.types ?? {},
   tshirt: { ...DEFAULT_TSHIRT, ...saved.tshirt },
   sa: { seam: 0.5, hem: 0.8, opening: 0.8, ...saved.sa },
 };
@@ -40,7 +41,9 @@ interface Current {
 
 function compute(): Current {
   const body = bodies.find((b) => b.id === st.bodyId) ?? bodies[0];
-  const resolved = resolveBody(body, st.variants[body.id]);
+  const typeIdx = typeIndexOf(body);
+  const resolved = resolveBody(body, st.variants[body.id], typeIdx);
+  const typeLabel = body.types?.[typeIdx]?.label;
   let draft: DraftResult | null = null;
   let missing: MeasurementKey[] = [];
   try {
@@ -50,7 +53,7 @@ function compute(): Current {
     else throw e;
   }
   const layout = draft ? layoutPieces(draft.pieces, st.sa) : null;
-  const cmds = layout ? drawCommands(layout, st.sa, `${body.name} / Tシャツ / ${new Date().toLocaleDateString('ja-JP')}`) : [];
+  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / Tシャツ / ${new Date().toLocaleDateString('ja-JP')}`) : [];
   return { body, resolved, draft, missing, layout, cmds };
 }
 
@@ -87,7 +90,8 @@ function renderPanel(cur: Current) {
     (c) => `<option value="${c}"${c === bodyCat.cat ? ' selected' : ''}>${c}${c === bodyCat.cat && bodyCat.guessed ? '（仮）' : ''}</option>`,
   ).join('');
 
-  const variantRows = (Object.entries(body.measurements) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][])
+  const ms = measurementsOf(body, typeIndexOf(body));
+  const variantRows = (Object.entries(ms) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][])
     .filter(([, m]) => m.variants && m.variants.length > 1)
     .map(([k, m]) => {
       const sel = st.variants[body.id]?.[k] ?? 0;
@@ -97,7 +101,7 @@ function renderPanel(cur: Current) {
     .join('');
 
   const reqKeys = TSHIRT_REQUIREMENTS.map((r) => r.key);
-  const otherKeys = MEASUREMENTS.map((d) => d.key).filter((k) => !reqKeys.includes(k) && body.measurements[k]);
+  const otherKeys = MEASUREMENTS.map((d) => d.key).filter((k) => !reqKeys.includes(k) && ms[k]);
   const row = (k: MeasurementKey) => {
     const d = DEF_BY_KEY[k];
     const v = resolved.values[k];
@@ -106,7 +110,7 @@ function renderPanel(cur: Current) {
     const badge = missing
       ? '<span class="badge missing">なし</span>'
       : `<span class="badge ${src}">${src === 'maker' ? 'メーカー' : src === 'measured' ? '実測' : '推定'}</span>`;
-    const hasVariants = (body.measurements[k]?.variants?.length ?? 0) > 1;
+    const hasVariants = (ms[k]?.variants?.length ?? 0) > 1;
     const help =
       missing || src === 'estimated'
         ? `<span class="help">${src === 'estimated' ? `推定: ${esc(resolved.notes[k] ?? '')}／` : ''}測り方: ${esc(d.howTo)}</span>`
@@ -121,6 +125,7 @@ function renderPanel(cur: Current) {
   $('panel').innerHTML = `
     <h2>ボディ</h2>
     <div class="row"><select id="body-select">${opts}</select></div>
+    ${body.types ? `<div class="row"><label>タイプ</label><select id="body-type">${body.types.map((t, i) => `<option value="${i}"${i === typeIndexOf(body) ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></div>` : ''}
     <div class="row"><label>カテゴリ</label><select id="body-category">${bodyCat.cat ? '' : '<option value="" selected>未分類</option>'}${catOpts}</select>${bodyCat.guessed && bodyCat.cat ? '<span class="help">身長からの仮のカテゴリです。正しいカテゴリを選んでください。</span>' : ''}</div>
     <div class="row">
       <button id="open-import" class="primary">採寸を取り込む</button>
@@ -204,6 +209,12 @@ function currentBody() {
   return bodies.find((b) => b.id === st.bodyId) ?? bodies[0];
 }
 
+/** 選んでいるタイプ（タイプがないボディは 0） */
+function typeIndexOf(b: Body): number {
+  const i = st.types?.[b.id] ?? 0;
+  return b.types && i < b.types.length ? i : 0;
+}
+
 /** サンプルを編集しようとしたらコピーを作って切り替える */
 function editableBody(): Body {
   const b = currentBody();
@@ -211,6 +222,7 @@ function editableBody(): Body {
   const copy: Body = { ...structuredClone(b), id: newId(), name: `${b.name}（コピー）`, sample: false };
   bodies.push(copy);
   st.variants[copy.id] = { ...st.variants[b.id] };
+  st.types = { ...st.types, [copy.id]: typeIndexOf(b) };
   st.bodyId = copy.id;
   return copy;
 }
@@ -234,6 +246,8 @@ document.addEventListener('change', (ev) => {
     st.bodyId = el.value;
   } else if (el.id === 'zoom') {
     zoom = Number(el.value);
+  } else if (el.id === 'body-type') {
+    st.types = { ...st.types, [currentBody().id]: Number(el.value) };
   } else if (el.id === 'body-category') {
     if (isCategory(el.value)) editableBody().category = el.value;
   } else if (el.dataset.variant) {
@@ -243,8 +257,11 @@ document.addEventListener('change', (ev) => {
     const k = el.dataset.measure as MeasurementKey;
     const b = editableBody();
     const n = Number(el.value);
-    if (el.value === '' || !(n > 0)) delete b.measurements[k];
-    else b.measurements[k] = { ...b.measurements[k], value: n, source: 'measured', variants: undefined };
+    // 2つ目以降のタイプを選んでいるときは、そのタイプの値として書き込む
+    const ti = typeIndexOf(b);
+    const target = b.types && ti > 0 ? b.types[ti].measurements : b.measurements;
+    if (el.value === '' || !(n > 0)) delete target[k];
+    else target[k] = { ...measurementsOf(b, ti)[k], value: n, source: 'measured', variants: undefined };
   } else if (el.name === 'fabric') {
     st.tshirt.fabric = el.value as 'knit' | 'woven';
   } else if (el.dataset.param) {

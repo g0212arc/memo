@@ -113,3 +113,25 @@ describe('カテゴリ', async () => {
     expect(buildImportPrompt()).toContain('category');
   });
 });
+
+describe('タイプ（同じボディの別タイプ）', () => {
+  it('MDD は 標準 と もちあし を選べ、もちあしでは上書きした値が使われる', () => {
+    const mdd = SAMPLE_BODIES.find((b) => b.name === 'MDD')!;
+    expect(mdd.types?.map((t) => t.label)).toEqual(['標準（S胸）', 'もちあし（L胸）']);
+    const std = resolveBody(mdd, {}, 0);
+    const mochi = resolveBody(mdd, {}, 1);
+    expect(std.values.hip_circ).toBe(19);
+    expect(mochi.values.hip_circ).toBe(22);
+    expect(mochi.values.chest_circ).toBe(18.8);
+    // 上書きしていない値はそのまま
+    expect(mochi.values.neck_circ).toBe(8);
+  });
+
+  it('取り込み時にタイプを読む（1つしかなければタイプなし扱い）', () => {
+    const r = parseImport('{"name":"A","measurements":{"chest_circ":15},"types":[{"label":"標準","measurements":{}},{"label":"L","measurements":{"chest_circ":18}}]}');
+    expect(r.bodies[0].types).toHaveLength(2);
+    expect(resolveBody(r.bodies[0], {}, 1).values.chest_circ).toBe(18);
+    const one = parseImport('{"name":"B","measurements":{"chest_circ":15},"types":[{"label":"標準","measurements":{}}]}');
+    expect(one.bodies[0].types).toBeUndefined();
+  });
+});

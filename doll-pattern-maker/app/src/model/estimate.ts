@@ -1,7 +1,7 @@
 // 不足している採寸値の推定。推定式はすべてここに集める。
 // 係数はサンプル5体で不自然にならないよう置いた仮の値（05-design.md §4）。実測値が集まったら見直す。
 
-import { Body, ValueSource } from './body';
+import { Body, ValueSource, measurementsOf } from './body';
 import { MeasurementKey } from './schema';
 import { Category, guessCategory } from './category';
 
@@ -21,8 +21,9 @@ export interface ResolvedBody {
 
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
-export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBody {
-  const guessed = body.category ? null : guessCategory(body);
+export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 0): ResolvedBody {
+  const measurements = measurementsOf(body, typeIndex);
+  const guessed = body.category ? null : guessCategory({ ...body, measurements });
   const res: ResolvedBody = {
     name: body.name,
     category: body.category ?? guessed,
@@ -33,7 +34,7 @@ export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBod
     warnings: [],
   };
 
-  for (const [k, m] of Object.entries(body.measurements) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][]) {
+  for (const [k, m] of Object.entries(measurements) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][]) {
     const idx = sel[k];
     const vv = idx !== undefined && m.variants?.[idx] ? m.variants[idx].value : m.value;
     res.values[k] = vv;

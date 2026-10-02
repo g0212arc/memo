@@ -17,7 +17,7 @@
 | [06-provenance.md](06-provenance.md) | 作図の根拠（一般的な製図知識と独自の値の区別）と、権利まわりの考え方 |
 | [app/](app/) | アプリ本体（使い方は app/README.md） |
 | [deploy/](deploy/) | VPS へのデプロイ（docker compose）と手順書 |
-| [samples/bodies/](samples/bodies/) | 採寸表15体を JSON 化した参考サンプル（テストデータ兼用）。JSON を置くだけでアプリに読み込まれる |
+| [samples/bodies/](samples/bodies/) | 採寸表14体（MDD は標準・もちあしの2タイプ）を JSON 化した参考サンプル（テストデータ兼用）。JSON を置くだけでアプリに読み込まれる |
 
 ---
 

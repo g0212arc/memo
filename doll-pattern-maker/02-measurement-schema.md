@@ -83,6 +83,10 @@
       ]
     }
   },
+  "types": [                         // 任意。同じボディの別タイプ（例: MDD の標準ともちあし）
+    { "label": "標準（S胸）", "measurements": {} },          // 1つ目は基本の値そのまま
+    { "label": "もちあし（L胸）", "measurements": { "hip_circ": { "value": 22 } } }  // 違う値だけ書く
+  ],
   "unmapped": [                      // 共通項目に当てはまらなかったもの
     { "raw_label": "…", "value": 0, "note": "…" }
   ],

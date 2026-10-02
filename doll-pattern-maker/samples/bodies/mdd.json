@@ -47,10 +47,45 @@
       "raw_label": "H. 足サイズ（幅）"
     }
   },
+  "types": [
+    {
+      "label": "標準（S胸）",
+      "measurements": {}
+    },
+    {
+      "label": "もちあし（L胸）",
+      "measurements": {
+        "height_with_head": {
+          "value": 43.0,
+          "raw_label": "A. 身長"
+        },
+        "chest_circ": {
+          "value": 18.8,
+          "raw_label": "B. 胸囲（L胸）"
+        },
+        "hip_circ": {
+          "value": 22.0,
+          "raw_label": "D. ヒップ"
+        },
+        "inseam": {
+          "value": 20.5,
+          "raw_label": "E. 股下"
+        },
+        "thigh_circ": {
+          "value": 13.8,
+          "raw_label": "F. 太もも"
+        },
+        "calf_circ": {
+          "value": 10.5,
+          "raw_label": "G. ふくらはぎ"
+        }
+      }
+    }
+  ],
   "unmapped": [],
   "ambiguities": [
     "身長は「約」付き（「約」を外した）。頭込みの全高として扱った",
     "肩幅・腕の長さは公式の表にない（ツールで推定）",
-    "胸囲は S胸 の値"
+    "タイプ「標準」は S胸、「もちあし」は L胸 の値"
   ]
 }

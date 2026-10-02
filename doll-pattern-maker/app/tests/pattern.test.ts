@@ -13,9 +13,10 @@ const variants: [string, Partial<TshirtParams>][] = [
 
 describe('Tシャツ（サンプル5体 × 設定）', () => {
   for (const body of SAMPLE_BODIES) {
+    for (const [ti, type] of (body.types ?? [{ label: '' }]).entries())
     for (const [label, params] of variants) {
-      it(`${body.name} / ${label}`, () => {
-        const r = resolveBody(body);
+      it(`${body.name}${type.label ? `（${type.label}）` : ''} / ${label}`, () => {
+        const r = resolveBody(body, {}, ti);
         const res = draftTshirt(r, { ...DEFAULT_TSHIRT, ...params });
         expect(res.pieces.map((p) => p.id)).toEqual(['front', 'back', 'sleeve', 'binding']);
 

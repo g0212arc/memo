@@ -11,6 +11,8 @@ const STATE_KEY = 'dpm.state.v1';
 export interface UiState {
   bodyId: string;
   variants: Record<string, VariantSelection>;
+  /** ボディごとに選んだタイプ */
+  types?: Record<string, number>;
   tshirt: TshirtParams;
   sa: SeamAllowance;
 }
