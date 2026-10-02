@@ -131,6 +131,8 @@ function renderPanel(cur: Current) {
     <div class="row"><label>着丈（ウエストから下へ）</label><input type="number" data-param="hemBelowWaist" step="0.1" value="${t.hemBelowWaist ?? ''}" placeholder="自動"> cm<span class="help">空欄なら腰丈の 8 割。マイナスで短くなります。</span></div>
     <div class="row"><label>袖丈（腕の長さに対して）</label><input type="number" data-param="sleeveRatio" step="0.05" min="0.1" max="1" value="${t.sleeveRatio}"><span class="help">0.3 で半袖。1.0 で手首まで。</span></div>
     <div class="row"><label>胸のゆとりを足す</label><input type="number" data-param="extraChestEase" step="0.1" value="${t.extraChestEase}"> cm</div>
+    <div class="row"><label>袖幅を足す</label><input type="number" data-param="extraSleeveWidth" step="0.1" value="${t.extraSleeveWidth}"> cm<span class="help">袖がきついときに。肘が通る周りより細くはなりません。</span></div>
+    <div class="row"><label>袖ぐりのゆとりを足す</label><input type="number" data-param="extraArmholeEase" step="0.1" value="${t.extraArmholeEase}"> cm</div>
     <div class="row"><label>前襟ぐりを下げる</label><input type="number" data-param="frontNeckDrop" step="0.1" value="${t.frontNeckDrop}"> cm</div>
 
     <h2>縫い代</h2>
@@ -234,7 +236,14 @@ document.addEventListener('change', (ev) => {
     const inp = el as HTMLInputElement;
     if (p === 'backOpening') st.tshirt.backOpening = inp.checked;
     else if (p === 'hemBelowWaist') st.tshirt.hemBelowWaist = inp.value === '' ? null : Number(inp.value);
-    else if (p === 'stretch' || p === 'sleeveRatio' || p === 'extraChestEase' || p === 'frontNeckDrop') {
+    else if (
+      p === 'stretch' ||
+      p === 'sleeveRatio' ||
+      p === 'extraChestEase' ||
+      p === 'frontNeckDrop' ||
+      p === 'extraSleeveWidth' ||
+      p === 'extraArmholeEase'
+    ) {
       const n = Number(inp.value);
       if (Number.isFinite(n)) st.tshirt[p] = n;
     }

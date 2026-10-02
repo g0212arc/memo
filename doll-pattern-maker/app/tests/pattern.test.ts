@@ -52,6 +52,11 @@ describe('Tシャツ（サンプル5体 × 設定）', () => {
           r.values.front_length! - r.values.back_length! + 0.05,
         );
 
+        // 肘が通る: 袖幅・袖口とも「肘が通る周り」以上
+        const hem = sleeve.edges.find((e) => e.kind === 'hem')!.segs[0];
+        const hemWidth = Math.abs(hem.to.x - hem.from.x);
+        expect(hemWidth).toBeGreaterThanOrEqual(r.values.elbow_pass_circ! - 1e-9);
+
         // 身頃の幅（半身×4）が胸囲以上
         const chestHalf = Math.max(...flatten(front.edges.flatMap((e) => e.segs)).map((p) => p.x));
         expect(chestHalf * 4).toBeGreaterThanOrEqual(r.values.chest_circ!);

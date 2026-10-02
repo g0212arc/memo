@@ -19,6 +19,10 @@ export interface SleeveInput {
   capEase: number;
   /** 袖口の幅 = 袖幅 × この値 */
   hemRatio: number;
+  /** 袖幅・袖口の最小（肘が通る周り＋余裕）。0 なら確認しない */
+  minPass: number;
+  /** 袖幅の上乗せ（cm） */
+  extraWidth: number;
 }
 
 export interface SleeveDraft {
@@ -27,6 +31,10 @@ export interface SleeveDraft {
   width: number;
   capLength: number;
   targetCapLength: number;
+  /** 肘が通るように袖幅を広げた */
+  widenedWidth: boolean;
+  /** 肘が通るように袖口を広げた */
+  widenedHem: boolean;
   warnings: string[];
 }
 
@@ -41,7 +49,9 @@ export function draftSleeve(s: SleeveInput): SleeveDraft {
   const warnings: string[] = [];
   const armholeTotal = s.frontArmholeLength + s.backArmholeLength;
   const target = armholeTotal * (1 + s.capEase);
-  const width = Math.max(s.upperArm + s.armEase, armholeTotal * s.widthRatio);
+  const baseWidth = Math.max(s.upperArm + s.armEase, armholeTotal * s.widthRatio) + s.extraWidth;
+  const widenedWidth = s.minPass > baseWidth;
+  const width = Math.max(baseWidth, s.minPass);
   const wb = width / 2 + width * 0.02;
   const wf = width / 2 - width * 0.02;
 
@@ -70,8 +80,11 @@ export function draftSleeve(s: SleeveInput): SleeveDraft {
     len = h + 0.5;
     warnings.push('袖丈が袖山より短いため、袖山の下 0.5cm まで延ばしました。');
   }
-  const hb = wb * s.hemRatio;
-  const hf = wf * s.hemRatio;
+  // 袖口は袖幅 × hemRatio。ただし肘が通る周りより細くしない
+  const hemTotal = Math.max(width * s.hemRatio, s.minPass);
+  const widenedHem = s.minPass > width * s.hemRatio;
+  const hb = (hemTotal / width) * wb;
+  const hf = (hemTotal / width) * wf;
 
   const piece: Piece = {
     id: 'sleeve',
@@ -87,5 +100,5 @@ export function draftSleeve(s: SleeveInput): SleeveDraft {
     grain: [v(0, h * 0.6 + 0.2), v(0, len - (len - h) * 0.25)],
   };
 
-  return { piece, capHeight: h, width, capLength: capLen(h), targetCapLength: target, warnings };
+  return { piece, capHeight: h, width, capLength: capLen(h), targetCapLength: target, widenedWidth, widenedHem, warnings };
 }

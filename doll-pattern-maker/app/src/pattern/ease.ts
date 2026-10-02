@@ -1,4 +1,7 @@
 // 布の種類ごとのゆとり量（cm）。値は仮置きで、試作して調整する。
+//
+// ゆとり ＝ 採寸値 × 割合 ＋ 固定分（布の厚み・関節の出っ張りの分）
+// 固定分はドールの大きさに関係なく同じ長さなので、小さいドールほどゆとりの割合が自然に大きくなる。
 
 import { Fabric } from './types';
 
@@ -6,23 +9,30 @@ export interface EaseSet {
   chest: number;
   hip: number;
   arm: number;
+  /** 袖ぐり（腕の付け根回りに足す長さ） */
+  armhole: number;
+  /** 肘・手が通る周りに足す余裕 */
+  pass: number;
 }
 
-/**
- * 布帛（伸びない布）: 動くための余裕と布の厚みの分を足す。
- * ニット（伸びる布）: 体にほぼ沿わせる。伸び率は通過チェック（フェーズ2）と縁取り布の長さに使う。
- */
-export function defaultEase(fabric: Fabric, m: { chest: number; hip: number; upperArm: number }): EaseSet {
+export function defaultEase(
+  fabric: Fabric,
+  m: { chest: number; hip: number; upperArm: number; armhole: number },
+): EaseSet {
   if (fabric === 'woven') {
     return {
       chest: m.chest * 0.1 + 0.5,
       hip: m.hip * 0.08 + 0.4,
       arm: m.upperArm * 0.2 + 0.3,
+      armhole: m.armhole * 0.1 + 0.4,
+      pass: 0.3,
     };
   }
   return {
-    chest: m.chest * 0.03,
-    hip: m.hip * 0.02,
-    arm: m.upperArm * 0.08,
+    chest: m.chest * 0.03 + 0.2,
+    hip: m.hip * 0.02 + 0.2,
+    arm: m.upperArm * 0.08 + 0.3,
+    armhole: m.armhole * 0.06 + 0.3,
+    pass: 0.1,
   };
 }

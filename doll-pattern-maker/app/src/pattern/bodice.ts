@@ -29,7 +29,7 @@ export interface BodiceOptions {
   shoulderExtend: number;
   /** 裾の位置（ウエストから下へ cm。マイナスで短くなる） */
   hemBelowWaist: number;
-  /** 袖ぐりのゆとり（腕の付け根回りに対する割合） */
+  /** 袖ぐりのゆとり（腕の付け根回りに足す長さ cm） */
   armholeEase: number;
   /** 背中開き */
   backOpening: boolean;
@@ -93,7 +93,7 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
 
   // 胸の線の高さ: 前後の袖ぐりの長さが「腕の付け根回り＋ゆとり」になる深さを二分法で求める
   const waistY = backNeckDepth + m.backLength;
-  const armholeTarget = m.armhole * (1 + o.armholeEase);
+  const armholeTarget = m.armhole + o.armholeEase;
   let lo = Math.max(backSP.y, frontSP.y) + 0.3;
   let hi = backNeckDepth + m.backLength * 0.8;
   if (armholeTotal(hi) < armholeTarget) {

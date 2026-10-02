@@ -22,6 +22,10 @@ export interface TshirtParams {
   extraChestEase: number;
   /** 前襟ぐりの下げ（cm） */
   frontNeckDrop: number;
+  /** 袖幅の上乗せ（cm、マイナス可） */
+  extraSleeveWidth: number;
+  /** 袖ぐりのゆとりの上乗せ（cm、マイナス可） */
+  extraArmholeEase: number;
 }
 
 export const DEFAULT_TSHIRT: TshirtParams = {
@@ -32,6 +36,8 @@ export const DEFAULT_TSHIRT: TshirtParams = {
   sleeveRatio: 0.3,
   extraChestEase: 0,
   frontNeckDrop: 0,
+  extraSleeveWidth: 0,
+  extraArmholeEase: 0,
 };
 
 /** Tシャツに必要な採寸項目。hard は推定できない（ないと作図できない）もの */
@@ -46,6 +52,7 @@ export const TSHIRT_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [
   { key: 'front_length', hard: false },
   { key: 'armhole_circ', hard: false },
   { key: 'upper_arm_circ', hard: false },
+  { key: 'elbow_pass_circ', hard: false },
   { key: 'waist_to_hip', hard: false },
 ];
 
@@ -57,8 +64,14 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
   const val = (k: MeasurementKey) => r.values[k] as number;
   const woven = p.fabric === 'woven';
 
-  const ease = defaultEase(p.fabric, { chest: val('chest_circ'), hip: val('hip_circ'), upperArm: val('upper_arm_circ') });
+  const ease = defaultEase(p.fabric, {
+    chest: val('chest_circ'),
+    hip: val('hip_circ'),
+    upperArm: val('upper_arm_circ'),
+    armhole: val('armhole_circ'),
+  });
   ease.chest += p.extraChestEase;
+  ease.armhole += p.extraArmholeEase;
 
   const chest = val('chest_circ');
   const openingExt = Math.min(1.5, Math.max(0.6, chest * 0.05));
@@ -81,7 +94,7 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
       frontNeckDrop: p.frontNeckDrop,
       shoulderExtend: val('shoulder_width') * 0.03,
       hemBelowWaist: p.hemBelowWaist ?? val('waist_to_hip') * 0.8,
-      armholeEase: woven ? 0.1 : 0.03,
+      armholeEase: ease.armhole,
       backOpening: p.backOpening,
       openingExt,
     },
@@ -96,9 +109,12 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
     armEase: ease.arm,
     armLength: val('arm_length'),
     lengthRatio: p.sleeveRatio,
-    widthRatio: woven ? 0.7 : 0.82,
+    widthRatio: woven ? 0.75 : 0.88,
     capEase: woven ? 0.03 : 0,
     hemRatio: 0.95,
+    // 着せるとき肘の関節が袖口を通るので、袖幅・袖口とも肘が通る周り＋余裕以上にする
+    minPass: val('elbow_pass_circ') + ease.pass,
+    extraWidth: p.extraSleeveWidth,
   });
 
   // 襟ぐりの縁取り布
@@ -126,8 +142,12 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
     `袖ぐり ${fmt(frontAH + backAH)}cm ／ 袖山 ${fmt(sleeve.capLength)}cm（いせ ${fmt(sleeve.capLength - (frontAH + backAH))}cm）`,
     `袖幅 ${fmt(sleeve.width)}cm ／ 袖山の高さ ${fmt(sleeve.capHeight)}cm`,
     `襟ぐり ${fmt(neckTotal)}cm ／ 縁取り布 ${fmt(bindLen)}cm × 仕上がり幅 ${fmt(finished)}cm`,
-    `胸のゆとり ${fmt(ease.chest)}cm（${woven ? '布帛' : 'ニット'}）`,
+    `胸のゆとり ${fmt(ease.chest)}cm ／ 袖ぐりのゆとり ${fmt(ease.armhole)}cm（${woven ? '布帛' : 'ニット'}）`,
+    `袖口 ${fmt(sleeve.piece.edges.find((e) => e.kind === 'hem')!.segs.reduce((a, s) => a + Math.abs(s.to.x - s.from.x), 0))}cm ／ 肘が通る周り ${fmt(val('elbow_pass_circ'))}cm`,
   ];
+  if (sleeve.widenedWidth || sleeve.widenedHem) {
+    info.push(`肘が通るように${sleeve.widenedWidth ? '袖幅' : ''}${sleeve.widenedWidth && sleeve.widenedHem ? 'と' : ''}${sleeve.widenedHem ? '袖口' : ''}を広げました`);
+  }
   if (p.backOpening) info.push(`背中開きの持ち出し ${fmt(openingExt)}cm`);
 
   return {
