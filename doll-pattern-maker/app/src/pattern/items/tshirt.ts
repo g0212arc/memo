@@ -6,7 +6,8 @@ import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { draftBodice } from '../bodice';
 import { draftSleeve } from '../sleeve';
-import { defaultEase } from '../ease';
+import { defaultEase, scaleEase } from '../ease';
+import { CATEGORY_EASE } from '../../model/category';
 import { DraftResult, Fabric, Piece } from '../types';
 
 export interface TshirtParams {
@@ -64,12 +65,16 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
   const val = (k: MeasurementKey) => r.values[k] as number;
   const woven = p.fabric === 'woven';
 
-  const ease = defaultEase(p.fabric, {
+  const categoryEase = r.category ? CATEGORY_EASE[r.category] : 1;
+  const ease = scaleEase(
+    defaultEase(p.fabric, {
     chest: val('chest_circ'),
     hip: val('hip_circ'),
     upperArm: val('upper_arm_circ'),
-    armhole: val('armhole_circ'),
-  });
+      armhole: val('armhole_circ'),
+    }),
+    categoryEase,
+  );
   ease.chest += p.extraChestEase;
   ease.armhole += p.extraArmholeEase;
 
@@ -149,6 +154,9 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
     info.push(`肘が通るように${sleeve.widenedWidth ? '袖幅' : ''}${sleeve.widenedWidth && sleeve.widenedHem ? 'と' : ''}${sleeve.widenedHem ? '袖口' : ''}を広げました`);
   }
   if (p.backOpening) info.push(`背中開きの持ち出し ${fmt(openingExt)}cm`);
+  info.push(
+    `カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`,
+  );
 
   return {
     pieces: [bodice.front, bodice.back, sleeve.piece, binding],

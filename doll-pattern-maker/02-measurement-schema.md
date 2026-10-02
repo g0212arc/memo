@@ -70,6 +70,7 @@
   "name": "甘蔗三代",                // ボディ名（画像の表記どおり）
   "maker": "糖果星系 BonBonGalaxy",   // わかれば
   "source": "メーカー公式の採寸画像",   // どこから取ったか
+  "category": "棍六",               // 特六 / 小六 / 1/6 / 棍六 / 1/4 / 大四 / 特四 / 1/3 / 叔体（表記があれば）
   "measurements": {
     "chest_circ": { "value": 11.4, "raw_label": "胸围" },
     // バリエーションがある項目: value は最初の値、variants に全部

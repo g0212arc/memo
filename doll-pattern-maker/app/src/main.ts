@@ -5,6 +5,7 @@ import { resolveBody, ResolvedBody } from './model/estimate';
 import { DEF_BY_KEY, MEASUREMENTS, MeasurementKey } from './model/schema';
 import { buildImportPrompt } from './model/prompt';
 import { SAMPLE_BODIES } from './samples';
+import { CATEGORIES, Category, guessCategory, isCategory } from './model/category';
 import { loadBodies, loadState, saveBodies, saveState, UiState } from './store';
 import { DEFAULT_TSHIRT, draftTshirt, MissingMeasurementsError, TSHIRT_REQUIREMENTS } from './pattern/items/tshirt';
 import { DraftResult } from './pattern/types';
@@ -70,9 +71,21 @@ function render() {
 
 function renderPanel(cur: Current) {
   const { body, resolved } = cur;
-  const opts = bodies
-    .map((b) => `<option value="${esc(b.id)}"${b.id === body.id ? ' selected' : ''}>${esc(b.name)}${b.sample ? '（サンプル）' : ''}</option>`)
-    .join('');
+  // カテゴリごとに見出しを付けて並べる（カテゴリがないボディは身長からの仮のカテゴリに入れる）
+  const catOf = (b: Body): { cat: Category | null; guessed: boolean } =>
+    b.category ? { cat: b.category, guessed: false } : { cat: guessCategory(b), guessed: true };
+  const option = (b: Body, guessed: boolean) =>
+    `<option value="${esc(b.id)}"${b.id === body.id ? ' selected' : ''}>${esc(b.name)}${guessed ? '（仮）' : ''}</option>`;
+  const groups = [...CATEGORIES, null].map((c) => {
+    const items = bodies.filter((b) => catOf(b).cat === c);
+    if (!items.length) return '';
+    return `<optgroup label="${c ?? '未分類'}">${items.map((b) => option(b, catOf(b).guessed)).join('')}</optgroup>`;
+  });
+  const opts = groups.join('');
+  const bodyCat = catOf(body);
+  const catOpts = CATEGORIES.map(
+    (c) => `<option value="${c}"${c === bodyCat.cat ? ' selected' : ''}>${c}${c === bodyCat.cat && bodyCat.guessed ? '（仮）' : ''}</option>`,
+  ).join('');
 
   const variantRows = (Object.entries(body.measurements) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][])
     .filter(([, m]) => m.variants && m.variants.length > 1)
@@ -108,6 +121,7 @@ function renderPanel(cur: Current) {
   $('panel').innerHTML = `
     <h2>ボディ</h2>
     <div class="row"><select id="body-select">${opts}</select></div>
+    <div class="row"><label>カテゴリ</label><select id="body-category">${bodyCat.cat ? '' : '<option value="" selected>未分類</option>'}${catOpts}</select>${bodyCat.guessed && bodyCat.cat ? '<span class="help">身長からの仮のカテゴリです。正しいカテゴリを選んでください。</span>' : ''}</div>
     <div class="row">
       <button id="open-import" class="primary">採寸を取り込む</button>
       <button id="export-body">JSONで保存</button>
@@ -220,6 +234,8 @@ document.addEventListener('change', (ev) => {
     st.bodyId = el.value;
   } else if (el.id === 'zoom') {
     zoom = Number(el.value);
+  } else if (el.id === 'body-category') {
+    if (isCategory(el.value)) editableBody().category = el.value;
   } else if (el.dataset.variant) {
     const b = currentBody();
     st.variants[b.id] = { ...st.variants[b.id], [el.dataset.variant]: Number(el.value) };

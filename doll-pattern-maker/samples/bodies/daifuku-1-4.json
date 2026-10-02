@@ -3,21 +3,82 @@
   "name": "大福体 四分",
   "maker": "JQ老师",
   "source": "小红书の採寸画像（大福体 四分尺寸数据）",
+  "category": "1/4",
   "measurements": {
-    "height": { "value": 38.5, "raw_label": "身高" },
-    "arm_length": { "value": 12.6, "raw_label": "手臂长" },
-    "inseam": { "value": 22.8, "raw_label": "裆到脚底腿长" },
-    "neck_circ": { "value": 6.6, "raw_label": "脖围" },
-    "shoulder_width": { "value": 8.5, "raw_label": "肩宽" },
-    "chest_circ": { "value": 22.1, "raw_label": "胸围", "variants": [{ "label": "胸1", "value": 22.1 }, { "label": "胸2", "value": 20.3 }, { "label": "胸3", "value": 19.1 }, { "label": "胸4", "value": 17.7 }] },
-    "waist_circ": { "value": 14.8, "raw_label": "腰围" },
-    "hip_circ": { "value": 25.5, "raw_label": "臀围" },
-    "thigh_circ": { "value": 15.2, "raw_label": "大腿围" },
-    "calf_circ": { "value": 9.5, "raw_label": "小腿围" },
-    "upper_arm_circ": { "value": 6.7, "raw_label": "上臂围" },
-    "wrist_joint_diam": { "value": 1.1, "raw_label": "手球直径" },
-    "foot_length": { "value": 5.2, "raw_label": "脚长" },
-    "foot_width": { "value": 2.3, "raw_label": "脚宽" }
+    "height": {
+      "value": 38.5,
+      "raw_label": "身高"
+    },
+    "arm_length": {
+      "value": 12.6,
+      "raw_label": "手臂长"
+    },
+    "inseam": {
+      "value": 22.8,
+      "raw_label": "裆到脚底腿长"
+    },
+    "neck_circ": {
+      "value": 6.6,
+      "raw_label": "脖围"
+    },
+    "shoulder_width": {
+      "value": 8.5,
+      "raw_label": "肩宽"
+    },
+    "chest_circ": {
+      "value": 22.1,
+      "raw_label": "胸围",
+      "variants": [
+        {
+          "label": "胸1",
+          "value": 22.1
+        },
+        {
+          "label": "胸2",
+          "value": 20.3
+        },
+        {
+          "label": "胸3",
+          "value": 19.1
+        },
+        {
+          "label": "胸4",
+          "value": 17.7
+        }
+      ]
+    },
+    "waist_circ": {
+      "value": 14.8,
+      "raw_label": "腰围"
+    },
+    "hip_circ": {
+      "value": 25.5,
+      "raw_label": "臀围"
+    },
+    "thigh_circ": {
+      "value": 15.2,
+      "raw_label": "大腿围"
+    },
+    "calf_circ": {
+      "value": 9.5,
+      "raw_label": "小腿围"
+    },
+    "upper_arm_circ": {
+      "value": 6.7,
+      "raw_label": "上臂围"
+    },
+    "wrist_joint_diam": {
+      "value": 1.1,
+      "raw_label": "手球直径"
+    },
+    "foot_length": {
+      "value": 5.2,
+      "raw_label": "脚长"
+    },
+    "foot_width": {
+      "value": 2.3,
+      "raw_label": "脚宽"
+    }
   },
   "unmapped": [],
   "ambiguities": [

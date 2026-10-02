@@ -74,3 +74,42 @@ describe('推定（サンプル5体）', () => {
     expect(resolveBody(d, { chest_circ: 3 }).values.chest_circ).toBe(17.7);
   });
 });
+
+describe('カテゴリ', async () => {
+  const { normalizeCategory, guessCategory, CATEGORIES } = await import('../src/model/category');
+
+  it('サンプルは全部カテゴリが決まっている', () => {
+    for (const b of SAMPLE_BODIES) expect(CATEGORIES).toContain(b.category);
+  });
+
+  it('表記ゆれを正規化する', () => {
+    expect(normalizeCategory('四分')).toBe('1/4');
+    expect(normalizeCategory('六分')).toBe('1/6');
+    expect(normalizeCategory('1／3')).toBe('1/3');
+    expect(normalizeCategory('特六')).toBe('特六');
+    expect(normalizeCategory('叔体')).toBe('叔体');
+    expect(normalizeCategory('なにか')).toBeNull();
+  });
+
+  it('取り込み時にカテゴリを読む。分からない表記は警告して身長から仮にする', () => {
+    const ok = parseImport('{"name":"A","category":"四分","measurements":{"chest_circ":20}}');
+    expect(ok.bodies[0].category).toBe('1/4');
+    const ng = parseImport('{"name":"B","category":"謎","measurements":{"height_with_head":30,"chest_circ":12}}');
+    expect(ng.bodies[0].category).toBeUndefined();
+    expect(ng.warnings.some((w) => w.includes('カテゴリ'))).toBe(true);
+    const r = resolveBody(ng.bodies[0]);
+    expect(r.category).toBe('1/6');
+    expect(r.categoryGuessed).toBe(true);
+  });
+
+  it('身長から仮のカテゴリを出す', () => {
+    const mk = (m: Record<string, number>) => parseImport(JSON.stringify({ name: 'x', measurements: m })).bodies[0];
+    expect(guessCategory(mk({ height_with_head: 45 }))).toBe('1/4');
+    expect(guessCategory(mk({ height: 48 }))).toBe('1/3');
+    expect(guessCategory(mk({ chest_circ: 10 }))).toBeNull();
+  });
+
+  it('プロンプトにカテゴリの説明が入っている', () => {
+    expect(buildImportPrompt()).toContain('category');
+  });
+});

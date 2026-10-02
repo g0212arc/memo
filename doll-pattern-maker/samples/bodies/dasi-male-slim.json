@@ -1,8 +1,9 @@
 {
   "schema": "doll-body/v1",
-  "name": "大四男体（痩体）",
+  "name": "两张半",
   "maker": "",
   "source": "1/4ドールボディ サイズ比較表（7種）",
+  "category": "大四",
   "measurements": {
     "height": {
       "value": 40.5,

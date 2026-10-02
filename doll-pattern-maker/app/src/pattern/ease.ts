@@ -15,6 +15,11 @@ export interface EaseSet {
   pass: number;
 }
 
+/** カテゴリの掛け率などで、ゆとりをまとめて k 倍する */
+export function scaleEase(e: EaseSet, k: number): EaseSet {
+  return { chest: e.chest * k, hip: e.hip * k, arm: e.arm * k, armhole: e.armhole * k, pass: e.pass * k };
+}
+
 export function defaultEase(
   fabric: Fabric,
   m: { chest: number; hip: number; upperArm: number; armhole: number },

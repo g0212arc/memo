@@ -3,6 +3,7 @@
   "name": "MDD",
   "maker": "ボークス",
   "source": "Volks 公式サイト（MDD ベースボディ2.0 Body Data）",
+  "category": "1/4",
   "measurements": {
     "height_with_head": {
       "value": 43.5,

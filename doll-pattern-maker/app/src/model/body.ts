@@ -1,6 +1,7 @@
 // ボディの型と、Claude アプリの返答（貼り付け文）からの取り込み。
 
 import { isMeasurementKey, MeasurementKey, DEF_BY_KEY } from './schema';
+import { Category, normalizeCategory } from './category';
 
 export type ValueSource = 'maker' | 'measured' | 'estimated';
 
@@ -29,6 +30,8 @@ export interface Body {
   name: string;
   maker?: string;
   source?: string;
+  /** カテゴリ（特六〜叔体）。ない場合は身長から仮のカテゴリを出す */
+  category?: Category;
   measurements: Partial<Record<MeasurementKey, Measurement>>;
   unmapped: Unmapped[];
   ambiguities: string[];
@@ -139,6 +142,12 @@ export function normalizeBody(raw: unknown): { body: Body; warnings: string[] } 
     unmapped: [],
     ambiguities: Array.isArray(o.ambiguities) ? o.ambiguities.filter((a): a is string => typeof a === 'string') : [],
   };
+
+  if (o.category !== undefined && o.category !== null && o.category !== '') {
+    const c = normalizeCategory(o.category);
+    if (c) body.category = c;
+    else warnings.push(`カテゴリ「${String(o.category)}」が分からないので、身長から仮のカテゴリを使います。`);
+  }
 
   if (Array.isArray(o.unmapped)) {
     for (const u of o.unmapped) {

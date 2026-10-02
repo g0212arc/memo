@@ -3,11 +3,15 @@
 
 import { Body, ValueSource } from './body';
 import { MeasurementKey } from './schema';
+import { Category, guessCategory } from './category';
 
 export type VariantSelection = Partial<Record<MeasurementKey, number>>;
 
 export interface ResolvedBody {
   name: string;
+  /** カテゴリ（ボディに書かれていなければ身長からの仮） */
+  category: Category | null;
+  categoryGuessed: boolean;
   values: Partial<Record<MeasurementKey, number>>;
   sources: Partial<Record<MeasurementKey, ValueSource>>;
   /** 推定値の出し方の説明 */
@@ -18,7 +22,16 @@ export interface ResolvedBody {
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
 export function resolveBody(body: Body, sel: VariantSelection = {}): ResolvedBody {
-  const res: ResolvedBody = { name: body.name, values: {}, sources: {}, notes: {}, warnings: [] };
+  const guessed = body.category ? null : guessCategory(body);
+  const res: ResolvedBody = {
+    name: body.name,
+    category: body.category ?? guessed,
+    categoryGuessed: !body.category && guessed !== null,
+    values: {},
+    sources: {},
+    notes: {},
+    warnings: [],
+  };
 
   for (const [k, m] of Object.entries(body.measurements) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][]) {
     const idx = sel[k];
