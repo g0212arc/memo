@@ -141,6 +141,15 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['pleats-front/ウエスト', 'pleats-front/ウエスト（ひだ）', 'pleats-back/ウエスト', 'pleats-back/ウエスト（持ち出し）', 'skirt-back/ウエスト'], b: ['waistband/ウエスト側#0'], check: 'none', note: '（ひだをたたんでから）' },
   ],
 
+  tiered: [
+    { a: ['tier1-back/後ろ中心'], note: '（左右を縫い合わせる）' },
+    ...[1, 2, 3, 4].flatMap((k) => [
+      { a: [`tier${k}-front/脇`, `tier${k}-back/脇`] },
+      ...(k > 1 ? [{ a: [`tier${k - 1}-front/段の下`, `tier${k - 1}-back/段の下`], b: [`tier${k}-front/段の上（ギャザー）`, `tier${k}-back/段の上（ギャザー）`], check: 'none' as const, note: '（ギャザーを寄せて）' }] : []),
+    ]),
+    { a: ['tier1-front/ウエスト', 'tier1-back/ウエスト', 'tier1-back/ウエスト（持ち出し）'], b: ['waistband/ウエスト側#0'], check: 'none' },
+  ],
+
   camisole: [
     { a: ['front/脇'], b: ['back/脇'] },
     { a: ['front-lining/脇'], b: ['back-lining/脇'] },

@@ -46,6 +46,7 @@ import { TIGHTS_BUST_DART_RATIO } from '../bust';
 import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
 import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
 import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
+import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
 import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
@@ -504,6 +505,42 @@ const ITEM_LIST_RAW: ItemDef[] = [
       ...extFields((p) => p.waist === 'belt'),
     ],
     draft: (r, p) => draftPleats(r, p as unknown as PleatsParams),
+  },
+  {
+    id: 'tiered',
+    label: 'ティアードスカート',
+    defaults: { ...DEFAULT_TIERED, ...EXT_DEFAULTS },
+    requirements: TIERED_REQUIREMENTS,
+    fields: [
+      { kind: 'select', key: 'tiers', label: '段の数', options: [['2', '2 段'], ['3', '3 段'], ['4', '4 段'], ['custom', '自分で入力']] },
+      { kind: 'number', key: 'tiersCustom', label: '段の数', step: 1, min: 2, max: 6, unit: '段', nullable: true, placeholder: '3', show: (p) => p.tiers === 'custom' },
+      { kind: 'radio', key: 'heights', label: '段の高さ', options: Object.entries(TIERED_HEIGHTS_LABEL) as [string, string][] },
+      {
+        kind: 'select',
+        key: 'gather',
+        label: 'ギャザーの量',
+        options: Object.entries(TIERED_GATHER_LABEL) as [string, string][],
+        help: '下の段を、上の段の何倍の長さにするか。',
+      },
+      { kind: 'number', key: 'gatherCustom', label: 'ギャザーの量', step: 0.1, min: 1, max: 4, unit: '倍', nullable: true, placeholder: '1.5', show: (p) => p.gather === 'custom' },
+      { kind: 'radio', key: 'top', label: '一番上の段', options: Object.entries(TIERED_TOP_LABEL) as [string, string][] },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'waist', label: 'ウエスト', options: [['elastic', 'ゴム'], ['belt', 'ベルト付き（後ろ開き）']] },
+      ...extFields((p) => p.waist === 'belt'),
+      { kind: 'radio', key: 'hem', label: '裾', options: [['fold', '三つ折り'], ['lace', 'レース付け']] },
+    ],
+    draft: (r, p) => draftTiered(r, p as unknown as TieredParams),
   },
   {
     id: 'camisole',
@@ -1254,6 +1291,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   pants: 'ボトムス',
   skirt: 'ボトムス',
   pleats: 'ボトムス',
+  tiered: 'ボトムス',
   camisole: 'その他',
   cape: 'その他',
   yukata: 'その他',
