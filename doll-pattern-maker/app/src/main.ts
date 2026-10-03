@@ -11,7 +11,7 @@ import { MissingMeasurementsError } from './pattern/items/tshirt';
 import { bustLarge } from './pattern/bust';
 import { FieldCtx, FieldSpec, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
 import { DraftResult } from './pattern/types';
-import { layoutPieces, Layout } from './render/layout';
+import { A4_PRINT_H, A4_PRINT_W, layoutPieces, Layout, parsePages } from './render/layout';
 import { drawCommands, Cmd } from './render/draw';
 import { toSvg } from './render/svg';
 
@@ -180,11 +180,16 @@ function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: Fiel
     .join('');
 }
 
+/** PDF に出すページの指定（例: 1,3-4。空欄で全部）。画面を描き直しても消えないよう保持する */
+let pdfPages = '';
+
 function renderToolbar(cur: Current) {
   const disabled = cur.layout ? '' : ' disabled';
   $('toolbar').innerHTML = `
     <label class="item-pick">アイテム <select id="item-select">${ITEMS.map((i) => `<option value="${i.id}"${i.id === cur.item.id ? ' selected' : ''}>${esc(i.label)}</option>`).join('')}</select></label>
     <button id="save-pdf" class="primary"${disabled}>PDFを保存（A4・原寸）</button>
+    <label class="pages">ページ <input id="pdf-pages" type="text" inputmode="numeric" placeholder="全部" value="${esc(pdfPages)}" size="8"></label>
+    <span class="note">${cur.layout ? `全 ${cur.layout.cols * cur.layout.rows} ページ` : ''}</span>
     <button id="save-svg"${disabled}>SVGを保存</button>
     <label class="zoom">表示倍率
       <select id="zoom">${[0.5, 1, 2, 3].map((z) => `<option value="${z}"${z === zoom ? ' selected' : ''}>${z * 100}%</option>`).join('')}</select>
@@ -217,7 +222,13 @@ function renderCanvas(cur: Current) {
   }
   const w = cur.layout.width * 10;
   const h = cur.layout.height * 10;
-  $('canvas').innerHTML = toSvg(cur.cmds, { widthMm: w, heightMm: h, grid: true });
+  const L = cur.layout;
+  $('canvas').innerHTML = toSvg(cur.cmds, {
+    widthMm: w,
+    heightMm: h,
+    grid: true,
+    pages: { wMm: A4_PRINT_W * 10, hMm: A4_PRINT_H * 10, cols: L.cols, rows: L.rows },
+  });
   const svg = $('canvas').querySelector('svg')!;
   svg.setAttribute('width', `${w * zoom}mm`);
   svg.setAttribute('height', `${h * zoom}mm`);
@@ -266,6 +277,11 @@ const safeName = (s: string) => s.replace(/[\\/:*?"<>|\s]+/g, '_');
 
 document.addEventListener('change', (ev) => {
   const el = ev.target as HTMLInputElement | HTMLSelectElement;
+  // ページの指定は PDF を保存するときに読むだけなので、描き直さない
+  if (el.id === 'pdf-pages') {
+    pdfPages = el.value;
+    return;
+  }
   if (el.id === 'body-select') {
     st.bodyId = el.value;
   } else if (el.id === 'zoom') {
@@ -389,7 +405,13 @@ document.addEventListener('click', async (ev) => {
       el.setAttribute('disabled', '');
       try {
         const { buildPdf, canvasRasterizer } = await import('./render/pdf');
-        const doc = buildPdf(c.cmds, c.layout.width * 10, c.layout.height * 10, canvasRasterizer());
+        pdfPages = $<HTMLInputElement>('pdf-pages').value;
+        const sel = parsePages(pdfPages, c.layout.cols * c.layout.rows);
+        if ('error' in sel) {
+          alert(sel.error);
+          return;
+        }
+        const doc = buildPdf(c.cmds, c.layout.width * 10, c.layout.height * 10, canvasRasterizer(), sel.pages);
         download(`${safeName(c.body.name)}_${c.item.label}.pdf`, doc.output('blob'));
       } finally {
         el.removeAttribute('disabled');

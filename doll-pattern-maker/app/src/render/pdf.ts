@@ -37,14 +37,19 @@ export function canvasRasterizer(): TextRasterizer {
 
 const hex = (c: string) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)] as const;
 
-export function buildPdf(cmds: Cmd[], widthMm: number, heightMm: number, raster: TextRasterizer): jsPDF {
+/** pages: 出力するページ番号（1 から。左上から右へ、行ごと）。省略すると全部 */
+export function buildPdf(cmds: Cmd[], widthMm: number, heightMm: number, raster: TextRasterizer, pages?: number[]): jsPDF {
   const cols = Math.max(1, Math.ceil(widthMm / PW - 1e-6));
   const rows = Math.max(1, Math.ceil(heightMm / PH - 1e-6));
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
+  const total = rows * cols;
+  const want = new Set(pages ?? Array.from({ length: total }, (_, i) => i + 1));
   let first = true;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
+      const n = r * cols + c + 1;
+      if (!want.has(n)) continue;
       if (!first) doc.addPage('a4', 'portrait');
       first = false;
       const ox = M - c * PW;
@@ -65,7 +70,7 @@ export function buildPdf(cmds: Cmd[], widthMm: number, heightMm: number, raster:
       doc.rect(M, M, PW, PH);
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
-      doc.text(`${r + 1}-${c + 1}  (${rows} x ${cols})`, PAGE_W - M, PAGE_H - M + 5, { align: 'right' });
+      doc.text(`p.${n} / ${total}${cols > 1 ? `  (row ${r + 1}, col ${c + 1})` : ''}`, PAGE_W - M, PAGE_H - M + 5, { align: 'right' });
       doc.text('Print at 100% (actual size)', M, PAGE_H - M + 5);
     }
   }
