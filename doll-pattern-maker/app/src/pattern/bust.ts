@@ -6,8 +6,8 @@ import { Fabric } from './types';
 /** 胸囲 ÷ ウエスト がこれ以上なら「胸が大きい」とみなす */
 export const BUST_DART_RATIO = 1.35;
 
-/** 伸びる布のタイツは少しの差なら伸びでなじむので、極端に大きいときだけ */
-export const TIGHTS_BUST_DART_RATIO = 1.5;
+/** タイツの基準（2026-10-03 にほかのアイテムと同じ基準にそろえた。分けたくなったらここを変える） */
+export const TIGHTS_BUST_DART_RATIO = BUST_DART_RATIO;
 
 /** 胸囲 ÷ ウエスト（分からなければ 0） */
 export function bustRatio(values: ResolvedBody['values']): number {

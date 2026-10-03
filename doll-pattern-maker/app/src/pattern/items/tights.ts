@@ -23,7 +23,7 @@ export interface TightsParams {
   snug: Snug;
   /** snug が custom のときに周りを何％小さくするか */
   reduceCustom: number | null;
-  /** 胸ダーツ（胸囲 ÷ ウエスト が 1.5 以上のときだけ効く） */
+  /** 胸ダーツ（胸囲 ÷ ウエスト が基準以上のときだけ効く） */
   bustDart: boolean;
 }
 

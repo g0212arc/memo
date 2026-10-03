@@ -685,7 +685,7 @@ export const ITEMS: ItemDef[] = [
         kind: 'checkbox',
         key: 'bustDart',
         label: '胸ダーツを入れる',
-        help: '胸がとても大きいボディ向け。伸びる布でも胸の下にすき間やしわが出ないよう、脇から胸へダーツを入れます。',
+        help: '胸囲とウエストの差が大きいボディ向け。伸びる布でも胸の下にすき間やしわが出ないよう、脇から胸へダーツを入れます。',
         show: (_p, ctx) => ctx.bustRatio >= TIGHTS_BUST_DART_RATIO,
       },
       {

@@ -63,10 +63,10 @@ describe('タイツのサイズ感と胸ダーツ', () => {
     expect(tightsReduction({ stretch: 40, opening: 'none', snug: 'custom', reduceCustom: 12 })).toBeCloseTo(0.12, 9);
   });
 
-  it('胸囲 ÷ ウエスト が 1.5 以上だけダーツの欄が出て、ダーツ分だけ前の脇が長い', () => {
+  it('胸囲 ÷ ウエスト が 1.35 以上だけダーツの欄が出て、ダーツ分だけ前の脇が長い', () => {
     const field = ITEM_BY_ID.tights.fields.find((f) => f.key === 'bustDart')!;
-    expect(field.show!({}, { category: null, bustLarge: true, bustRatio: 1.45 })).toBe(false);
-    expect(field.show!({}, { category: null, bustLarge: true, bustRatio: 1.55 })).toBe(true);
+    expect(field.show!({}, { category: null, bustLarge: true, bustRatio: 1.3 })).toBe(false);
+    expect(field.show!({}, { category: null, bustLarge: true, bustRatio: 1.4 })).toBe(true);
     const r = resolveBody(SAMPLE_BODIES.find((b) => b.name === '大福体 四分')!);
     r.values.waist_circ = r.values.chest_circ! / 1.6;
     const withDart = draftTights(r, { ...DEFAULT_TIGHTS });
