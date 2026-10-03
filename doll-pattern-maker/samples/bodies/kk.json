@@ -1,0 +1,33 @@
+{
+  "schema": "doll-body/v1",
+  "name": "KK体",
+  "maker": "",
+  "source": "商品ページの採寸画像（MDD 素头の出品ページ）",
+  "category": "1/4",
+  "measurements": {
+    "height": { "value": 35.5, "raw_label": "身高（不含头）" },
+    "height_with_head": { "value": 41.5, "raw_label": "身高（含头）" },
+    "neck_circ": { "value": 6.7, "raw_label": "脖围" },
+    "shoulder_width": { "value": 8, "raw_label": "肩宽" },
+    "chest_circ": { "value": 15.7, "raw_label": "胸围（小胸）" },
+    "waist_circ": { "value": 12.7, "raw_label": "腰围" },
+    "hip_circ": { "value": 21.5, "raw_label": "臀围" },
+    "thigh_circ": { "value": 11.8, "raw_label": "大腿围" },
+    "calf_circ": { "value": 8.8, "raw_label": "小腿围" },
+    "arm_length": { "value": 11.2, "raw_label": "臂长／手臂长" },
+    "inseam": { "value": 21.5, "raw_label": "腿长" },
+    "foot_length": { "value": 5.4, "raw_label": "脚长" },
+    "foot_width": { "value": 2.1, "raw_label": "脚宽" }
+  },
+  "types": [
+    { "label": "小胸", "measurements": {} },
+    { "label": "大胸", "measurements": { "chest_circ": { "value": 20, "raw_label": "胸围（大胸）" } } }
+  ],
+  "unmapped": [],
+  "ambiguities": [
+    "肩幅は表の 8 を使った（図の中では 7.7）",
+    "「腿长」は表の 21.5 を使った（図の中では 21）。股から足裏までの線なので股下として扱った",
+    "「腰围」はウエストとして扱った（臀围が別にある）",
+    "タイプ「小胸」「大胸」は胸囲だけが違う"
+  ]
+}
