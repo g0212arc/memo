@@ -140,5 +140,22 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
   // 腰丈
   if (has('back_length')) est('waist_to_hip', val('back_length') * 0.45, '背丈 × 0.45');
 
+  // 脚まわり（パンツ用）。背丈などの推定に影響しないよう、最後に出す
+  if (!has('inseam') && has('rise')) {
+    if (has('outer_leg_length') && val('outer_leg_length') - val('rise') > val('rise')) {
+      est('inseam', val('outer_leg_length') - val('rise'), '外脚長 − 股上');
+    } else if (has('navel_to_sole') && val('navel_to_sole') - val('rise') > val('rise')) {
+      est('inseam', val('navel_to_sole') - val('rise'), 'へそ〜足裏 − 股上');
+    } else if (has('height')) {
+      est('inseam', val('height') * 0.58, '頭なし身長 × 0.58');
+    }
+  }
+  if (has('hip_circ')) est('thigh_circ', val('hip_circ') * 0.6, 'ヒップ × 0.6');
+  if (has('thigh_circ')) est('calf_circ', val('thigh_circ') * 0.7, '太もも回り × 0.7');
+  if (has('inseam')) est('knee_height', val('inseam') * 0.52, '股下 × 0.52');
+  if (has('height')) est('foot_length', val('height') * 0.15, '頭なし身長 × 0.15');
+  else if (has('inseam')) est('foot_length', val('inseam') * 0.26, '股下 × 0.26');
+  if (has('foot_length')) est('foot_pass_circ', val('foot_length') * 1.5, '足の長さ × 1.5');
+
   return res;
 }

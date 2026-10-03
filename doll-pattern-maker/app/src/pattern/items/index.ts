@@ -6,12 +6,38 @@ import { DraftResult } from '../types';
 import { FIT_LABEL, LENGTH_LABEL } from '../fit';
 import { DEFAULT_TSHIRT, draftTshirt, TSHIRT_REQUIREMENTS, TshirtParams } from './tshirt';
 import { DEFAULT_TURTLENECK, draftTurtleneck, TURTLENECK_REQUIREMENTS, TurtleneckParams } from './turtleneck';
+import { DEFAULT_PANTS, draftPants, flyAvailable, FLY_CATEGORIES, PANTS_LENGTH_LABEL, PANTS_REQUIREMENTS, PantsParams } from './pants';
+import { Category } from '../../model/category';
 
 type Params = Record<string, unknown>;
 
+/** 設定欄を出すときに参照するボディの情報 */
+export interface FieldCtx {
+  category: Category | null;
+}
+
+/** 選択肢を、ボディによって出したり隠したりする */
+type Available = (value: string, ctx: FieldCtx) => boolean;
+
 export type FieldSpec =
-  | { kind: 'radio'; key: string; label: string; options: [string, string][]; help?: string; show?: (p: Params) => boolean }
-  | { kind: 'select'; key: string; label: string; options: [string, string][]; help?: string; show?: (p: Params) => boolean }
+  | {
+      kind: 'radio';
+      key: string;
+      label: string;
+      options: [string, string][];
+      available?: Available;
+      help?: string;
+      show?: (p: Params) => boolean;
+    }
+  | {
+      kind: 'select';
+      key: string;
+      label: string;
+      options: [string, string][];
+      available?: Available;
+      help?: string;
+      show?: (p: Params) => boolean;
+    }
   | {
       kind: 'number';
       key: string;
@@ -129,6 +155,61 @@ export const ITEMS: ItemDef[] = [
       ...fineFields((p) => p.sleeve !== 'none'),
     ],
     draft: (r, p) => draftTurtleneck(r, p as unknown as TurtleneckParams),
+  },
+  {
+    id: 'pants',
+    label: 'パンツ',
+    defaults: { ...DEFAULT_PANTS },
+    requirements: PANTS_REQUIREMENTS,
+    fields: [
+      fabricFields[0],
+      fabricFields[1],
+      {
+        kind: 'radio',
+        key: 'waist',
+        label: 'ウエスト',
+        options: [['elastic', 'ゴム'], ['fly', '前開き（ベルト付き）']],
+        available: (value, ctx) => value !== 'fly' || flyAvailable(ctx.category),
+        help: `前開きは ${FLY_CATEGORIES.join('・')} で選べます。`,
+      },
+      { kind: 'select', key: 'fit', label: '身幅', options: [...fitOptions, ['custom', '自分で入力']], help: 'タイトは裾へ細く、余裕ありはワイド寄りになります。' },
+      {
+        kind: 'number',
+        key: 'hipEaseCustom',
+        label: 'ヒップのゆとり',
+        step: 0.1,
+        min: 0,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通と同じ',
+        help: 'ヒップ周りに足す長さ。脚の形は「普通」になります。',
+        show: (p) => p.fit === 'custom',
+      },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(PANTS_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'inseamCustom',
+        label: '股下（股から裾まで）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: 'くるぶし丈',
+        show: (p) => p.length === 'custom',
+      },
+      {
+        kind: 'number',
+        key: 'hemCustom',
+        label: '裾の周り（片脚）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '身幅で決まる',
+        help: '空欄なら身幅の選択で決まります。',
+      },
+    ],
+    draft: (r, p) => draftPants(r, p as unknown as PantsParams),
   },
 ];
 
