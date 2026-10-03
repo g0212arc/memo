@@ -46,6 +46,7 @@ import { TIGHTS_BUST_DART_RATIO } from '../bust';
 import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
 import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
 import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
+import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -944,6 +945,80 @@ const ITEM_LIST: ItemDef[] = [
     ],
     draft: (r, p) => draftShorts(r, p as unknown as ShortsParams),
   },
+  {
+    id: 'china',
+    label: 'チャイナ服（トップス／スリットドレス）',
+    defaults: { ...DEFAULT_CHINA },
+    requirements: CHINA_REQUIREMENTS,
+    fields: [
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(CHINA_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      {
+        kind: 'select',
+        key: 'slit',
+        label: 'スリットの深さ（両脇）',
+        options: Object.entries(CHINA_SLIT_LABEL) as [string, string][],
+        show: (p) => chinaIsDress(p as unknown as ChinaParams),
+      },
+      {
+        kind: 'number',
+        key: 'slitCustom',
+        label: 'スリットの長さ（裾から）',
+        step: 0.1,
+        min: 0,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => chinaIsDress(p as unknown as ChinaParams) && p.slit === 'custom',
+      },
+      { kind: 'checkbox', key: 'topSlit', label: '脇に短いスリットを入れる', show: (p) => !chinaIsDress(p as unknown as ChinaParams) },
+      {
+        kind: 'radio',
+        key: 'hem',
+        label: '裾',
+        options: [['straight', 'まっすぐ'], ['taper', '少しすぼめる']],
+        show: (p) => chinaIsDress(p as unknown as ChinaParams),
+      },
+      { kind: 'select', key: 'sleeve', label: '袖', options: Object.entries(CHINA_SLEEVE_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'sleeveCustom',
+        label: '袖丈（肩先から）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '半袖',
+        show: (p) => p.sleeve === 'custom',
+      },
+      { kind: 'select', key: 'collar', label: '立ち襟の高さ', options: Object.entries(CHINA_COLLAR_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'collarCustom',
+        label: '立ち襟の高さ',
+        step: 0.1,
+        min: 0.2,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.collar === 'custom',
+      },
+      { ...dartField, show: (_p, ctx) => ctx.bustLarge },
+      { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions },
+      { kind: 'radio', key: 'fitSleeve', label: '袖のフィット', options: fitOptions, show: (p) => chinaHasSleeve(p as unknown as ChinaParams) },
+    ],
+    draft: (r, p) => draftChina(r, { ...(p as unknown as ChinaParams), fabric: 'woven' }),
+  },
 ];
 
 /** 並び順で常に一番下にするアイテム（下着のように服の下に着るもの）。アイテムを足すときも、この順は自動で保たれる */
@@ -967,6 +1042,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   camisole: 'その他',
   cape: 'その他',
   yukata: 'その他',
+  china: 'その他',
   tights: '下着・小物',
   socks: '下着・小物',
   shorts: '下着・小物',
