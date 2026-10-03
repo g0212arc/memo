@@ -2,7 +2,7 @@
   "schema": "doll-body/v1",
   "name": "叔体二代 75cm（Telesthesiadoll 75cm Boy Ver.2）",
   "maker": "Telesthesiadoll",
-  "source": "通販の対応ボディ表（75cm Boy Ver.2（75二代体））",
+  "source": "通販の対応ボディ表（75cm Boy Ver.2（75二代体））、採寸画像（上腕・足首・足の高さ・選べる首）",
   "category": "叔体",
   "measurements": {
     "height_with_head": {
@@ -24,6 +24,10 @@
     "chest_circ": {
       "value": 31.5,
       "raw_label": "バスト"
+    },
+    "upper_arm_circ": {
+      "value": 10.2,
+      "raw_label": "上腕（採寸画像）"
     },
     "waist_circ": {
       "value": 22.5,
@@ -49,6 +53,10 @@
       "value": 17.3,
       "raw_label": "太腿周り"
     },
+    "ankle_circ": {
+      "value": 8.2,
+      "raw_label": "足首（採寸画像）"
+    },
     "foot_length": {
       "value": 8.5,
       "raw_label": "足※"
@@ -56,17 +64,41 @@
     "foot_width": {
       "value": 3.2,
       "raw_label": "足幅"
+    },
+    "foot_height": {
+      "value": 2.5,
+      "raw_label": "足首〜床（採寸画像）"
     }
   },
   "unmapped": [
     {
       "raw_label": "ウィッグ 8〜9インチ",
       "note": "ウィッグサイズ。ケモミミ・ベレー帽・フードの頭囲の目安"
+    },
+    {
+      "raw_label": "肩の線〜ウエストの線（縦）",
+      "value": 11.2,
+      "note": "採寸画像の縦線。背丈（首の付け根から）とは測り始めが違うので使っていない"
     }
   ],
   "ambiguities": [
     "「身長」75 は 75cm ドールの全高として、頭込みの身長として扱った",
     "「袖丈※」は肩先から手首までの腕の長さとして扱った（※の注記は表に載っていない）",
     "「股下※」は股から足裏まで、「足※」は足の長さとして扱った（※の注記は表に載っていない）"
+  ],
+  "types": [
+    {
+      "label": "首 10.5（標準）",
+      "measurements": {}
+    },
+    {
+      "label": "首 13（選べる首）",
+      "measurements": {
+        "neck_circ": {
+          "value": 13,
+          "raw_label": "有13脖子可选"
+        }
+      }
+    }
   ]
 }
