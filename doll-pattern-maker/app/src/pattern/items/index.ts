@@ -43,6 +43,7 @@ import { DEFAULT_HOODIE, draftHoodie, HOODIE_LENGTH_LABEL, HOODIE_REQUIREMENTS, 
 import { HEAD_SIZES } from '../hood';
 import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, YukataParams } from './yukata';
 import { TIGHTS_BUST_DART_RATIO } from '../bust';
+import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -185,6 +186,50 @@ const ITEM_LIST: ItemDef[] = [
       ...fineFields(),
     ],
     draft: (r, p) => draftTshirt(r, p as unknown as TshirtParams),
+  },
+  {
+    id: 'raglan',
+    label: 'ラグラン袖シャツ',
+    defaults: { ...DEFAULT_RAGLAN },
+    requirements: RAGLAN_REQUIREMENTS,
+    fields: [
+      ...fabricFields,
+      dartField,
+      {
+        kind: 'radio',
+        key: 'shoulder',
+        label: '肩の作り',
+        options: [['dart', '1枚袖＋肩ダーツ'], ['two', '2枚袖（肩から袖の外側に縫い目）']],
+        help: '2枚袖は肩の丸みがきれいに出ます。1枚袖は袖の上の三角（ダーツ）を縫います。',
+      },
+      { kind: 'radio', key: 'neck', label: '首まわり', options: [['crew', 'クルーネック'], ['v', 'Vネック']] },
+      { kind: 'select', key: 'sleeve', label: '袖丈', options: Object.entries(RAGLAN_SLEEVE_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'sleeveCustom',
+        label: '袖丈（肩先から）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '半袖',
+        show: (p) => p.sleeve === 'custom',
+      },
+      ...fitFields(),
+      {
+        kind: 'number',
+        key: 'hemBelowWaist',
+        label: '着丈（ウエストから下へ）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '丈の選択',
+        help: '空欄なら「丈」の選択で決まります。マイナスで短くなります。',
+      },
+      { kind: 'number', key: 'frontNeckDrop', label: '前襟ぐりを下げる', step: 0.1, unit: 'cm', help: 'Vネックでは V が深くなります。' },
+      ...fineFields(),
+    ],
+    draft: (r, p) => draftRaglan(r, p as unknown as RaglanParams),
   },
   {
     id: 'turtleneck',
@@ -823,6 +868,7 @@ export type ItemGroup = (typeof ITEM_GROUPS)[number];
 export const ITEM_GROUP: Record<string, ItemGroup> = {
   tshirt: 'トップス',
   turtleneck: 'トップス',
+  raglan: 'トップス',
   yshirt: 'トップス',
   sailor: 'トップス',
   hoodie: 'トップス',
