@@ -1,8 +1,8 @@
 {
   "schema": "doll-body/v1",
-  "name": "囝囝体（H肩）",
+  "name": "囝囝体",
   "maker": "",
-  "source": "1/4ドールボディ サイズ比較表（7種）",
+  "source": "UF doll 1/4 MAN の採寸画像（T型肩・H型肩）と、長腿版・原腿版囝囝体の表（2026-10-03 更新）",
   "category": "大四",
   "measurements": {
     "height": {
@@ -57,9 +57,13 @@
       "value": 7.8,
       "raw_label": "ふくらはぎ囲"
     },
-    "outer_leg_length": {
+    "crotch_to_ankle": {
+      "value": 24.7,
+      "raw_label": "腿长（不含脚）"
+    },
+    "inseam": {
       "value": 27,
-      "raw_label": "脚長（足含む）"
+      "raw_label": "腿长（含脚）"
     },
     "ankle_circ": {
       "value": 6.7,
@@ -74,15 +78,79 @@
       "raw_label": "足幅"
     }
   },
-  "unmapped": [
-    {
-      "raw_label": "脚長",
-      "value": 24.7
-    }
-  ],
+  "unmapped": [],
   "ambiguities": [
-    "表の「腰囲」はウエストとして扱った（臀囲が別にあり、値もウエストの大きさ）",
-    "「脚長」は足首までの長さと思われ、股下とは別物のため取り込まず、その他に回した",
-    "「脚長（足含む）」は外脚長として扱った"
+    "「腰围」はウエストとして扱った（臀围が別にある）",
+    "「腿长（不含脚）」は股から足首、「腿长（含脚）」は股下（足裏まで）として扱った（2026-10-03 に、外脚長として入れていたのを直した）",
+    "タイプ: 肩は T型肩（肩宽 12）／H型肩（肩宽 11）、脚は 通常脚／長脚版。長脚版は身長・脚の長さ・太もも回りだけが違う（長脚版の表は 1 種類だが、T型肩・H型肩のどちらにもある）"
+  ],
+  "types": [
+    {
+      "label": "H型肩・通常脚",
+      "measurements": {}
+    },
+    {
+      "label": "H型肩・長脚版",
+      "measurements": {
+        "height": {
+          "value": 44.7,
+          "raw_label": "不含头身高（长腿版）"
+        },
+        "height_with_head": {
+          "value": 50.2,
+          "raw_label": "含头身高（长腿版）"
+        },
+        "crotch_to_ankle": {
+          "value": 27.8,
+          "raw_label": "腿长（不含脚）（长腿版）"
+        },
+        "inseam": {
+          "value": 30.1,
+          "raw_label": "腿长（含脚）（长腿版）"
+        },
+        "thigh_circ": {
+          "value": 11,
+          "raw_label": "大腿围（长腿版）"
+        }
+      }
+    },
+    {
+      "label": "T型肩・通常脚",
+      "measurements": {
+        "shoulder_width": {
+          "value": 12,
+          "raw_label": "肩宽（T型肩）"
+        }
+      }
+    },
+    {
+      "label": "T型肩・長脚版",
+      "measurements": {
+        "shoulder_width": {
+          "value": 12,
+          "raw_label": "肩宽（T型肩）"
+        },
+        "height": {
+          "value": 44.7,
+          "raw_label": "不含头身高（长腿版）"
+        },
+        "height_with_head": {
+          "value": 50.2,
+          "raw_label": "含头身高（长腿版）"
+        },
+        "crotch_to_ankle": {
+          "value": 27.8,
+          "raw_label": "腿长（不含脚）（长腿版）"
+        },
+        "inseam": {
+          "value": 30.1,
+          "raw_label": "腿长（含脚）（长腿版）"
+        },
+        "thigh_circ": {
+          "value": 11,
+          "raw_label": "大腿围（长腿版）"
+        }
+      }
+    }
   ]
 }

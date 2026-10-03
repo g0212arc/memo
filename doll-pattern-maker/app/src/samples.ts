@@ -18,7 +18,7 @@ const ORDER = [
   'sk43',
   'hiren-2',
   'kohaku',
-  'kakoi-h', // 囝囝体（ファイル名は id を保つため変えない）
+  'kakoi-h', // 囝囝体（T型肩・H型肩 × 通常脚・長脚版。ファイル名は id を保つため変えない）
   'songbai', // 松柏体（叔体）
   'pingping', // 苹苹体（1/6）
   'kk', // KK体（1/4）
