@@ -50,6 +50,7 @@ import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEV
 import { applyMatches } from '../match';
 import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
 import { MATCH_RULES } from './matches';
+import { BERET_FIT_LABEL, BERET_HEAD_LABEL, BERET_PUFF_LABEL, BERET_REQUIREMENTS, BeretParams, DEFAULT_BERET, draftBeret } from './beret';
 import { DEFAULT_EARS, draftEars, EAR_HEAD_LABEL, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
@@ -1055,6 +1056,48 @@ const ITEM_LIST_RAW: ItemDef[] = [
     draft: (r, p) => draftChina(r, { ...(p as unknown as ChinaParams), fabric: 'woven' }),
   },
   {
+    id: 'beret',
+    label: 'ベレー帽',
+    defaults: { ...DEFAULT_BERET },
+    requirements: BERET_REQUIREMENTS,
+    fields: [
+      {
+        kind: 'select',
+        key: 'head',
+        label: '頭囲（ウィッグサイズ）',
+        options: Object.entries(BERET_HEAD_LABEL) as [string, string][],
+        help: 'ボディに関係なく、かぶる頭の大きさで選びます。範囲の大きい方で作ります。',
+      },
+      { kind: 'number', key: 'headCustom', label: '頭囲', step: 0.1, min: 5, unit: 'cm', nullable: true, placeholder: '7〜8インチ', show: (p) => p.head === 'custom' },
+      { kind: 'select', key: 'fit', label: '頭の口のゆとり', options: Object.entries(BERET_FIT_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'fitCustom',
+        label: '頭の口のゆとり',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        help: '頭囲に足す長さ。マイナスで小さくなります。',
+        show: (p) => p.fit === 'custom',
+      },
+      { kind: 'select', key: 'puff', label: 'ふくらみ', options: Object.entries(BERET_PUFF_LABEL) as [string, string][] },
+      { kind: 'number', key: 'puffCustom', label: 'トップの直径', step: 0.1, min: 1, unit: 'cm', nullable: true, placeholder: '普通', show: (p) => p.puff === 'custom' },
+      { kind: 'radio', key: 'top', label: 'トップ', options: [['circle', '1枚の円'], ['panels', 'はぎ合わせ']] },
+      {
+        kind: 'select',
+        key: 'panels',
+        label: 'はぎ合わせの枚数',
+        options: [['6', '6 枚'], ['8', '8 枚'], ['custom', '自分で入力']],
+        show: (p) => p.top === 'panels',
+      },
+      { kind: 'number', key: 'panelsCustom', label: 'はぎ合わせの枚数', step: 1, min: 3, max: 16, unit: '枚', nullable: true, placeholder: '6', show: (p) => p.top === 'panels' && p.panels === 'custom' },
+      { kind: 'radio', key: 'edge', label: '頭の口', options: [['band', 'ベルト付き'], ['elastic', 'ゴム入り']] },
+      { kind: 'checkbox', key: 'stem', label: 'てっぺんの飾り（ヘタ）を付ける' },
+    ],
+    draft: (r, p) => draftBeret(r, p as unknown as BeretParams),
+  },
+  {
     id: 'ears',
     label: 'ケモミミ',
     defaults: { ...DEFAULT_EARS },
@@ -1142,6 +1185,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   socks: '下着・小物',
   shorts: '下着・小物',
   ears: '下着・小物',
+  beret: '下着・小物',
 };
 export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他';
 

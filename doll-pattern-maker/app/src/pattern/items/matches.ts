@@ -154,6 +154,13 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['shorts-back/クロッチ付け'], b: ['gusset/クロッチ付け（後ろ）'] },
   ],
 
+  beret: [
+    { a: ['beret-top/はぎ目'] },
+    { a: ['beret-top/縁'], b: ['beret-under/外まわり'], check: 'none' },
+    { a: ['beret-under/切れ目'], note: '（2 枚を縫い合わせて輪にする）' },
+    { a: ['beret-under/頭の口'], b: ['beret-band/頭の口側#0'], check: 'none' },
+  ],
+
   ears: [
     { a: ['ear-front/縁'], b: ['ear-back/縁'] },
     { a: ['ear-front/根元（底布付け）', 'ear-back/根元（底布付け）'], b: ['ear-base/底布付け'], check: 'none', note: '（タックを縫ってから）' },
