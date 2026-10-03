@@ -52,8 +52,11 @@ export function draftSleeve(s: SleeveInput): SleeveDraft {
   const baseWidth = Math.max(s.upperArm + s.armEase, armholeTotal * s.widthRatio) + s.extraWidth;
   const widenedWidth = s.minPass > baseWidth;
   const width = Math.max(baseWidth, s.minPass);
-  const wb = width / 2 + width * 0.02;
-  const wf = width / 2 - width * 0.02;
+  // 袖幅を前後に分ける割合は、前後の袖ぐりの長さに合わせる（袖山の頂点が肩の縫い目に合うように）。
+  // ふつうは後ろが少し長く、今までの「後ろ ＋2%」とほぼ同じになる
+  const split = Math.max(-0.1, Math.min(0.1, (s.backArmholeLength - s.frontArmholeLength) / armholeTotal));
+  const wb = width / 2 + width * split;
+  const wf = width / 2 - width * split;
 
   const capLen = (h: number) => {
     const [b, f] = capCurves(wf, wb, h);

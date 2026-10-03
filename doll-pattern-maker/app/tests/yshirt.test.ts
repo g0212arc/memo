@@ -44,11 +44,12 @@ describe('Yシャツ（サンプル全ボディ × 設定）', () => {
           }
           for (const pt of pieceCutLine(piece, sa)) expect(Number.isFinite(pt.x) && Number.isFinite(pt.y)).toBe(true);
         }
-        // 前後の脇の差 ＝ 胸の分（前丈 − 背丈）。シャツテールでも前後同じだけ上げる
+        // 前後の脇の差: 胸ダーツありは ダーツの口の分（＝前丈 − 背丈）、なしは同じ長さ（前丈の差は裾で前中心へ下げる）
         const front = by('front')!;
         const back = by('back')!;
         const hemY = (pc: Piece) => Math.max(...pc.edges.find((e) => e.name === '裾')!.segs.map((s) => Math.max(s.from.y, s.to.y)));
-        expect(Math.abs(len(front, '脇') - len(back, '脇') - (hemY(front) - hemY(back)))).toBeLessThan(0.4);
+        const dart = front.marks?.some((m) => m.length === 3) ?? false;
+        expect(Math.abs(len(front, '脇') - len(back, '脇') - (dart ? hemY(front) - hemY(back) : 0))).toBeLessThan(0.4);
         // 台襟（前開き）の襟付け ＝ 襟ぐり（半身）＋ 前立て
         if (opening === 'front' && p.collar !== 'round') {
           const neck = len(front, '襟ぐり') + len(p.yoke ? by('yoke')! : back, '襟ぐり');

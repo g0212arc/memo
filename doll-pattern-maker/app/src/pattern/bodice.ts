@@ -246,10 +246,18 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
     const apexX = Math.min(bpX + chestQ * 0.12, U.x - bustDelta * 1.5);
     const apex = v(Math.max(apexX, chestQ * 0.3), yU + bustDelta / 2);
     marks = [[U, apex, L]];
+  } else if (bustDelta > 0.05) {
+    // ダーツなし: 脇は後ろと同じ長さにして（縫い合わせる辺がそろう）、前丈の差は裾で前中心へ下げる
+    frontSide = backSide.map((s) => ({ ...s }));
   } else {
     frontSide = sideSegs(frontHemY, frontHipY);
   }
-  const frontHemX = (frontSide[frontSide.length - 1] as { to: Vec }).to.x;
+  const frontSideEnd = (frontSide[frontSide.length - 1] as { to: Vec }).to;
+  const frontHemX = frontSideEnd.x;
+  const frontHemSeg: Seg =
+    Math.abs(frontSideEnd.y - frontHemY) < 1e-9
+      ? line(v(frontHemX, frontHemY), v(0, frontHemY))
+      : cubic(frontSideEnd, v(frontHemX * 0.6, frontSideEnd.y), v(frontHemX * 0.4, frontHemY), v(0, frontHemY));
   const front: Piece = {
     id: 'front',
     name: '前身頃',
@@ -259,7 +267,7 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
       { segs: [line(snp, frontSP)], kind: 'seam', name: '肩' },
       { segs: frontArmhole, kind: 'seam', name: '袖ぐり' },
       { segs: frontSide, kind: 'seam', name: '脇' },
-      { segs: [line(v(frontHemX, frontHemY), v(0, frontHemY))], kind: 'hem', name: '裾' },
+      { segs: [frontHemSeg], kind: 'hem', name: '裾' },
       { segs: [line(v(0, frontHemY), v(0, frontNeckDepth))], kind: 'fold', name: '前中心（わ）' },
     ],
     grain: [v(chestQ * 0.5, chestY * 0.9), v(chestQ * 0.5, frontHemY - (frontHemY - chestY) * 0.2)],

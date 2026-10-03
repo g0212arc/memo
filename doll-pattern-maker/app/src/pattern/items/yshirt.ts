@@ -166,7 +166,8 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
   const shapeHem = (side: Edge, hemY: number, endX: number): { side: Edge; hem: Edge } => {
     const sideEnd = side.segs[side.segs.length - 1].to;
     if (up < 0.05) return { side, hem: { segs: [line(sideEnd, v(endX, hemY))], kind: 'hem', name: '裾' } };
-    const [above] = splitSegsAtY(side.segs, hemY - up);
+    // 脇の下端（前は胸ダーツなしだと裾の前中心より上）から上げる
+    const [above] = splitSegsAtY(side.segs, sideEnd.y - up);
     const s = above[above.length - 1].to;
     const curve = cubic(s, v(s.x * 0.9, hemY - up * 0.15), v(s.x * 0.45, hemY), v(Math.max(0, endX), hemY));
     const segs: Seg[] = endX < 0 ? [curve, line(v(0, hemY), v(endX, hemY))] : [curve];

@@ -215,6 +215,11 @@ function renderMessages(cur: Current) {
   const warns = [...cur.resolved.warnings, ...(cur.draft?.warnings ?? []), ...cur.body.ambiguities.map((a) => `メモ: ${a}`)];
   if (warns.length) out.push(`<div class="msg warn"><ul>${warns.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>`);
   if (cur.draft) out.push(`<div class="msg info"><ul>${cur.draft.info.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>`);
+  if (cur.draft?.matches?.length) {
+    out.push(
+      `<details class="msg info"><summary>合印の一覧（同じ記号の辺どうしを縫い合わせる）</summary><ul>${cur.draft.matches.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></details>`,
+    );
+  }
   $('messages').innerHTML = out.join('');
 }
 

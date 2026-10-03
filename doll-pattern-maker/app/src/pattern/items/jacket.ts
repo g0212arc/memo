@@ -366,7 +366,7 @@ export function draftJacket(r: ResolvedBody, p: JacketParams): DraftResult {
   if (p.lining) {
     const frontLiningEdges = thin ? front.edges : clipPieceX(front, 'right', fw, { kind: 'seam', name: '見返し付け' });
     pieces.push(
-      { ...front, id: 'front-lining', name: '前身頃（裏地）', cut: '2枚（左右反転・裏地）', edges: frontLiningEdges, marks: undefined },
+      { ...front, id: 'front-lining', name: '前身頃（裏地）', cut: '2枚（左右反転・裏地）', edges: frontLiningEdges, marks: front.marks?.filter((m) => m.length === 3) },  // 裏地にも胸ダーツの印（ポケットなどの印は付けない）
       { ...back, id: 'back-lining', name: '後ろ身頃（裏地）', cut: '2枚（左右反転・裏地）' },
     );
   }

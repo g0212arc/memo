@@ -11,6 +11,8 @@ export interface Edge {
   kind: EdgeKind;
   /** 画面に出す名前（例: 袖ぐり） */
   name: string;
+  /** 合印（同じ記号の辺どうしを縫い合わせる）。match.ts が付ける */
+  match?: string;
 }
 
 export interface Piece {
@@ -40,4 +42,6 @@ export interface DraftResult {
   warnings: string[];
   /** 縫い合わせる辺の長さの確認など */
   info: string[];
+  /** 合印の一覧（例: A: 前身頃「肩」⇔ 後ろ身頃「肩」） */
+  matches?: string[];
 }

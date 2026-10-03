@@ -237,7 +237,8 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
     const apexX = Math.min(bpX + chestQ * 0.12, U.x - delta * 1.5);
     frontMarks.push([U, v(Math.max(apexX, chestQ * 0.3), yU + delta / 2), L]);
   } else {
-    frontLower = [backSide[0], ...backSide.slice(1).map(shiftDown)];
+    // ダーツなし: 脇は後ろと同じ長さ。前丈の差は裾で前中心へ下げる（身頃原型と同じ）
+    frontLower = backSide.map((q) => v(q.x, q.y));
   }
   const fHemY = g.frontHemY;
 
@@ -321,10 +322,14 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
       else if (e.name === '脇') {
         if (slitLen <= 0) edges.push({ segs: [...frontHead, ...polyline(frontLower)], kind: 'seam', name: '脇' });
         else {
-          const [up, low] = splitAtY(frontLower, fHemY - slitLen);
+          const [up, low] = splitAtY(frontLower, frontLower[frontLower.length - 1].y - slitLen);
           edges.push({ segs: [...frontHead, ...polyline(up)], kind: 'seam', name: '脇' }, { segs: polyline(low), kind: 'opening', name: 'スリット' });
         }
-      } else if (e.name === '裾') edges.push({ segs: [line(v(lastF.x, fHemY), v(0, fHemY))], kind: 'hem', name: '裾' });
+      } else if (e.name === '裾') {
+        const hemSeg: Seg =
+          Math.abs(lastF.y - fHemY) < 1e-9 ? line(lastF, v(0, fHemY)) : cubic(lastF, v(lastF.x * 0.6, lastF.y), v(lastF.x * 0.4, fHemY), v(0, fHemY));
+        edges.push({ segs: [hemSeg], kind: 'hem', name: '裾' });
+      }
       else edges.push(e);
     }
     return { ...pc, edges, marks: frontMarks };

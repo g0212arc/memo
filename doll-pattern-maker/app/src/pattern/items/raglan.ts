@@ -226,6 +226,38 @@ export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
     narrowed = true;
     if (!sb.ok || !sf.ok) warnings.push('袖幅が広く、袖下のカーブを袖ぐりの長さに合わせられません。袖幅か袖ぐりのゆとりを確認してください。');
   }
+  // 前後の脇下の点（袖幅の点）の高さをそろえる（袖下を縫い合わせる長さがそろうように）。
+  // 高い方は袖幅を少し細くすると、袖下のカーブの長さはそのままで下がる
+  /** 袖幅の点の横の位置を変えて、高さ Y に合わせる（A' から離すほど上がる。袖下のカーブの長さはそのまま） */
+  const toHeight = (s: typeof sb, h: Half, f: (q: Vec) => Vec, Y: number): typeof sb => {
+    const ax = s.raglan.to.x;
+    const dir = Math.sign(s.curve.to.x - ax) || (s.curve.to.x >= 0 ? 1 : -1);
+    const dMax = Math.abs(s.curve.to.x - ax) * 3 + 1;
+    const at = (d: number) => sleeveHalf(h, f, ax + dir * d);
+    let lo = 0;
+    let hi = dMax;
+    if (at(lo).curve.to.y <= Y) return at(lo);
+    if (at(hi).curve.to.y >= Y) return at(hi);
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(mid).curve.to.y > Y) lo = mid;
+      else hi = mid;
+    }
+    return at((lo + hi) / 2);
+  };
+  // 低い方に合わせる。高い方が下がりきらないときは、そこまで低い方を上げる
+  {
+    const bHigher = sb.curve.to.y < sf.curve.to.y;
+    let Y = Math.max(sb.curve.to.y, sf.curve.to.y);
+    if (bHigher) {
+      sb = toHeight(sb, hb, fB, Y);
+      if (sb.curve.to.y < Y - 1e-4) sf = toHeight(sf, hf, fF, (Y = sb.curve.to.y));
+    } else {
+      sf = toHeight(sf, hf, fF, Y);
+      if (sf.curve.to.y < Y - 1e-4) sb = toHeight(sb, hb, fB, (Y = sf.curve.to.y));
+    }
+  }
+
   const back = reshape(bodice.back, hb, false);
   const front = reshape(bodice.front, hf, true);
 
@@ -237,8 +269,12 @@ export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
   }
   const hemRatio = p.sleeve === 'custom' ? Math.max(0.78, 0.95 - Math.max(0, len / val('arm_length') - 0.3) * 0.25) : HEM_RATIO[p.sleeve];
   const hemTotal = Math.max(width * hemRatio, minPass);
-  const hB = v((hemTotal / width) * wb, len);
-  const hF = v(-(hemTotal / width) * wf, len);
+  // 袖口の端: 袖口の幅（合計）はそのままで、前後の袖下の傾きを同じにする（袖下の長さがそろう）
+  const dxB = (hemTotal / width) * wb - sb.curve.to.x;
+  const dxF = sf.curve.to.x + (hemTotal / width) * wf;
+  const dHem = (dxB + dxF) / 2;
+  const hB = v(sb.curve.to.x + dHem, len);
+  const hF = v(sf.curve.to.x - dHem, len);
   const O = v(0, 0);
 
   const sleeveSide = (s: typeof sb, hem: Vec, isBack: boolean): Edge[] => {

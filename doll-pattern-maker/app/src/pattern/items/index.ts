@@ -47,6 +47,8 @@ import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, 
 import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
 import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
+import { applyMatches } from '../match';
+import { MATCH_RULES } from './matches';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -156,7 +158,7 @@ const fineFields = (withSleeve: (p: Params) => boolean = () => true): FieldSpec[
   { kind: 'number', key: 'extraArmholeEase', label: '袖ぐりのゆとりを足す', step: 0.1, unit: 'cm' },
 ];
 
-const ITEM_LIST: ItemDef[] = [
+const ITEM_LIST_RAW: ItemDef[] = [
   {
     id: 'tshirt',
     label: 'Tシャツ',
@@ -1020,6 +1022,12 @@ const ITEM_LIST: ItemDef[] = [
     draft: (r, p) => draftChina(r, { ...(p as unknown as ChinaParams), fabric: 'woven' }),
   },
 ];
+
+/** 作図の結果に合印（A・B・C…）を付ける。対応表は matches.ts */
+const ITEM_LIST: ItemDef[] = ITEM_LIST_RAW.map((def) => ({
+  ...def,
+  draft: (r, p) => applyMatches(def.draft(r, p), MATCH_RULES[def.id] ?? []).result,
+}));
 
 /** 並び順で常に一番下にするアイテム（下着のように服の下に着るもの）。アイテムを足すときも、この順は自動で保たれる */
 export const ALWAYS_LAST: readonly string[] = ['tights'];
