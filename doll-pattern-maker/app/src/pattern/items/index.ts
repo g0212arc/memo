@@ -39,6 +39,8 @@ import {
   ROLL_LABEL,
 } from './jacket';
 import { CAPE_COLLAR_LABEL, CAPE_FLARE_LABEL, CAPE_LENGTH_LABEL, CAPE_REQUIREMENTS, CapeParams, capeIsLong, DEFAULT_CAPE, draftCape } from './cape';
+import { DEFAULT_HOODIE, draftHoodie, HOODIE_LENGTH_LABEL, HOODIE_REQUIREMENTS, HoodieParams } from './hoodie';
+import { HEAD_SIZES } from '../hood';
 import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
 
 type Params = Record<string, unknown>;
@@ -553,6 +555,67 @@ export const ITEMS: ItemDef[] = [
       { kind: 'checkbox', key: 'lining', label: '裏地を付ける' },
     ],
     draft: (r, p) => draftCape(r, p as unknown as CapeParams),
+  },
+  {
+    id: 'hoodie',
+    label: 'パーカー',
+    defaults: { ...DEFAULT_HOODIE },
+    requirements: HOODIE_REQUIREMENTS,
+    fields: [
+      ...fabricFields.slice(0, 2),
+      dartField,
+      { kind: 'radio', key: 'front', label: '前', options: [['pullover', 'かぶり'], ['zip', '前ファスナー']] },
+      {
+        kind: 'select',
+        key: 'headSize',
+        label: '頭のサイズ',
+        options: [
+          ['auto', '自動（ボディの頭囲）'],
+          ...(Object.entries(HEAD_SIZES).map(([k, s]) => [k, s.label]) as [string, string][]),
+          ['custom', '自分で入力'],
+        ],
+        help: 'フードの大きさを決めます。9〜10インチは 3枚はぎ、それより小さいと 2枚はぎになります。',
+      },
+      {
+        kind: 'number',
+        key: 'headCustom',
+        label: '頭囲',
+        step: 0.1,
+        min: 5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: 'ボディの頭囲',
+        show: (p) => p.headSize === 'custom',
+      },
+      { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖'], ['half', '半袖']] },
+      { kind: 'select', key: 'fit', label: '身幅', options: [...fitOptions, ['custom', '自分で入力']] },
+      {
+        kind: 'number',
+        key: 'chestEaseCustom',
+        label: '胸のゆとり',
+        step: 0.1,
+        min: 0,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通と同じ',
+        show: (p) => p.fit === 'custom',
+      },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(HOODIE_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '着丈（ウエストから下へ。リブ込み）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'checkbox', key: 'strings', label: 'フードのひもを付ける' },
+      { kind: 'checkbox', key: 'pocket', label: 'カンガルーポケットを付ける' },
+      { kind: 'checkbox', key: 'rib', label: '袖口・裾にリブを付ける' },
+    ],
+    draft: (r, p) => draftHoodie(r, p as unknown as HoodieParams),
   },
 ];
 

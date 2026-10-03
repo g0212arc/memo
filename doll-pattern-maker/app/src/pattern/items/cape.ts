@@ -7,6 +7,7 @@ import { cubic, line, pathLength, Seg } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { DraftResult, EdgeKind, Fabric, Piece } from '../types';
+import { draftHood, THREE_PANEL_HEAD } from '../hood';
 import { MissingMeasurementsError } from './tshirt';
 
 export type CapeLength = 'shoulder' | 'elbow' | 'waist' | 'knee' | 'ankle' | 'custom';
@@ -223,21 +224,10 @@ export function draftCape(r: ResolvedBody, p: CapeParams): DraftResult {
       head = neck * 2.4;
       warnings.push(`頭囲がないので、首回りから約 ${fmt(head)}cm と推定してフードを作りました。頭囲を入れると正確になります。`);
     }
-    const H = head * 0.38 + val('neck_length');
-    const D = Math.max(neckHalf, head * 0.3);
-    const B = v(D, H - D * 0.12);
-    const T = v(D * 0.45, 0);
-    pieces.push({
-      id: 'hood',
-      name: 'フード',
-      cut: lined ? '4枚（左右反転・表と裏）' : '2枚（左右反転）',
-      edges: [
-        { segs: [cubic(v(0, H), v(D * 0.4, H), v(D * 0.75, H - D * 0.05), B)], kind: 'seam', name: '襟付け' },
-        { segs: [cubic(B, v(D * 1.18, H * 0.55), v(D * 0.98, 0), T), line(T, v(0, 0))], kind: 'seam', name: '後ろの縫い目' },
-        { segs: [line(v(0, 0), v(0, H))], kind: lined ? 'seam' : 'hem', name: '顔まわり' },
-      ],
-      grain: [v(D * 0.35, H * 0.2), v(D * 0.35, H * 0.8)],
-    });
+    const hood = draftHood({ neckHalf, head, neckLength: val('neck_length'), panels: head >= THREE_PANEL_HEAD ? 3 : 2, lined });
+    pieces.push(...hood.pieces);
+    const H = hood.height;
+    const D = hood.depth;
     info.push(`フード 高さ ${fmt(H)}cm ／ 奥行き ${fmt(D)}cm（頭囲 ${fmt(head)}cm から）`);
   }
 
