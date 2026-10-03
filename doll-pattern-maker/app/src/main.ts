@@ -9,7 +9,7 @@ import { CATEGORIES, Category, guessCategory, isCategory } from './model/categor
 import { loadBodies, loadState, saveBodies, saveState, UiState } from './store';
 import { MissingMeasurementsError } from './pattern/items/tshirt';
 import { bustLarge, bustRatio } from './pattern/bust';
-import { FieldCtx, FieldSpec, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
+import { FieldCtx, FieldSpec, groupOf, ITEM_GROUPS, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
 import { DraftResult } from './pattern/types';
 import { A4_PRINT_H, A4_PRINT_W, layoutPieces, Layout, parsePages } from './render/layout';
 import { drawCommands, Cmd } from './render/draw';
@@ -186,7 +186,10 @@ let pdfPages = '';
 function renderToolbar(cur: Current) {
   const disabled = cur.layout ? '' : ' disabled';
   $('toolbar').innerHTML = `
-    <label class="item-pick">アイテム <select id="item-select">${ITEMS.map((i) => `<option value="${i.id}"${i.id === cur.item.id ? ' selected' : ''}>${esc(i.label)}</option>`).join('')}</select></label>
+    <label class="item-pick">アイテム <select id="item-select">${ITEM_GROUPS.map((g) => {
+      const items = ITEMS.filter((i) => groupOf(i.id) === g);
+      return items.length ? `<optgroup label="${g}">${items.map((i) => `<option value="${i.id}"${i.id === cur.item.id ? ' selected' : ''}>${esc(i.label)}</option>`).join('')}</optgroup>` : '';
+    }).join('')}</select></label>
     <button id="save-pdf" class="primary"${disabled}>PDFを保存（A4・原寸）</button>
     <label class="pages">ページ <input id="pdf-pages" type="text" inputmode="numeric" placeholder="全部" value="${esc(pdfPages)}" size="8"></label>
     <span class="note">${cur.layout ? `全 ${cur.layout.cols * cur.layout.rows} ページ` : ''}</span>

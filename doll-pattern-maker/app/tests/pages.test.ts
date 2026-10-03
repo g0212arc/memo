@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SAMPLE_BODIES } from '../src/samples';
 import { resolveBody } from '../src/model/estimate';
-import { ITEMS } from '../src/pattern/items';
+import { groupOf, ITEM_GROUPS, ITEMS } from '../src/pattern/items';
 import { A4_PRINT_H, A4_PRINT_W, layoutPieces, parsePages } from '../src/render/layout';
 import { pieceCutLine } from '../src/render/geometry';
 import { bbox } from '../src/geometry/path';
@@ -53,5 +53,12 @@ describe('アイテムの並び順', () => {
   it('色移り防止タイツは常に一番下', () => {
     expect(ITEMS[ITEMS.length - 1].id).toBe('tights');
     expect(new Set(ITEMS.map((i) => i.id)).size).toBe(ITEMS.length);
+  });
+});
+
+describe('アイテムの種類の並び', () => {
+  it('トップス → ボトムス → その他 → 下着・小物 の順', () => {
+    const order = ITEMS.map((i) => ITEM_GROUPS.indexOf(groupOf(i.id)));
+    for (let k = 1; k < order.length; k++) expect(order[k]).toBeGreaterThanOrEqual(order[k - 1]);
   });
 });

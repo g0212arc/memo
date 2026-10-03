@@ -708,9 +708,28 @@ const ITEM_LIST: ItemDef[] = [
 /** 並び順で常に一番下にするアイテム（下着のように服の下に着るもの）。アイテムを足すときも、この順は自動で保たれる */
 export const ALWAYS_LAST: readonly string[] = ['tights'];
 
-/** 画面のアイテム一覧の並び（ALWAYS_LAST のアイテムは常に最後） */
+/** アイテムの種類。画面ではこの順に見出しを付けて並べる */
+export const ITEM_GROUPS = ['トップス', 'ボトムス', 'その他', '下着・小物'] as const;
+export type ItemGroup = (typeof ITEM_GROUPS)[number];
+/** アイテムごとの種類（ここにないアイテムは「その他」） */
+export const ITEM_GROUP: Record<string, ItemGroup> = {
+  tshirt: 'トップス',
+  turtleneck: 'トップス',
+  yshirt: 'トップス',
+  sailor: 'トップス',
+  hoodie: 'トップス',
+  jacket: 'トップス',
+  pants: 'ボトムス',
+  camisole: 'その他',
+  cape: 'その他',
+  yukata: 'その他',
+  tights: '下着・小物',
+};
+export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他';
+
+/** 画面のアイテム一覧の並び: 種類の順 → 登録順。ALWAYS_LAST のアイテムは常に最後 */
 export const ITEMS: ItemDef[] = [
-  ...ITEM_LIST.filter((i) => !ALWAYS_LAST.includes(i.id)),
+  ...ITEM_GROUPS.flatMap((g) => ITEM_LIST.filter((i) => groupOf(i.id) === g && !ALWAYS_LAST.includes(i.id))),
   ...ALWAYS_LAST.map((id) => ITEM_LIST.find((i) => i.id === id)).filter((i): i is ItemDef => !!i),
 ];
 
