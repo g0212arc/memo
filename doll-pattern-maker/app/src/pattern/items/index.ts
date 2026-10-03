@@ -1275,9 +1275,9 @@ const ITEM_LIST: ItemDef[] = ITEM_LIST_RAW.map((def) => ({
 export const ALWAYS_LAST: readonly string[] = ['tights'];
 
 /** アイテムの種類。画面ではこの順に見出しを付けて並べる */
-export const ITEM_GROUPS = ['トップス', 'ボトムス', 'アウター', 'その他・小物'] as const;
+export const ITEM_GROUPS = ['トップス', 'ボトムス', 'アウター', 'その他', '小物'] as const;
 export type ItemGroup = (typeof ITEM_GROUPS)[number];
-/** アイテムごとの種類（ここにないアイテムは「その他・小物」） */
+/** アイテムごとの種類（ここにないアイテムは「その他」） */
 export const ITEM_GROUP: Record<string, ItemGroup> = {
   tshirt: 'トップス',
   turtleneck: 'トップス',
@@ -1292,17 +1292,17 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   skirt: 'ボトムス',
   pleats: 'ボトムス',
   tiered: 'ボトムス',
-  camisole: 'その他・小物',
+  camisole: 'その他',
   cape: 'アウター',
-  yukata: 'その他・小物',
-  china: 'その他・小物',
-  tights: 'その他・小物',
-  socks: 'その他・小物',
-  shorts: 'その他・小物',
-  ears: 'その他・小物',
-  beret: 'その他・小物',
+  yukata: 'その他',
+  china: 'その他',
+  tights: '小物',
+  socks: '小物',
+  shorts: '小物',
+  ears: '小物',
+  beret: '小物',
 };
-export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他・小物';
+export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他';
 
 /** 画面のアイテム一覧の並び: 種類の順 → 登録順。ALWAYS_LAST のアイテムは常に最後 */
 export const ITEMS: ItemDef[] = [
