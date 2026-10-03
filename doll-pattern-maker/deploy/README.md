@@ -111,6 +111,7 @@ push → [test] npm test / build → [deploy] ssh deploy@VPS → deploy.sh（取
 - GitHub に預けるのは**この用途専用の鍵**。VPS の `authorized_keys` で `restrict,command="…deploy.sh"` を付けるので、
   この鍵で入っても `deploy.sh` しか実行できない（シェルもポート転送も使えない）
 - シークレットが未設定の間は、deploy ジョブは何もせずに成功扱いで終わる
+- 状況: 2026-10-03 に専用の鍵の登録（VPS 側）とシークレット3つの登録（GitHub 側）が済み、自動デプロイを有効にした
 
 ### 設定手順（手元の PC で。sudo は不要）
 
