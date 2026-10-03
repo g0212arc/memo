@@ -22,6 +22,7 @@ const ORDER = [
   'songbai', // 松柏体（叔体）
   'pingping', // 苹苹体（1/6）
   'kk', // KK体（1/4）
+  'cherry', // 车厘子体（チェリー体）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

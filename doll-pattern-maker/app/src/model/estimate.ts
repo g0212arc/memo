@@ -130,7 +130,15 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
   // 腕まわり
   if (has('chest_circ')) est('upper_arm_circ', val('chest_circ') * 0.32, '胸囲 × 0.32');
   // 肘が通る周り（球体関節の出っ張りを見込む）
-  if (has('upper_arm_circ')) est('elbow_pass_circ', val('upper_arm_circ') * 1.15 + 0.3, '上腕回り × 1.15 ＋ 0.3');
+  if (has('upper_arm_circ')) {
+    // 前腕のほうが太いボディ（デフォルメ体など）では、前腕が通る大きさを下回らないように
+    const fromArm = val('upper_arm_circ') * 1.15 + 0.3;
+    if (has('forearm_circ') && val('forearm_circ') + 0.2 > fromArm) {
+      est('elbow_pass_circ', val('forearm_circ') + 0.2, '前腕回り ＋ 0.2（前腕が上腕より太いため）');
+    } else {
+      est('elbow_pass_circ', fromArm, '上腕回り × 1.15 ＋ 0.3');
+    }
+  }
   if (has('upper_arm_circ') && res.sources.upper_arm_circ !== 'estimated') {
     est('armhole_circ', val('upper_arm_circ') * 1.4, '上腕回り × 1.4');
   } else if (has('chest_circ')) {
