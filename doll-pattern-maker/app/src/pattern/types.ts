@@ -22,6 +22,8 @@ export interface Piece {
   edges: Edge[];
   /** 布目線（始点・終点） */
   grain: [Vec, Vec];
+  /** 内側の印（ダーツの線など）。折れ線ごと */
+  marks?: Vec[][];
 }
 
 export interface SeamAllowance {

@@ -8,12 +8,23 @@ import { DEFAULT_TSHIRT, draftTshirt, TSHIRT_REQUIREMENTS, TshirtParams } from '
 import { DEFAULT_TURTLENECK, draftTurtleneck, TURTLENECK_REQUIREMENTS, TurtleneckParams } from './turtleneck';
 import { DEFAULT_PANTS, draftPants, flyAvailable, FLY_CATEGORIES, PANTS_LENGTH_LABEL, PANTS_REQUIREMENTS, PantsParams } from './pants';
 import { Category } from '../../model/category';
+import {
+  CAMISOLE_REQUIREMENTS,
+  CamisoleParams,
+  DEFAULT_CAMISOLE,
+  draftCamisole,
+  SKIRT_LABEL,
+  SKIRT_LENGTH_LABEL,
+  STRAP_LABEL,
+} from './camisole';
 
 type Params = Record<string, unknown>;
 
 /** 設定欄を出すときに参照するボディの情報 */
 export interface FieldCtx {
   category: Category | null;
+  /** 胸ダーツを選べるボディか */
+  bustLarge: boolean;
 }
 
 /** 選択肢を、ボディによって出したり隠したりする */
@@ -27,7 +38,7 @@ export type FieldSpec =
       options: [string, string][];
       available?: Available;
       help?: string;
-      show?: (p: Params) => boolean;
+      show?: (p: Params, ctx: FieldCtx) => boolean;
     }
   | {
       kind: 'select';
@@ -36,7 +47,7 @@ export type FieldSpec =
       options: [string, string][];
       available?: Available;
       help?: string;
-      show?: (p: Params) => boolean;
+      show?: (p: Params, ctx: FieldCtx) => boolean;
     }
   | {
       kind: 'number';
@@ -50,9 +61,9 @@ export type FieldSpec =
       nullable?: boolean;
       placeholder?: string;
       help?: string;
-      show?: (p: Params) => boolean;
+      show?: (p: Params, ctx: FieldCtx) => boolean;
     }
-  | { kind: 'checkbox'; key: string; label: string; help?: string; show?: (p: Params) => boolean };
+  | { kind: 'checkbox'; key: string; label: string; help?: string; show?: (p: Params, ctx: FieldCtx) => boolean };
 
 export interface ItemDef {
   id: string;
@@ -82,6 +93,14 @@ const fabricFields: FieldSpec[] = [
   },
   { kind: 'checkbox', key: 'backOpening', label: '背中開き（面ファスナー・スナップ）' },
 ];
+/** 胸が大きいボディで布帛のときだけ出す */
+const dartField: FieldSpec = {
+  kind: 'checkbox',
+  key: 'bustDart',
+  label: '胸ダーツを入れる',
+  help: '胸囲とウエストの差が大きいボディ向け。脇から胸へダーツを入れて、前身頃を胸に沿わせます。',
+  show: (p, ctx) => ctx.bustLarge && p.fabric === 'woven',
+};
 const fitFields = (withSleeve: (p: Params) => boolean = () => true): FieldSpec[] => [
   { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions },
   { kind: 'radio', key: 'fitSleeve', label: '袖', options: fitOptions, show: withSleeve },
@@ -109,6 +128,7 @@ export const ITEMS: ItemDef[] = [
     requirements: TSHIRT_REQUIREMENTS,
     fields: [
       ...fabricFields,
+      dartField,
       ...fitFields(),
       {
         kind: 'number',
@@ -142,6 +162,7 @@ export const ITEMS: ItemDef[] = [
     fields: [
       { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖'], ['none', 'なし（ノースリーブ）']] },
       ...fabricFields,
+      dartField,
       ...fitFields((p) => p.sleeve !== 'none'),
       {
         kind: 'number',
@@ -210,6 +231,57 @@ export const ITEMS: ItemDef[] = [
       },
     ],
     draft: (r, p) => draftPants(r, p as unknown as PantsParams),
+  },
+  {
+    id: 'camisole',
+    label: 'キャミソールワンピース',
+    defaults: { ...DEFAULT_CAMISOLE },
+    requirements: CAMISOLE_REQUIREMENTS,
+    fields: [
+      fabricFields[0],
+      fabricFields[1],
+      dartField,
+      { kind: 'select', key: 'fit', label: '身幅', options: [...fitOptions, ['custom', '自分で入力']] },
+      {
+        kind: 'number',
+        key: 'chestEaseCustom',
+        label: '胸のゆとり',
+        step: 0.1,
+        min: 0,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通と同じ',
+        help: '胸囲に足す長さ。',
+        show: (p) => p.fit === 'custom',
+      },
+      { kind: 'select', key: 'skirt', label: 'スカート', options: Object.entries(SKIRT_LABEL) as [string, string][] },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'skirtLengthCustom',
+        label: 'スカート丈（ウエストから）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'select', key: 'strap', label: '肩ひもの幅', options: Object.entries(STRAP_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'strapCustom',
+        label: '肩ひもの幅（仕上がり）',
+        step: 0.05,
+        min: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.strap === 'custom',
+      },
+      { kind: 'checkbox', key: 'lining', label: '身頃に裏地を付ける', help: '付けないときは、胸元と後ろ開きをバイアステープなどで始末します。' },
+    ],
+    draft: (r, p) => draftCamisole(r, p as unknown as CamisoleParams),
   },
 ];
 

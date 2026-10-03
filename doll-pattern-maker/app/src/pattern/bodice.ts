@@ -37,6 +37,27 @@ export interface BodiceOptions {
   backOpening: boolean;
   /** 背中開きの持ち出し幅（cm） */
   openingExt: number;
+  /** 胸ダーツ（脇から胸へ）。前丈と背丈の差をダーツでとる */
+  bustDart?: boolean;
+  /** 裾がウエストより上のとき、脇をウエストに向けて細くする（切り替えのあるワンピースの身頃） */
+  waistTaper?: boolean;
+}
+
+/** 作図の途中の位置（身頃を作り変えるアイテム用） */
+export interface BodiceGeom {
+  chestY: number;
+  chestQ: number;
+  waistY: number;
+  snp: Vec;
+  backSP: Vec;
+  frontSP: Vec;
+  backNeckDepth: number;
+  frontNeckDepth: number;
+  backHemY: number;
+  frontHemY: number;
+  /** 前丈と背丈の差（胸のふくらみの分） */
+  bustDelta: number;
+  dartApplied: boolean;
 }
 
 export interface BodiceDraft {
@@ -47,8 +68,33 @@ export interface BodiceDraft {
   /** 襟ぐりの長さ（半身、持ち出し分は含まない） */
   backNeckLength: number;
   frontNeckLength: number;
+  geom: BodiceGeom;
   warnings: string[];
 }
+
+/** 線分をつないだ脇線で、高さ y のときの x */
+function xAtY(pts: Vec[], y: number): number {
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    if (y <= b.y + 1e-9 || i === pts.length - 1) {
+      if (Math.abs(b.y - a.y) < 1e-9) return b.x;
+      const t = Math.min(1, Math.max(0, (y - a.y) / (b.y - a.y)));
+      return a.x + (b.x - a.x) * t;
+    }
+  }
+  return pts[pts.length - 1].x;
+}
+
+/** 脇線の点列を y0〜y1 の範囲で切り出す */
+function sliceY(pts: Vec[], y0: number, y1: number): Vec[] {
+  const out: Vec[] = [v(xAtY(pts, y0), y0)];
+  for (const p of pts) if (p.y > y0 + 1e-9 && p.y < y1 - 1e-9) out.push(p);
+  out.push(v(xAtY(pts, y1), y1));
+  return out;
+}
+
+const polyline = (pts: Vec[]): Seg[] => pts.slice(1).map((q, i) => line(pts[i], q));
 
 const BACK_SLOPE = 18;
 const FRONT_SLOPE = 22;
@@ -128,7 +174,10 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
       return [line(top, hipPt), line(hipPt, v(hipQ, hemY))];
     }
     let need = chestQ;
-    if (hemY > waistY && hipQ > chestQ) {
+    if (o.waistTaper && hemY <= waistY + 1e-6) {
+      // ウエストに向けて細くする（胸との差が大きいときも、細くしすぎない）
+      need = Math.min(chestQ, Math.max((m.waist + o.ease.hip) / 4, chestQ * 0.75));
+    } else if (hemY > waistY && hipQ > chestQ) {
       // ウエストとヒップの間に裾があるとき、その高さで必要な幅
       const waistQ = (m.waist + o.ease.hip) / 4;
       const t = Math.min(1, (hemY - waistY) / Math.max(m.waistToHip, 0.1));
@@ -179,7 +228,27 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
   };
 
   // ---- 前身頃 ----
-  const frontSide = sideSegs(frontHemY, frontHipY);
+  // 胸ダーツ: 前の脇は「後ろの脇 ＋ ダーツ分（前丈 − 背丈）」。ダーツを縫うと後ろの脇と同じ長さになる
+  const bustDelta = frontHemY - backHemY;
+  const dartApplied = !!o.bustDart && bustDelta > 0.1;
+  let frontSide: Seg[];
+  let marks: Vec[][] | undefined;
+  if (dartApplied) {
+    const backPts = [backSide[0].from, ...backSide.map((s) => s.to)];
+    const yU = chestY + (Math.min(waistY, backHemY) - chestY) * 0.3;
+    const U = v(xAtY(backPts, yU), yU);
+    const L = v(U.x, yU + bustDelta);
+    const upper = sliceY(backPts, chestY, yU);
+    const lower = sliceY(backPts, yU, backHemY).map((p) => v(p.x, p.y + bustDelta));
+    frontSide = [...polyline(upper), line(U, L), ...polyline(lower)];
+    // ダーツの先は胸の頂点（中心から胸囲の 10%）の少し手前で止める
+    const bpX = Math.min(m.chest * 0.1, chestQ * 0.6);
+    const apexX = Math.min(bpX + chestQ * 0.12, U.x - bustDelta * 1.5);
+    const apex = v(Math.max(apexX, chestQ * 0.3), yU + bustDelta / 2);
+    marks = [[U, apex, L]];
+  } else {
+    frontSide = sideSegs(frontHemY, frontHipY);
+  }
   const frontHemX = (frontSide[frontSide.length - 1] as { to: Vec }).to.x;
   const front: Piece = {
     id: 'front',
@@ -194,6 +263,7 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
       { segs: [line(v(0, frontHemY), v(0, frontNeckDepth))], kind: 'fold', name: '前中心（わ）' },
     ],
     grain: [v(chestQ * 0.5, chestY * 0.9), v(chestQ * 0.5, frontHemY - (frontHemY - chestY) * 0.2)],
+    marks,
   };
 
   return {
@@ -203,6 +273,20 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
     frontArmhole,
     backNeckLength: pathLength([backNeck]),
     frontNeckLength: pathLength([frontNeck]),
+    geom: {
+      chestY,
+      chestQ,
+      waistY,
+      snp,
+      backSP,
+      frontSP,
+      backNeckDepth,
+      frontNeckDepth,
+      backHemY,
+      frontHemY,
+      bustDelta,
+      dartApplied,
+    },
     warnings,
   };
 }

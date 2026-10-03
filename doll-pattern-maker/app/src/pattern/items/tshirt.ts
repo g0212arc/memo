@@ -5,6 +5,7 @@ import { line, pathLength } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { draftBodice } from '../bodice';
+import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit, Fit, LengthPreset } from '../fit';
@@ -12,6 +13,8 @@ import { CATEGORY_EASE } from '../../model/category';
 import { DraftResult, Fabric, Piece } from '../types';
 
 export interface TshirtParams {
+  /** 胸ダーツ（胸が大きいボディ・布帛のときだけ効く） */
+  bustDart: boolean;
   fabric: Fabric;
   /** ニットの伸び率（%）。縁取り布の長さに使う */
   stretch: number;
@@ -37,6 +40,7 @@ export interface TshirtParams {
 export const DEFAULT_TSHIRT: TshirtParams = {
   fabric: 'knit',
   stretch: 20,
+  bustDart: true,
   backOpening: true,
   hemBelowWaist: null,
   fitBody: 'normal',
@@ -113,6 +117,7 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
       hemBelowWaist: p.hemBelowWaist ?? val('waist_to_hip') * { short: 0.4, normal: 0.8, long: 1.3 }[p.length],
       armholeEase: ease.armhole,
       backOpening: p.backOpening,
+      bustDart: useBustDart(r, p),
       openingExt,
     },
   );

@@ -8,6 +8,7 @@ import { SAMPLE_BODIES } from './samples';
 import { CATEGORIES, Category, guessCategory, isCategory } from './model/category';
 import { loadBodies, loadState, saveBodies, saveState, UiState } from './store';
 import { MissingMeasurementsError } from './pattern/items/tshirt';
+import { bustLarge } from './pattern/bust';
 import { FieldCtx, FieldSpec, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
 import { DraftResult } from './pattern/types';
 import { layoutPieces, Layout } from './render/layout';
@@ -142,7 +143,7 @@ function renderPanel(cur: Current) {
     ${otherKeys.length ? `<h2>その他の採寸値</h2><table class="measure">${otherKeys.map(row).join('')}</table>` : ''}
 
     <h2>${esc(cur.item.label)}の設定</h2>
-    ${renderFields(cur.item.fields, st.params[cur.item.id], { category: cur.resolved.category })}
+    ${renderFields(cur.item.fields, st.params[cur.item.id], { category: cur.resolved.category, bustLarge: bustLarge(cur.resolved.values) })}
 
     <h2>縫い代</h2>
     <div class="row"><label>縫い合わせ</label><input type="number" data-sa="seam" step="1" min="0" value="${Math.round(st.sa.seam * 10)}"> mm</div>
@@ -154,7 +155,7 @@ function renderPanel(cur: Current) {
 /** アイテムの設定欄を fields の定義から作る */
 function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: FieldCtx): string {
   return fields
-    .filter((f) => !f.show || f.show(p))
+    .filter((f) => !f.show || f.show(p, ctx))
     .map((f) => {
       const help = f.help ? `<span class="help">${esc(f.help)}</span>` : '';
       if (f.kind === 'radio' || f.kind === 'select') {

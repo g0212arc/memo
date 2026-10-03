@@ -7,10 +7,8 @@ const files = import.meta.glob('../../samples/bodies/*.json', { eager: true, imp
 
 /** 表示順。ここにないファイルは後ろに名前順で並ぶ */
 const ORDER = [
-  'falcon',
   'daifuku-1-4',
   'kansho3',
-  'daifuku-1-6',
   'melon',
   'sdm-female',
   'mdd',

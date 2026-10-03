@@ -7,7 +7,7 @@ import { SeamAllowance } from '../pattern/types';
 import { Layout, TEST_SQUARE, LABEL_NAME_SIZE, LABEL_CUT_SIZE } from './layout';
 import { pieceCutLine, pieceOutline } from './geometry';
 
-export type Stroke = 'cut' | 'finish' | 'fold' | 'grain' | 'guide';
+export type Stroke = 'cut' | 'finish' | 'fold' | 'grain' | 'guide' | 'mark';
 
 export type Cmd =
   | { t: 'poly'; pts: Vec[]; closed: boolean; stroke: Stroke }
@@ -47,6 +47,9 @@ export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): 
       cmds.push({ t: 'text', at: add(mid, mul(inward, 3)), text: 'わ', size: 3.5, anchor: 'middle' });
     }
 
+    // ダーツなどの内側の印
+    for (const m of piece.marks ?? []) cmds.push({ t: 'poly', pts: m.map(tr), closed: false, stroke: 'mark' });
+
     // 布目線（両矢印）
     const [g0, g1] = piece.grain.map(tr);
     cmds.push({ t: 'poly', pts: [g0, g1], closed: false, stroke: 'grain' });
@@ -69,4 +72,5 @@ export const STROKE_STYLE: Record<Stroke, { width: number; color: string; dash?:
   fold: { width: 0.3, color: '#b03060', dash: [4, 1, 0.6, 1] },
   grain: { width: 0.25, color: '#2060b0' },
   guide: { width: 0.15, color: '#aaaaaa' },
+  mark: { width: 0.25, color: '#222222' },
 };

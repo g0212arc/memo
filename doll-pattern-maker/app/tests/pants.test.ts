@@ -69,8 +69,8 @@ describe('パンツの設定', () => {
     expect(res.pieces.some((x) => x.id === 'waistband')).toBe(false);
     expect(res.warnings.join()).toContain('ゴムで作図');
     const field = ITEM_BY_ID.pants.fields.find((f) => f.key === 'waist')!;
-    expect(field.kind === 'radio' && field.available!('fly', { category: '小六' })).toBe(false);
-    expect(field.kind === 'radio' && field.available!('fly', { category: '特六' })).toBe(true);
+    expect(field.kind === 'radio' && field.available!('fly', { category: '小六', bustLarge: false })).toBe(false);
+    expect(field.kind === 'radio' && field.available!('fly', { category: '特六', bustLarge: false })).toBe(true);
   });
 
   it('自分で入力した股下・ヒップのゆとり・裾の周りが反映される', () => {
