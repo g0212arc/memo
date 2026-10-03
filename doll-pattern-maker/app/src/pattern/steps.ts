@@ -54,6 +54,13 @@ const STEPS: Record<string, (h: H) => string[]> = {
     h.p.backOpening ? '背中開きを始末して面ファスナー・スナップ' : '',
     '裾・袖口を三つ折り',
   ],
+  cardigan: (h) => [
+    h.has('pocket') ? 'ポケットを前身頃の印に縫い付ける' : '',
+    ...bodice(h),
+    h.has('hem-rib') ? `裾リブ・袖口リブを付ける${paren([h.l('裾側'), h.l('袖口側')].filter(Boolean).join('・'))}` : '裾・袖口を三つ折り',
+    h.has('front-band') ? `前立てリブを裾から襟ぐりまで付ける${paren(h.l('前端・襟ぐり側'))}` : `見返しを付けて返し、襟ぐりを縁取る${paren([h.l('前端（見返しと縫う）'), h.l('縁取り')].filter(Boolean).join('・'))}`,
+    h.p.closure === 'none' ? '' : h.p.closure === 'button' ? '印の位置にボタンホールとボタン' : '印の位置にスナップ',
+  ],
   turtleneck: (h) => [
     ...bodice(h, { sleeveless: `袖ぐりを縁取る${paren(h.l('縁'))}` }),
     `タートルを二つ折りにして襟ぐりに付ける${paren(h.l('襟ぐり側'))}`,

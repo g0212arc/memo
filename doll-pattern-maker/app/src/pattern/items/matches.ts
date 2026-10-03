@@ -33,6 +33,15 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     },
   ],
 
+  cardigan: [
+    ...BODICE,
+    { a: ['sleeve/袖口（リブ付け）'], b: ['cuff/袖口側#0'], check: 'none' },
+    { a: ['front/裾（リブ付け）', 'back/裾（リブ付け）'], b: ['hem-rib/裾側#0'], check: 'none' },
+    { a: ['front/前端（前立て付け）', 'front/襟ぐり', 'back/襟ぐり'], b: ['front-band/前端・襟ぐり側#0'], check: 'none' },
+    { a: ['front/襟ぐり', 'back/襟ぐり'], b: ['binding/縁取り#0'], check: 'none' },
+    { a: ['front/前端（見返しと縫う）'], b: ['front-facing/前端（見返しと縫う）'] },
+  ],
+
   turtleneck: [
     ...BODICE,
     { a: NECK, b: ['turtle/襟ぐり側#0'], check: 'none' },

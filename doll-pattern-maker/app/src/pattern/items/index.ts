@@ -51,6 +51,7 @@ import { applyMatches } from '../match';
 import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
 import { MATCH_RULES } from './matches';
 import { BERET_FIT_LABEL, BERET_HEAD_LABEL, BERET_PUFF_LABEL, BERET_REQUIREMENTS, BeretParams, DEFAULT_BERET, draftBeret } from './beret';
+import { CARDIGAN_LENGTH_LABEL, CARDIGAN_REQUIREMENTS, CARDIGAN_SLEEVE_LABEL, CardiganParams, DEFAULT_CARDIGAN, draftCardigan } from './cardigan';
 import { DEFAULT_EARS, draftEars, EAR_HEAD_LABEL, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
@@ -262,6 +263,52 @@ const ITEM_LIST_RAW: ItemDef[] = [
       ...extFields((p) => !!p.backOpening),
     ],
     draft: (r, p) => draftRaglan(r, p as unknown as RaglanParams),
+  },
+  {
+    id: 'cardigan',
+    label: 'カーディガン',
+    defaults: { ...DEFAULT_CARDIGAN },
+    requirements: CARDIGAN_REQUIREMENTS,
+    fields: [
+      fabricFields[0],
+      fabricFields[1],
+      dartField,
+      { kind: 'radio', key: 'neck', label: '首まわり', options: [['v', 'Vネック'], ['crew', 'クルーネック']] },
+      {
+        kind: 'radio',
+        key: 'band',
+        label: '前立て',
+        options: [['rib', 'リブの前立て（襟ぐり〜前端を一続きに）'], ['facing', '見返しで始末']],
+      },
+      { kind: 'radio', key: 'closure', label: '留め具', options: [['button', 'ボタン'], ['snap', 'スナップ'], ['none', 'なし（羽織る）']] },
+      {
+        kind: 'select',
+        key: 'buttons',
+        label: 'ボタン（スナップ）の数',
+        options: [['auto', '自動（丈から）'], ['custom', '自分で入力']],
+        show: (p) => p.closure !== 'none',
+      },
+      { kind: 'number', key: 'buttonsCustom', label: 'ボタン（スナップ）の数', step: 1, min: 1, max: 12, unit: '個', nullable: true, placeholder: '自動', show: (p) => p.closure !== 'none' && p.buttons === 'custom' },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(CARDIGAN_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '着丈（ウエストから下へ）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        help: 'リブ込みの長さ。マイナスで短くなります。',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'select', key: 'sleeve', label: '袖', options: Object.entries(CARDIGAN_SLEEVE_LABEL) as [string, string][] },
+      { kind: 'number', key: 'sleeveCustom', label: '袖丈（肩先から）', step: 0.1, min: 0.5, unit: 'cm', nullable: true, placeholder: '長袖', show: (p) => p.sleeve === 'custom' },
+      { kind: 'radio', key: 'edge', label: '裾・袖口', options: [['rib', 'リブ付き'], ['hem', '三つ折り']] },
+      { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions, help: '重ね着の分のゆとりは、どれを選んでも足してあります。' },
+      { kind: 'radio', key: 'fitSleeve', label: '袖', options: fitOptions },
+      { kind: 'checkbox', key: 'pocket', label: 'ポケットを付ける（前に貼り付け）' },
+    ],
+    draft: (r, p) => draftCardigan(r, p as unknown as CardiganParams),
   },
   {
     id: 'turtleneck',
@@ -1170,6 +1217,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   tshirt: 'トップス',
   turtleneck: 'トップス',
   raglan: 'トップス',
+  cardigan: 'トップス',
   yshirt: 'トップス',
   sailor: 'トップス',
   hoodie: 'トップス',
