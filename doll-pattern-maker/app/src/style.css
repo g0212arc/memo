@@ -75,6 +75,20 @@ body {
   font-size: 13px;
 }
 
+.field-label {
+  font-size: 13px;
+  min-width: 3em;
+  font-weight: bold;
+}
+
+.app-footer {
+  padding: 10px 16px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+
 select,
 input[type='number'],
 textarea {
@@ -185,6 +199,11 @@ tr.estimated input {
   padding: 10px 16px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+}
+
+.toolbar .item-pick {
+  font-size: 13px;
+  font-weight: bold;
 }
 
 .toolbar .zoom {

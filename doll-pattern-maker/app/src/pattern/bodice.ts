@@ -25,6 +25,8 @@ export interface BodiceOptions {
   neckWiden: number;
   /** 前襟ぐりをさらに下げる量（cm） */
   frontNeckDrop: number;
+  /** 前襟ぐりの深さ = 襟ぐりの幅 × この値（初期値 1.1。首に沿わせるときは小さく） */
+  frontNeckDepthRatio?: number;
   /** 肩先を延ばす量（cm） */
   shoulderExtend: number;
   /** 裾の位置（ウエストから下へ cm。マイナスで短くなる） */
@@ -62,7 +64,7 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
   // 襟ぐり
   const nw = m.neck * (0.19 + o.neckWiden);
   const backNeckDepth = nw / 3;
-  const frontNeckDepth = nw * 1.1 + o.frontNeckDrop;
+  const frontNeckDepth = nw * (o.frontNeckDepthRatio ?? 1.1) + o.frontNeckDrop;
 
   // 肩
   const backSPx = Math.max(m.shoulder / 2 + o.shoulderExtend, nw + 0.3);

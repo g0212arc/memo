@@ -2,7 +2,6 @@
 
 import { Body } from './model/body';
 import { VariantSelection } from './model/estimate';
-import { TshirtParams } from './pattern/items/tshirt';
 import { SeamAllowance } from './pattern/types';
 
 const BODIES_KEY = 'dpm.bodies.v1';
@@ -13,7 +12,12 @@ export interface UiState {
   variants: Record<string, VariantSelection>;
   /** ボディごとに選んだタイプ */
   types?: Record<string, number>;
-  tshirt: TshirtParams;
+  /** 選んでいるアイテム */
+  item: string;
+  /** アイテムごとの設定 */
+  params: Record<string, Record<string, unknown>>;
+  /** 旧形式（Tシャツだけの頃）の設定。読み込み時に params.tshirt へ移す */
+  tshirt?: Record<string, unknown>;
   sa: SeamAllowance;
 }
 

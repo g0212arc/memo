@@ -4,7 +4,7 @@
 import { Vec, add, mul, sub, normalize, perpLeft, v, lerp } from '../geometry/vec';
 import { flatten } from '../geometry/path';
 import { SeamAllowance } from '../pattern/types';
-import { Layout, TEST_SQUARE } from './layout';
+import { Layout, TEST_SQUARE, LABEL_NAME_SIZE, LABEL_CUT_SIZE } from './layout';
 import { pieceCutLine, pieceOutline } from './geometry';
 
 export type Stroke = 'cut' | 'finish' | 'fold' | 'grain' | 'guide';
@@ -57,7 +57,8 @@ export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): 
     cmds.push({ t: 'poly', pts: head(g0, mul(dir, -1)), closed: false, stroke: 'grain' });
 
     const la = mm(pl.labelAt);
-    cmds.push({ t: 'text', at: v(la.x, la.y + 4), text: `${piece.name}　${piece.cut}`, size: 3.2, anchor: 'start' });
+    cmds.push({ t: 'text', at: v(la.x, la.y + 4), text: piece.name, size: LABEL_NAME_SIZE, anchor: 'start' });
+    cmds.push({ t: 'text', at: v(la.x, la.y + 8), text: piece.cut, size: LABEL_CUT_SIZE, anchor: 'start' });
   }
   return cmds;
 }

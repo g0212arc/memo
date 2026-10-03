@@ -7,7 +7,8 @@ import { buildImportPrompt } from './model/prompt';
 import { SAMPLE_BODIES } from './samples';
 import { CATEGORIES, Category, guessCategory, isCategory } from './model/category';
 import { loadBodies, loadState, saveBodies, saveState, UiState } from './store';
-import { DEFAULT_TSHIRT, draftTshirt, MissingMeasurementsError, TSHIRT_REQUIREMENTS } from './pattern/items/tshirt';
+import { MissingMeasurementsError } from './pattern/items/tshirt';
+import { FieldSpec, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
 import { DraftResult } from './pattern/types';
 import { layoutPieces, Layout } from './render/layout';
 import { drawCommands, Cmd } from './render/draw';
@@ -24,13 +25,18 @@ const st: UiState = {
   bodyId: saved.bodyId && bodies.some((b) => b.id === saved.bodyId) ? saved.bodyId : bodies[0].id,
   variants: saved.variants ?? {},
   types: saved.types ?? {},
-  tshirt: { ...DEFAULT_TSHIRT, ...saved.tshirt },
+  item: saved.item && ITEM_BY_ID[saved.item] ? saved.item : ITEMS[0].id,
+  // 保存された設定に、新しく増えた項目の初期値を補う
+  params: Object.fromEntries(
+    ITEMS.map((i) => [i.id, { ...i.defaults, ...(i.id === 'tshirt' ? saved.tshirt : undefined), ...saved.params?.[i.id] }]),
+  ),
   sa: { seam: 0.5, hem: 0.8, opening: 0.8, ...saved.sa },
 };
 // スマホは閲覧中心なので、最初は縮小して全体を見せる
 let zoom = window.innerWidth < 800 ? 0.5 : 1;
 
 interface Current {
+  item: ItemDef;
   body: Body;
   resolved: ResolvedBody;
   draft: DraftResult | null;
@@ -40,6 +46,7 @@ interface Current {
 }
 
 function compute(): Current {
+  const item = currentItem();
   const body = bodies.find((b) => b.id === st.bodyId) ?? bodies[0];
   const typeIdx = typeIndexOf(body);
   const resolved = resolveBody(body, st.variants[body.id], typeIdx);
@@ -47,14 +54,14 @@ function compute(): Current {
   let draft: DraftResult | null = null;
   let missing: MeasurementKey[] = [];
   try {
-    draft = draftTshirt(resolved, st.tshirt);
+    draft = item.draft(resolved, st.params[item.id]);
   } catch (e) {
     if (e instanceof MissingMeasurementsError) missing = e.keys;
     else throw e;
   }
   const layout = draft ? layoutPieces(draft.pieces, st.sa) : null;
-  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / Tシャツ / ${new Date().toLocaleDateString('ja-JP')}`) : [];
-  return { body, resolved, draft, missing, layout, cmds };
+  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / ${item.label} / ${new Date().toLocaleDateString('ja-JP')}`) : [];
+  return { item, body, resolved, draft, missing, layout, cmds };
 }
 
 function persist() {
@@ -100,7 +107,7 @@ function renderPanel(cur: Current) {
     })
     .join('');
 
-  const reqKeys = TSHIRT_REQUIREMENTS.map((r) => r.key);
+  const reqKeys = cur.item.requirements.map((r) => r.key);
   const otherKeys = MEASUREMENTS.map((d) => d.key).filter((k) => !reqKeys.includes(k) && ms[k]);
   const row = (k: MeasurementKey) => {
     const d = DEF_BY_KEY[k];
@@ -121,7 +128,6 @@ function renderPanel(cur: Current) {
       <td>${badge}</td></tr>`;
   };
 
-  const t = st.tshirt;
   $('panel').innerHTML = `
     <h2>ボディ</h2>
     <div class="row"><select id="body-select">${opts}</select></div>
@@ -135,24 +141,13 @@ function renderPanel(cur: Current) {
     ${body.sample ? '<p class="note">サンプル（参考値）です。値を書き換えると、コピーを作ってそちらを編集します。</p>' : ''}
     ${variantRows ? `<h2>パーツの選択</h2>${variantRows}` : ''}
 
-    <h2>採寸値（Tシャツに使う項目）</h2>
+    <h2>採寸値（${esc(cur.item.label)}に使う項目）</h2>
     <p class="note">「推定」は他の値から計算した仮の値です。実物を測って入れると「実測」になります。</p>
     <table class="measure">${reqKeys.map(row).join('')}</table>
     ${otherKeys.length ? `<h2>その他の採寸値</h2><table class="measure">${otherKeys.map(row).join('')}</table>` : ''}
 
-    <h2>Tシャツ</h2>
-    <div class="row">
-      <label><input type="radio" name="fabric" value="knit"${t.fabric === 'knit' ? ' checked' : ''}> ニット（伸びる布）</label>
-      <label><input type="radio" name="fabric" value="woven"${t.fabric === 'woven' ? ' checked' : ''}> 布帛（伸びない布）</label>
-    </div>
-    ${t.fabric === 'knit' ? `<div class="row"><label>伸び率</label><input type="number" data-param="stretch" step="5" min="0" max="100" value="${t.stretch}"> %<span class="help">横に引っぱったとき何％伸びるか。襟ぐりの縁取り布の長さに使います。</span></div>` : ''}
-    <div class="row"><label><input type="checkbox" data-param="backOpening"${t.backOpening ? ' checked' : ''}> 背中開き（面ファスナー・スナップ）</label></div>
-    <div class="row"><label>着丈（ウエストから下へ）</label><input type="number" data-param="hemBelowWaist" step="0.1" value="${t.hemBelowWaist ?? ''}" placeholder="自動"> cm<span class="help">空欄なら腰丈の 8 割。マイナスで短くなります。</span></div>
-    <div class="row"><label>袖丈（腕の長さに対して）</label><input type="number" data-param="sleeveRatio" step="0.05" min="0.1" max="1" value="${t.sleeveRatio}"><span class="help">0.3 で半袖。1.0 で手首まで。</span></div>
-    <div class="row"><label>胸のゆとりを足す</label><input type="number" data-param="extraChestEase" step="0.1" value="${t.extraChestEase}"> cm</div>
-    <div class="row"><label>袖幅を足す</label><input type="number" data-param="extraSleeveWidth" step="0.1" value="${t.extraSleeveWidth}"> cm<span class="help">袖がきついときに。肘が通る周りより細くはなりません。</span></div>
-    <div class="row"><label>袖ぐりのゆとりを足す</label><input type="number" data-param="extraArmholeEase" step="0.1" value="${t.extraArmholeEase}"> cm</div>
-    <div class="row"><label>前襟ぐりを下げる</label><input type="number" data-param="frontNeckDrop" step="0.1" value="${t.frontNeckDrop}"> cm</div>
+    <h2>${esc(cur.item.label)}の設定</h2>
+    ${renderFields(cur.item.fields, st.params[cur.item.id])}
 
     <h2>縫い代</h2>
     <div class="row"><label>縫い合わせ</label><input type="number" data-sa="seam" step="1" min="0" value="${Math.round(st.sa.seam * 10)}"> mm</div>
@@ -161,9 +156,35 @@ function renderPanel(cur: Current) {
   `;
 }
 
+/** アイテムの設定欄を fields の定義から作る */
+function renderFields(fields: FieldSpec[], p: Record<string, unknown>): string {
+  return fields
+    .filter((f) => !f.show || f.show(p))
+    .map((f) => {
+      const help = f.help ? `<span class="help">${esc(f.help)}</span>` : '';
+      if (f.kind === 'radio') {
+        const opts = f.options
+          .map(([v, l]) => `<label><input type="radio" name="field-${f.key}" data-field="${f.key}" value="${v}"${p[f.key] === v ? ' checked' : ''}> ${esc(l)}</label>`)
+          .join(' ');
+        return `<div class="row"><span class="field-label">${esc(f.label)}</span>${opts}${help}</div>`;
+      }
+      if (f.kind === 'select') {
+        const opts = f.options.map(([v, l]) => `<option value="${v}"${p[f.key] === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
+        return `<div class="row"><label>${esc(f.label)}</label><select data-field="${f.key}">${opts}</select>${help}</div>`;
+      }
+      if (f.kind === 'checkbox') {
+        return `<div class="row"><label><input type="checkbox" data-field="${f.key}"${p[f.key] ? ' checked' : ''}> ${esc(f.label)}</label>${help}</div>`;
+      }
+      const val = p[f.key] === null || p[f.key] === undefined ? '' : String(p[f.key]);
+      return `<div class="row"><label>${esc(f.label)}</label><input type="number" data-field="${f.key}" step="${f.step}"${f.min !== undefined ? ` min="${f.min}"` : ''}${f.max !== undefined ? ` max="${f.max}"` : ''} value="${val}"${f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : ''}>${f.unit ? ` ${f.unit}` : ''}${help}</div>`;
+    })
+    .join('');
+}
+
 function renderToolbar(cur: Current) {
   const disabled = cur.layout ? '' : ' disabled';
   $('toolbar').innerHTML = `
+    <label class="item-pick">アイテム <select id="item-select">${ITEMS.map((i) => `<option value="${i.id}"${i.id === cur.item.id ? ' selected' : ''}>${esc(i.label)}</option>`).join('')}</select></label>
     <button id="save-pdf" class="primary"${disabled}>PDFを保存（A4・原寸）</button>
     <button id="save-svg"${disabled}>SVGを保存</button>
     <label class="zoom">表示倍率
@@ -180,7 +201,7 @@ function renderMessages(cur: Current) {
         .join('')}</ul></div>`,
     );
   }
-  const est = TSHIRT_REQUIREMENTS.map((r) => r.key).filter((k) => cur.resolved.sources[k] === 'estimated');
+  const est = cur.item.requirements.map((r) => r.key).filter((k) => cur.resolved.sources[k] === 'estimated');
   if (est.length) {
     out.push(`<div class="msg warn">推定値を使っています: ${est.map((k) => esc(DEF_BY_KEY[k].ja)).join('、')}。実測すると精度が上がります。</div>`);
   }
@@ -204,6 +225,10 @@ function renderCanvas(cur: Current) {
 }
 
 // ---------------- 操作 ----------------
+
+function currentItem(): ItemDef {
+  return ITEM_BY_ID[st.item] ?? ITEMS[0];
+}
 
 function currentBody() {
   return bodies.find((b) => b.id === st.bodyId) ?? bodies[0];
@@ -262,24 +287,23 @@ document.addEventListener('change', (ev) => {
     const target = b.types && ti > 0 ? b.types[ti].measurements : b.measurements;
     if (el.value === '' || !(n > 0)) delete target[k];
     else target[k] = { ...measurementsOf(b, ti)[k], value: n, source: 'measured', variants: undefined };
-  } else if (el.name === 'fabric') {
-    st.tshirt.fabric = el.value as 'knit' | 'woven';
-  } else if (el.dataset.param) {
-    const p = el.dataset.param;
+  } else if (el.id === 'item-select') {
+    if (ITEM_BY_ID[el.value]) st.item = el.value;
+  } else if (el.dataset.field) {
+    const item = currentItem();
+    const f = item.fields.find((x) => x.key === el.dataset.field);
+    if (!f) return;
+    const p = st.params[item.id];
     const inp = el as HTMLInputElement;
-    if (p === 'backOpening') st.tshirt.backOpening = inp.checked;
-    else if (p === 'hemBelowWaist') st.tshirt.hemBelowWaist = inp.value === '' ? null : Number(inp.value);
-    else if (
-      p === 'stretch' ||
-      p === 'sleeveRatio' ||
-      p === 'extraChestEase' ||
-      p === 'frontNeckDrop' ||
-      p === 'extraSleeveWidth' ||
-      p === 'extraArmholeEase'
-    ) {
-      const n = Number(inp.value);
-      if (Number.isFinite(n)) st.tshirt[p] = n;
-    }
+    if (f.kind === 'checkbox') p[f.key] = inp.checked;
+    else if (f.kind === 'number') {
+      if (inp.value === '' && f.nullable) p[f.key] = null;
+      else {
+        const n = Number(inp.value);
+        if (inp.value === '' || !Number.isFinite(n)) return;
+        p[f.key] = n;
+      }
+    } else p[f.key] = el.value;
   } else if (el.dataset.sa) {
     const n = Number(el.value);
     if (Number.isFinite(n) && n >= 0) st.sa[el.dataset.sa as 'seam' | 'hem' | 'opening'] = n / 10;
@@ -344,7 +368,7 @@ document.addEventListener('click', async (ev) => {
       const c = cur();
       if (!c.layout) return;
       const svg = toSvg(c.cmds, { widthMm: c.layout.width * 10, heightMm: c.layout.height * 10 });
-      download(`${safeName(c.body.name)}_Tシャツ.svg`, new Blob([svg], { type: 'image/svg+xml' }));
+      download(`${safeName(c.body.name)}_${c.item.label}.svg`, new Blob([svg], { type: 'image/svg+xml' }));
       break;
     }
     case 'save-pdf': {
@@ -354,7 +378,7 @@ document.addEventListener('click', async (ev) => {
       try {
         const { buildPdf, canvasRasterizer } = await import('./render/pdf');
         const doc = buildPdf(c.cmds, c.layout.width * 10, c.layout.height * 10, canvasRasterizer());
-        download(`${safeName(c.body.name)}_Tシャツ.pdf`, doc.output('blob'));
+        download(`${safeName(c.body.name)}_${c.item.label}.pdf`, doc.output('blob'));
       } finally {
         el.removeAttribute('disabled');
       }

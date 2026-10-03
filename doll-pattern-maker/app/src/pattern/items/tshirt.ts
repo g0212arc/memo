@@ -7,6 +7,7 @@ import { MeasurementKey } from '../../model/schema';
 import { draftBodice } from '../bodice';
 import { draftSleeve } from '../sleeve';
 import { defaultEase, scaleEase } from '../ease';
+import { applyFit, Fit, LengthPreset } from '../fit';
 import { CATEGORY_EASE } from '../../model/category';
 import { DraftResult, Fabric, Piece } from '../types';
 
@@ -15,8 +16,12 @@ export interface TshirtParams {
   /** ニットの伸び率（%）。縁取り布の長さに使う */
   stretch: number;
   backOpening: boolean;
-  /** 着丈（ウエストから下へ cm）。null なら腰丈の 8 割 */
+  /** 着丈（ウエストから下へ cm）。null なら丈の選択（短め／普通／長め）から決める */
   hemBelowWaist: number | null;
+  /** 身幅・袖のフィット感、丈 */
+  fitBody: Fit;
+  fitSleeve: Fit;
+  length: LengthPreset;
   /** 袖丈 = 腕の長さ × この値 */
   sleeveRatio: number;
   /** 胸のゆとりの上乗せ（cm、マイナス可） */
@@ -34,6 +39,9 @@ export const DEFAULT_TSHIRT: TshirtParams = {
   stretch: 20,
   backOpening: true,
   hemBelowWaist: null,
+  fitBody: 'normal',
+  fitSleeve: 'normal',
+  length: 'normal',
   sleeveRatio: 0.3,
   extraChestEase: 0,
   frontNeckDrop: 0,
@@ -66,7 +74,8 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
   const woven = p.fabric === 'woven';
 
   const categoryEase = r.category ? CATEGORY_EASE[r.category] : 1;
-  const ease = scaleEase(
+  const ease = applyFit(
+    scaleEase(
     defaultEase(p.fabric, {
     chest: val('chest_circ'),
     hip: val('hip_circ'),
@@ -74,6 +83,9 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
       armhole: val('armhole_circ'),
     }),
     categoryEase,
+    ),
+    p.fitBody,
+    p.fitSleeve,
   );
   ease.chest += p.extraChestEase;
   ease.armhole += p.extraArmholeEase;
@@ -98,7 +110,7 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
       neckWiden: 0.02,
       frontNeckDrop: p.frontNeckDrop,
       shoulderExtend: val('shoulder_width') * 0.03,
-      hemBelowWaist: p.hemBelowWaist ?? val('waist_to_hip') * 0.8,
+      hemBelowWaist: p.hemBelowWaist ?? val('waist_to_hip') * { short: 0.4, normal: 0.8, long: 1.3 }[p.length],
       armholeEase: ease.armhole,
       backOpening: p.backOpening,
       openingExt,
