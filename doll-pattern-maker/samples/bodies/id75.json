@@ -1,0 +1,43 @@
+{
+  "schema": "doll-body/v1",
+  "name": "ID75（Male）",
+  "maker": "",
+  "source": "ID75 の採寸表（単位 cm）",
+  "category": "叔体",
+  "measurements": {
+    "height_with_head": { "value": 75, "raw_label": "高さ（ヘッドを含む）" },
+    "height": { "value": 68, "raw_label": "高さ（ヘッドを除く）" },
+    "head_circ": { "value": 23.9, "raw_label": "ヘッド周り 9.4inch" },
+    "neck_circ": { "value": 13, "raw_label": "ネック周り" },
+    "shoulder_width": { "value": 14.5, "raw_label": "肩幅（腕を除く）" },
+    "chest_circ": { "value": 35, "raw_label": "胸周り" },
+    "waist_circ": { "value": 25.3, "raw_label": "腰周り" },
+    "hip_circ": { "value": 32.5, "raw_label": "お尻周り" },
+    "arm_length": { "value": 23.3, "raw_label": "腕の長さ（肩〜手首）" },
+    "wrist_circ": { "value": 7, "raw_label": "手首周り" },
+    "inseam": { "value": 43.7, "raw_label": "脚の長さ（太もも〜足）" },
+    "crotch_to_ankle": { "value": 40.5, "raw_label": "脚の長さ（太もも〜足首）" },
+    "thigh_circ": { "value": 19.2, "raw_label": "太もも周り" },
+    "calf_circ": { "value": 16, "raw_label": "ふくらはぎの周り" },
+    "ankle_joint_circ": { "value": 10, "raw_label": "足首の周り（足首ジョイント）" },
+    "foot_length": { "value": 9.5, "raw_label": "足の長さ" },
+    "foot_width": { "value": 4.1, "raw_label": "足の幅" }
+  },
+  "unmapped": [
+    { "raw_label": "重さ（kg）", "value": 2.95 },
+    { "raw_label": "ヘッド周り-Mega Gem（inch）", "value": 8.7, "note": "別のヘッド（Mega Gem）のときの頭囲（インチ）＝ 約 22.1cm" },
+    { "raw_label": "アイ（mm）", "value": 14 },
+    { "raw_label": "上半身の長さ（首〜骨盤）", "value": 23.7 },
+    { "raw_label": "肩幅（腕を含む）", "value": 19, "note": "腕の付け根まで含めた幅。肩幅には「腕を除く」14.5 を使った" },
+    { "raw_label": "骨盤周り", "value": 27.8, "note": "ウエストとヒップの間。ヒップには「お尻周り」32.5 を使った" },
+    { "raw_label": "下半身の長さ（骨盤〜足）", "value": 47 },
+    { "raw_label": "太ももの長さ", "value": 20.8 },
+    { "raw_label": "ふくらはぎの長さ", "value": 20.3 }
+  ],
+  "ambiguities": [
+    "「ヘッド周り」9.4 はインチなので cm に直した（9.4 × 2.54 ＝ 23.9）",
+    "「腰周り」はウエスト、「お尻周り」はヒップとして扱った（「骨盤周り」はその間なので、その他に回した）",
+    "「脚の長さ（太もも〜足）」は股下（股から足裏まで）、「脚の長さ（太もも〜足首）」は股から足首として扱った",
+    "「足首の周り（足首ジョイント）」は足首の球体関節の周りとして扱った"
+  ]
+}

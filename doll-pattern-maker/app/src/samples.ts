@@ -28,6 +28,8 @@ const ORDER = [
   'ruri', // 琉璃体（特四）
   'mihong', // 咪哄体（1/6）
   'asai46', // asai46（大四）
+  'telesthesia-75v2', // 叔体二代 75cm（Telesthesiadoll）
+  'id75', // ID75（叔体）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

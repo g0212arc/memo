@@ -1,0 +1,72 @@
+{
+  "schema": "doll-body/v1",
+  "name": "叔体二代 75cm（Telesthesiadoll 75cm Boy Ver.2）",
+  "maker": "Telesthesiadoll",
+  "source": "通販の対応ボディ表（75cm Boy Ver.2（75二代体））",
+  "category": "叔体",
+  "measurements": {
+    "height_with_head": {
+      "value": 75,
+      "raw_label": "身長"
+    },
+    "head_circ": {
+      "value": 21.5,
+      "raw_label": "頭囲"
+    },
+    "neck_circ": {
+      "value": 10.5,
+      "raw_label": "首周り"
+    },
+    "shoulder_width": {
+      "value": 16.5,
+      "raw_label": "肩幅"
+    },
+    "chest_circ": {
+      "value": 31.5,
+      "raw_label": "バスト"
+    },
+    "waist_circ": {
+      "value": 22.5,
+      "raw_label": "ウエスト"
+    },
+    "hip_circ": {
+      "value": 31.2,
+      "raw_label": "ヒップ"
+    },
+    "arm_length": {
+      "value": 25,
+      "raw_label": "袖丈※"
+    },
+    "wrist_circ": {
+      "value": 6.6,
+      "raw_label": "手首周り"
+    },
+    "inseam": {
+      "value": 35.5,
+      "raw_label": "股下※"
+    },
+    "thigh_circ": {
+      "value": 17.3,
+      "raw_label": "太腿周り"
+    },
+    "foot_length": {
+      "value": 8.5,
+      "raw_label": "足※"
+    },
+    "foot_width": {
+      "value": 3.2,
+      "raw_label": "足幅"
+    }
+  },
+  "unmapped": [
+    {
+      "raw_label": "ウィッグ 8〜9インチ",
+      "note": "ウィッグサイズ。ケモミミ・ベレー帽・フードの頭囲の目安"
+    }
+  ],
+  "ambiguities": [
+    "「身長」75 は 75cm ドールの全高として、頭込みの身長として扱った",
+    "「袖丈※」は肩先から手首までの腕の長さとして扱った（※の注記は表に載っていない）",
+    "「股下※」は股から足裏まで、「足※」は足の長さとして扱った（※の注記は表に載っていない）"
+  ]
+}
