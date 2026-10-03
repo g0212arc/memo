@@ -150,7 +150,7 @@ const fineFields = (withSleeve: (p: Params) => boolean = () => true): FieldSpec[
   { kind: 'number', key: 'extraArmholeEase', label: '袖ぐりのゆとりを足す', step: 0.1, unit: 'cm' },
 ];
 
-export const ITEMS: ItemDef[] = [
+const ITEM_LIST: ItemDef[] = [
   {
     id: 'tshirt',
     label: 'Tシャツ',
@@ -703,6 +703,15 @@ export const ITEMS: ItemDef[] = [
     ],
     draft: (r, p) => draftTights(r, p as unknown as TightsParams),
   },
+];
+
+/** 並び順で常に一番下にするアイテム（下着のように服の下に着るもの）。アイテムを足すときも、この順は自動で保たれる */
+export const ALWAYS_LAST: readonly string[] = ['tights'];
+
+/** 画面のアイテム一覧の並び（ALWAYS_LAST のアイテムは常に最後） */
+export const ITEMS: ItemDef[] = [
+  ...ITEM_LIST.filter((i) => !ALWAYS_LAST.includes(i.id)),
+  ...ALWAYS_LAST.map((id) => ITEM_LIST.find((i) => i.id === id)).filter((i): i is ItemDef => !!i),
 ];
 
 export const ITEM_BY_ID: Record<string, ItemDef> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));

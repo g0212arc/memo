@@ -48,3 +48,10 @@ describe('印刷するページの指定', () => {
     expect('error' in parsePages('3-1', 5)).toBe(true);
   });
 });
+
+describe('アイテムの並び順', () => {
+  it('色移り防止タイツは常に一番下', () => {
+    expect(ITEMS[ITEMS.length - 1].id).toBe('tights');
+    expect(new Set(ITEMS.map((i) => i.id)).size).toBe(ITEMS.length);
+  });
+});
