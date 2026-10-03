@@ -22,6 +22,18 @@ export const CATEGORY_EASE: Record<Category, number> = {
   叔体: 1.0,
 };
 
+/**
+ * 腕まわりを胸囲から推定するときの割合。小さいドールほど胸に対して腕が太い（2026-10-03。
+ * 実測のある小六は 上腕 ÷ 胸囲 ＝ 0.41〜0.45、甘蔗三代の実測は 胸囲 12・上腕 5・腕の付け根回り 6）。
+ * 大きいドールは人間に近い（0.30〜0.38）
+ */
+export const SMALL_ARM_CATEGORIES: readonly Category[] = ['小六', '棍六', '1/6'];
+export function armRatios(category: Category | null): { upperArm: number; armholeFromArm: number; armholeFromChest: number } {
+  return category && SMALL_ARM_CATEGORIES.includes(category)
+    ? { upperArm: 0.41, armholeFromArm: 1.2, armholeFromChest: 0.5 }
+    : { upperArm: 0.32, armholeFromArm: 1.4, armholeFromChest: 0.42 };
+}
+
 /** 採寸画像の表記ゆれ → カテゴリ */
 const ALIASES: Record<string, Category> = {
   特六: '特六',

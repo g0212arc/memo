@@ -3,7 +3,7 @@
 
 import { Body, ValueSource, measurementsOf } from './body';
 import { MeasurementKey } from './schema';
-import { Category, guessCategory } from './category';
+import { armRatios, Category, guessCategory } from './category';
 
 export type VariantSelection = Partial<Record<MeasurementKey, number>>;
 
@@ -128,7 +128,9 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
   }
 
   // 腕まわり
-  if (has('chest_circ')) est('upper_arm_circ', val('chest_circ') * 0.32, '胸囲 × 0.32');
+  // 小さいカテゴリ（小六・棍六・1/6）は胸に対して腕が太いので、割合を変える
+  const arm = armRatios(res.category);
+  if (has('chest_circ')) est('upper_arm_circ', val('chest_circ') * arm.upperArm, `胸囲 × ${arm.upperArm}`);
   // 肘が通る周り（球体関節の出っ張りを見込む）
   if (has('upper_arm_circ')) {
     // 前腕のほうが太いボディ（デフォルメ体など）では、前腕が通る大きさを下回らないように
@@ -140,9 +142,14 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
     }
   }
   if (has('upper_arm_circ') && res.sources.upper_arm_circ !== 'estimated') {
-    est('armhole_circ', val('upper_arm_circ') * 1.4, '上腕回り × 1.4');
+    est('armhole_circ', val('upper_arm_circ') * arm.armholeFromArm, `上腕回り × ${arm.armholeFromArm}`);
   } else if (has('chest_circ')) {
-    est('armhole_circ', val('chest_circ') * 0.42, '胸囲 × 0.42');
+    est('armhole_circ', val('chest_circ') * arm.armholeFromChest, `胸囲 × ${arm.armholeFromChest}`);
+  }
+  // 推定した腕の付け根回りは、肘が通る袖幅を付けられる大きさ（肘が通る周り ＋ 0.2）を下回らないように（前腕が太いボディ）
+  if (res.sources.armhole_circ === 'estimated' && has('elbow_pass_circ') && val('armhole_circ') < val('elbow_pass_circ') + 0.2) {
+    res.values.armhole_circ = r2(val('elbow_pass_circ') + 0.2);
+    res.notes.armhole_circ = '肘が通る周り ＋ 0.2（推定が小さすぎるため。前腕が太いボディ）';
   }
 
   // 腰丈

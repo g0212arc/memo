@@ -2,7 +2,7 @@
   "schema": "doll-body/v1",
   "name": "甘蔗三代",
   "maker": "糖果星系 BonBonGalaxy",
-  "source": "メーカー公式の採寸画像（PVC 倉庫データ）",
+  "source": "メーカー公式の採寸画像（PVC 倉庫データ）。胸囲・ウエスト・ヒップ・首回り・腕まわりは実物の実測（2026-10-03）",
   "category": "棍六",
   "measurements": {
     "height_with_head": {
@@ -18,24 +18,32 @@
       "raw_label": "头围"
     },
     "neck_circ": {
-      "value": 5.4,
-      "raw_label": "脖围"
+      "value": 6,
+      "raw_label": "脖围（実測）"
     },
     "shoulder_width": {
       "value": 5.5,
       "raw_label": "肩宽"
     },
     "chest_circ": {
-      "value": 11.4,
-      "raw_label": "胸围"
+      "value": 12,
+      "raw_label": "胸围（実測）"
     },
     "waist_circ": {
-      "value": 9.6,
-      "raw_label": "腰围"
+      "value": 10,
+      "raw_label": "腰围（実測）"
     },
     "hip_circ": {
-      "value": 13.8,
-      "raw_label": "臀围"
+      "value": 14.5,
+      "raw_label": "臀围（実測）"
+    },
+    "armhole_circ": {
+      "value": 6,
+      "raw_label": "腕の付け根回り（実測）"
+    },
+    "upper_arm_circ": {
+      "value": 5,
+      "raw_label": "上腕回り（実測）"
     },
     "arm_length": {
       "value": 8.4,
@@ -87,5 +95,7 @@
     }
   },
   "unmapped": [],
-  "ambiguities": []
+  "ambiguities": [
+    "公式の値は 胸囲 11.4・ウエスト 9.6・ヒップ 13.8・首回り 5.4。実物を測った値に差し替えた（2026-10-03）"
+  ]
 }
