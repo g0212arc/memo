@@ -15,6 +15,14 @@ export interface Edge {
   match?: string;
 }
 
+/** 型紙の中に書く文字（「持ち出し」など） */
+export interface PieceNote {
+  at: Vec;
+  text: string;
+  /** 縦書き（1 文字ずつ下へ） */
+  vertical?: boolean;
+}
+
 export interface Piece {
   id: string;
   name: string;
@@ -26,6 +34,8 @@ export interface Piece {
   grain: [Vec, Vec];
   /** 内側の印（ダーツの線など）。折れ線ごと */
   marks?: Vec[][];
+  /** 型紙の中に書く文字 */
+  notes?: PieceNote[];
 }
 
 export interface SeamAllowance {

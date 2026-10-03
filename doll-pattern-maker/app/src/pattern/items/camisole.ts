@@ -7,6 +7,7 @@ import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
 import { draftBodice } from '../bodice';
+import { extMarks, openingExtOf } from '../opening';
 import { useBustDart } from '../bust';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit, Fit } from '../fit';
@@ -130,7 +131,7 @@ export function draftCamisole(r: ResolvedBody, p: CamisoleParams): DraftResult {
   );
   if (p.fit === 'custom' && finite(p.chestEaseCustom)) ease.chest = p.chestEaseCustom;
 
-  const openingExt = clamp(chest * 0.05, 0.6, 1.5);
+  const openingExt = openingExtOf(p, chest); // 持ち出しの幅（片側）
   const dart = useBustDart(r, p);
   const bodice = draftBodice(
     {
@@ -200,6 +201,7 @@ export function draftCamisole(r: ResolvedBody, p: CamisoleParams): DraftResult {
       { segs: [line(v(cbX, backWaistY), v(cbX, backTopY))], kind: 'opening', name: '後ろ開き' },
     ],
     grain: [v(g.chestQ * 0.5, backTopY + (backWaistY - backTopY) * 0.2), v(g.chestQ * 0.5, backWaistY - (backWaistY - backTopY) * 0.15)],
+    ...extMarks(backTopY, backWaistY, openingExt),
   };
   const pieces: Piece[] = [front, back];
   if (p.lining) {
@@ -296,6 +298,7 @@ export function draftCamisole(r: ResolvedBody, p: CamisoleParams): DraftResult {
       name: isFront ? '前スカート' : '後ろスカート',
       cut: isFront ? '1枚（わ）' : '2枚（左右反転）',
       edges,
+      ...(isFront ? {} : extMarks(0, openEnd, openingExt)),
       grain: [v(Math.min(topX, hemX) * 0.5, skirtLen * 0.15), v(Math.min(topX, hemX) * 0.5, skirtLen * 0.85)],
     };
   };

@@ -5,6 +5,7 @@ import { Vec, v, add, mul, polar } from '../geometry/vec';
 import { Seg, line, cubic, pathLength } from '../geometry/path';
 import { Edge, Piece } from './types';
 import { EaseSet } from './ease';
+import { extMarks } from './opening';
 
 export interface BodiceMeasurements {
   chest: number;
@@ -225,6 +226,8 @@ export function draftBodice(m: BodiceMeasurements, o: BodiceOptions): BodiceDraf
     cut: o.backOpening ? '2枚（左右反転）' : '1枚（わ）',
     edges: backEdges,
     grain: [v(chestQ * 0.5, chestY * 0.9), v(chestQ * 0.5, backHemY - (backHemY - chestY) * 0.2)],
+    // 背中開き: 後ろ中心の線と「持ち出し」の文字
+    ...(o.backOpening && o.openingExt > 0 ? extMarks(backNeckDepth, backHemY, o.openingExt) : {}),
   };
 
   // ---- 前身頃 ----

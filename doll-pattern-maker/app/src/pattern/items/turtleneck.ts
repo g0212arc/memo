@@ -7,6 +7,7 @@ import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
 import { draftBodice } from '../bodice';
+import { openingExtOf } from '../opening';
 import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
 import { defaultEase, scaleEase } from '../ease';
@@ -110,7 +111,7 @@ export function draftTurtleneck(r: ResolvedBody, p: TurtleneckParams): DraftResu
 
   const chest = val('chest_circ');
   const shoulder = val('shoulder_width');
-  const openingExt = Math.min(1.5, Math.max(0.6, chest * 0.05));
+  const openingExt = openingExtOf(p, chest); // 持ち出しの幅（片側）
   const bodice = draftBodice(
     {
       chest,

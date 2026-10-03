@@ -80,6 +80,15 @@ export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): 
 
     // ダーツなどの内側の印
     for (const m of piece.marks ?? []) cmds.push({ t: 'poly', pts: m.map(tr), closed: false, stroke: 'mark' });
+    // 型紙の中の文字（「持ち出し」など）。縦書きは 1 文字ずつ下へ並べる
+    for (const nt of piece.notes ?? []) {
+      const at = tr(nt.at);
+      if (nt.vertical) {
+        const chars = [...nt.text];
+        const step = NOTE_SIZE * 1.1;
+        chars.forEach((ch, i) => cmds.push({ t: 'text', at: v(at.x, at.y + (i - (chars.length - 1) / 2) * step + NOTE_SIZE * 0.35), text: ch, size: NOTE_SIZE, anchor: 'middle' }));
+      } else cmds.push({ t: 'text', at: v(at.x, at.y + NOTE_SIZE * 0.35), text: nt.text, size: NOTE_SIZE, anchor: 'middle' });
+    }
 
     // 布目線（両矢印）
     const [g0, g1] = piece.grain.map(tr);
@@ -98,6 +107,7 @@ export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): 
 }
 
 const MATCH_SIZE = 3.2;
+const NOTE_SIZE = 2.4;
 
 /** 折れ線の、長さの割合 t の点と、そこでの向き */
 function pointAt(pts: Vec[], t: number): { p: Vec; dir: Vec } | null {

@@ -11,12 +11,13 @@ import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
 import { DraftResult, Edge, EdgeKind, Piece } from '../types';
 import { MissingMeasurementsError } from './tshirt';
+import { extMarks, ExtParams, openingExtOf } from '../opening';
 
 export type SkirtFlare = 'tight' | 'semi' | 'aline' | 'half' | 'full' | 'custom';
 export type SkirtLength = 'mini' | 'knee' | 'midi' | 'ankle' | 'custom';
 export type SkirtWaist = 'elastic' | 'belt';
 
-export interface SkirtParams {
+export interface SkirtParams extends ExtParams {
   flare: SkirtFlare;
   /** flare が custom のときの角度（スカート全体で何度の円か。0〜360） */
   flareCustom: number | null;
@@ -128,7 +129,7 @@ export const openingLength = (wh: number, L: number) => Math.min(wh * 1.2, L * 0
 /**
  * 中心の辺（裾 → ウエスト）。後ろ: ベルト付きは上を開き、スリットは下を開く。どちらもなければ「わ」
  */
-export function centerEdges(L: number, isFront: boolean, belt: boolean, slitLen: number, yOpen: number, top = 0): Edge[] {
+export function centerEdges(L: number, isFront: boolean, belt: boolean, slitLen: number, yOpen: number, top = 0, ext = 0): Edge[] {
   if (isFront || (!belt && slitLen <= 0)) {
     return [{ segs: [line(v(0, L), v(0, top))], kind: 'fold', name: isFront ? '前中心（わ）' : '後ろ中心（わ）' }];
   }
@@ -140,9 +141,18 @@ export function centerEdges(L: number, isFront: boolean, belt: boolean, slitLen:
   }
   const yO = belt ? top + yOpen : top;
   if (y > yO + 1e-9) edges.push({ segs: [line(v(0, y), v(0, yO))], kind: 'seam', name: '後ろ中心' });
-  if (belt) edges.push({ segs: [line(v(0, yO), v(0, top))], kind: 'opening', name: '後ろ開き' });
+  if (belt && ext > 0) {
+    // 持ち出し: 開きの部分だけ後ろ中心の外へ ext 出す（下端は段）。ウエスト側の短い辺は extWaistEdge で足す
+    edges.push(
+      { segs: [line(v(0, yO), v(-ext, yO))], kind: 'seam', name: '持ち出しの下端' },
+      { segs: [line(v(-ext, yO), v(-ext, top))], kind: 'opening', name: '後ろ開き' },
+    );
+  } else if (belt) edges.push({ segs: [line(v(0, yO), v(0, top))], kind: 'opening', name: '後ろ開き' });
   return edges;
 }
+
+/** 持ち出しのウエスト側の短い辺（後ろ中心の外 ext → 後ろ中心） */
+export const extWaistEdge = (ext: number, top: number, kind: EdgeKind): Edge => ({ segs: [line(v(-ext, top), v(0, top))], kind, name: 'ウエスト（持ち出し）' });
 
 /** 中心 (0,0)・半径 r の円弧（真下から角度 a0 → a1）。90° ごとに 3 次ベジェで */
 function arc(r: number, a0: number, a1: number): Seg[] {
@@ -175,6 +185,8 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
   // ゴムはヒップが通る周りで裁ってゴムで縮める
   const waistCut = belt ? b.waistF : b.hipF;
   const yOpen = openingLength(wh, L);
+  // 持ち出しの幅（片側）。ベルト付きの後ろ開きだけ
+  const ext = belt ? openingExtOf(p, b.hipF) : 0;
   const pieces: Piece[] = [];
   let gather = 0;
   let slitLen = 0;
@@ -222,8 +234,9 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
       edges.push(
         { segs: straight ? [line(waistSide, E)] : [sideUpper, line(hipPt, E)], kind: 'seam', name: '脇' },
         { segs: [hem], kind: 'hem', name: '裾' },
-        ...centerEdges(L, isFront, belt, isFront ? 0 : slitLen, yOpen),
+        ...centerEdges(L, isFront, belt, isFront ? 0 : slitLen, yOpen, 0, isFront ? 0 : ext),
       );
+      if (!isFront && ext > 0) edges.unshift(extWaistEdge(ext, 0, waistKind));
       const onFold = isFront || (!belt && slitLen <= 0);
       pieces.push({
         id: isFront ? 'skirt-front' : 'skirt-back',
@@ -231,6 +244,7 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
         cut: onFold ? '1枚（わ）' : '2枚（左右反転）',
         edges,
         grain: [v(Hq * 0.3, wh * 0.6), v(Hq * 0.3, L - (L - wh) * 0.15)],
+        ...(!isFront && ext > 0 ? extMarks(0, yOpen, ext) : {}),
       });
       if (isFront) info.push(`ダーツ 前 ${fmt(dart)}cm`);
       else info[info.length - 1] += `・後ろ ${fmt(dart)}cm（片側 1 本）`;
@@ -249,13 +263,14 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
     const gx = Math.min(1.5, (rIn + L * 0.15) * Math.sin(Math.min(beta, Math.PI / 2)) * 0.4);
     for (const isFront of [true, false]) {
       // 中心の辺は扇の中心線（真下）。centerEdges の座標（x=0、y は rIn から下へ）に合わせる
-      const center = centerEdges(R, isFront, belt, 0, yOpen, rIn);
+      const center = centerEdges(R, isFront, belt, 0, yOpen, rIn, isFront ? 0 : ext);
       const onFold = isFront || !belt;
       pieces.push({
         id: isFront ? 'skirt-front' : 'skirt-back',
         name: isFront ? '前スカート' : '後ろスカート',
         cut: onFold ? '1枚（わ）' : '2枚（左右反転）',
         edges: [
+          ...(!isFront && ext > 0 ? [extWaistEdge(ext, rIn, waistKind)] : []),
           { segs: arc(rIn, 0, beta), kind: waistKind, name: 'ウエスト' },
           { segs: [line(pt(rIn, beta), pt(R, beta))], kind: 'seam', name: '脇' },
           { segs: reverseSegs(arc(R, 0, beta)), kind: 'hem', name: '裾' },
@@ -263,15 +278,17 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
         ],
         // 布目は中心（わ）と平行
         grain: [v(gx, rIn + L * 0.15), v(gx, R - L * 0.15)],
+        ...(!isFront && ext > 0 ? extMarks(rIn, rIn + yOpen, ext) : {}),
       });
     }
     info.push(`扇形: ウエストの半径 ${fmt(rIn)}cm ／ 裾の半径 ${fmt(R)}cm（1 枚あたり ${fmt(A / 4)}°）`);
   }
 
   if (belt) {
-    const overlap = bandOverlap(b.waistF);
+    // ベルトの重なりは、スカートの持ち出しの重なり（片側 × 2）にそろえる
+    const overlap = 2 * ext;
     pieces.push(waistbandPiece(b.waistF + overlap, bandH));
-    info.push(`ベルト ${fmt(b.waistF + overlap)}cm × 仕上がりの高さ ${fmt(bandH)}cm（重なり ${fmt(overlap)}cm にスナップ・かぎホック）／ 後ろ開き ${fmt(yOpen)}cm`);
+    info.push(`ベルト ${fmt(b.waistF + overlap)}cm × 仕上がりの高さ ${fmt(bandH)}cm（重なり ${fmt(overlap)}cm にスナップ・かぎホック）／ 後ろ開き ${fmt(yOpen)}cm・持ち出し ${fmt(ext)}cm`);
     if (gather > 0.05) info.push(`ヒップが入るようにウエストを広げたので、ウエストを ${fmt(gather)}cm 縮めて（ギャザー）ベルトに付けます`);
   } else {
     info.push(`ウエスト: 三つ折りにしてゴムを通します（裁つ周り ${fmt(waistCut)}cm・ゴムの長さの目安 ${fmt(b.waist * 0.95)}cm）`);

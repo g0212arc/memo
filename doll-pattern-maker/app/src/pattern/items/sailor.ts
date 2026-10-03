@@ -8,7 +8,7 @@ import { cubic, flatten, line, pathLength, Seg } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
-import { BACK_OPENING_CATEGORIES, OpeningChoice, resolveOpening } from '../opening';
+import { BACK_OPENING_CATEGORIES, OpeningChoice, openingExtOf, resolveOpening } from '../opening';
 import { draftBodice } from '../bodice';
 import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
@@ -120,7 +120,8 @@ export function draftSailor(r: ResolvedBody, p: SailorParams): DraftResult {
   if (p.fit === 'custom' && finite(p.chestEaseCustom)) ease.chest = p.chestEaseCustom;
 
   const wth = val('waist_to_hip');
-  const openingExt = clamp(chest * 0.05, 0.6, 1.5);
+  // 背中開きの持ち出しは「持ち出しの幅」から（前開きの重なりは今まで通り自動）
+  const openingExt = opening === 'back' ? openingExtOf(p, chest) : clamp(chest * 0.05, 0.6, 1.5);
   // 着丈（ウエストから）: ショートは胸の線とウエストの間（あとで胸の線の高さから決め直す）
   const hemFor = (chestToWaist: number) =>
     p.length === 'custom' && finite(p.lengthCustom)

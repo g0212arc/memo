@@ -48,6 +48,7 @@ import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKI
 import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
+import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
 import { MATCH_RULES } from './matches';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
@@ -139,6 +140,28 @@ const dartField: FieldSpec = {
   help: '胸囲とウエストの差が大きいボディ向け。脇から胸へダーツを入れて、前身頃を胸に沿わせます。',
   show: (p, ctx) => ctx.bustLarge && p.fabric === 'woven',
 };
+/** 背中開きの持ち出しの幅（片側）。show: 後ろ開きのときだけ出す */
+const extFields = (show: (p: Params, ctx: FieldCtx) => boolean): FieldSpec[] => [
+  {
+    kind: 'select',
+    key: 'extWidth',
+    label: '持ち出しの幅（片側）',
+    options: Object.entries(EXT_LABEL) as [string, string][],
+    help: '後ろ中心の外に付ける、マジックテープ・スナップ用の重なり。閉じると左右で重なる幅はこの 2 倍。自動は胸囲（スカートはヒップ）の 5%（0.6〜1.5cm）。',
+    show,
+  },
+  {
+    kind: 'number',
+    key: 'extWidthCustom',
+    label: '持ち出しの幅（片側）',
+    step: 0.1,
+    min: 0.2,
+    unit: 'cm',
+    nullable: true,
+    placeholder: '自動',
+    show: (p, ctx) => show(p, ctx) && p.extWidth === 'custom',
+  },
+];
 const fitFields = (withSleeve: (p: Params) => boolean = () => true): FieldSpec[] => [
   { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions },
   { kind: 'radio', key: 'fitSleeve', label: '袖', options: fitOptions, show: withSleeve },
@@ -162,7 +185,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
   {
     id: 'tshirt',
     label: 'Tシャツ',
-    defaults: { ...DEFAULT_TSHIRT },
+    defaults: { ...DEFAULT_TSHIRT, ...EXT_DEFAULTS },
     requirements: TSHIRT_REQUIREMENTS,
     fields: [
       ...fabricFields,
@@ -189,13 +212,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
       },
       { kind: 'number', key: 'frontNeckDrop', label: '前襟ぐりを下げる', step: 0.1, unit: 'cm' },
       ...fineFields(),
+      ...extFields((p) => !!p.backOpening),
     ],
     draft: (r, p) => draftTshirt(r, p as unknown as TshirtParams),
   },
   {
     id: 'raglan',
     label: 'ラグラン袖シャツ',
-    defaults: { ...DEFAULT_RAGLAN },
+    defaults: { ...DEFAULT_RAGLAN, ...EXT_DEFAULTS },
     requirements: RAGLAN_REQUIREMENTS,
     fields: [
       ...fabricFields,
@@ -233,13 +257,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
       },
       { kind: 'number', key: 'frontNeckDrop', label: '前襟ぐりを下げる', step: 0.1, unit: 'cm', help: 'Vネックでは V が深くなります。' },
       ...fineFields(),
+      ...extFields((p) => !!p.backOpening),
     ],
     draft: (r, p) => draftRaglan(r, p as unknown as RaglanParams),
   },
   {
     id: 'turtleneck',
     label: 'タートルネック',
-    defaults: { ...DEFAULT_TURTLENECK },
+    defaults: { ...DEFAULT_TURTLENECK, ...EXT_DEFAULTS },
     requirements: TURTLENECK_REQUIREMENTS,
     fields: [
       { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖'], ['none', 'なし（ノースリーブ）']] },
@@ -256,6 +281,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
         help: '1.0 で首の長さと同じ高さ。',
       },
       ...fineFields((p) => p.sleeve !== 'none'),
+      ...extFields((p) => !!p.backOpening),
     ],
     draft: (r, p) => draftTurtleneck(r, p as unknown as TurtleneckParams),
   },
@@ -317,7 +343,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
   {
     id: 'skirt',
     label: 'スカート',
-    defaults: { ...DEFAULT_SKIRT },
+    defaults: { ...DEFAULT_SKIRT, ...EXT_DEFAULTS },
     requirements: SKIRT_REQUIREMENTS,
     fields: [
       { kind: 'select', key: 'flare', label: '広がり', options: Object.entries(SKIRT_FLARE_LABEL) as [string, string][] },
@@ -354,13 +380,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
         help: `広がりが ${SLIT_MAX_ANGLE}° 以下（タイト・セミタイト）のときに選べます。`,
         show: (p) => slitAvailable(p as unknown as SkirtParams),
       },
+      ...extFields((p) => p.waist === 'belt'),
     ],
     draft: (r, p) => draftSkirt(r, p as unknown as SkirtParams),
   },
   {
     id: 'pleats',
     label: 'プリーツスカート',
-    defaults: { ...DEFAULT_PLEATS },
+    defaults: { ...DEFAULT_PLEATS, ...EXT_DEFAULTS },
     requirements: PLEATS_REQUIREMENTS,
     fields: [
       { kind: 'radio', key: 'pleat', label: 'ひだの種類', options: Object.entries(PLEAT_LABEL) as [string, string][] },
@@ -397,13 +424,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
         show: (p) => p.length === 'custom',
       },
       { kind: 'radio', key: 'waist', label: 'ウエスト', options: [['elastic', 'ゴム'], ['belt', 'ベルト付き（後ろ開き）']] },
+      ...extFields((p) => p.waist === 'belt'),
     ],
     draft: (r, p) => draftPleats(r, p as unknown as PleatsParams),
   },
   {
     id: 'camisole',
     label: 'キャミソールワンピース',
-    defaults: { ...DEFAULT_CAMISOLE },
+    defaults: { ...DEFAULT_CAMISOLE, ...EXT_DEFAULTS },
     requirements: CAMISOLE_REQUIREMENTS,
     fields: [
       fabricFields[0],
@@ -448,13 +476,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
         show: (p) => p.strap === 'custom',
       },
       { kind: 'checkbox', key: 'lining', label: '身頃に裏地を付ける', help: '付けないときは、胸元と後ろ開きをバイアステープなどで始末します。' },
+      ...extFields(() => true),
     ],
     draft: (r, p) => draftCamisole(r, p as unknown as CamisoleParams),
   },
   {
     id: 'sailor',
     label: 'セーラートップス',
-    defaults: { ...DEFAULT_SAILOR },
+    defaults: { ...DEFAULT_SAILOR, ...EXT_DEFAULTS },
     requirements: SAILOR_REQUIREMENTS,
     fields: [
       fabricFields[0],
@@ -523,13 +552,14 @@ const ITEM_LIST_RAW: ItemDef[] = [
       { kind: 'checkbox', key: 'cuff', label: 'カフスを付ける' },
       { kind: 'radio', key: 'scarf', label: 'スカーフ', options: [['triangle', '三角'], ['long', '長方形']] },
       { kind: 'checkbox', key: 'lining', label: '身頃に裏地を付ける' },
+      ...extFields((p, ctx) => resolveOpening(ctx.category, p.opening as OpeningChoice) === 'back'),
     ],
     draft: (r, p) => draftSailor(r, p as unknown as SailorParams),
   },
   {
     id: 'yshirt',
     label: 'Yシャツ',
-    defaults: { ...DEFAULT_YSHIRT },
+    defaults: { ...DEFAULT_YSHIRT, ...EXT_DEFAULTS },
     requirements: YSHIRT_REQUIREMENTS,
     fields: [
       fabricFields[0],
@@ -579,6 +609,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
       { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖（カフス付き）'], ['half', '半袖']] },
       { kind: 'checkbox', key: 'yoke', label: 'ヨーク（肩の切り替え）を付ける' },
       { kind: 'checkbox', key: 'pocket', label: '胸ポケットを付ける' },
+      ...extFields((p, ctx) => resolveOpening(ctx.category, p.opening as OpeningChoice) === 'back'),
     ],
     draft: (r, p) => draftYshirt(r, p as unknown as YshirtParams),
   },
@@ -950,7 +981,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
   {
     id: 'china',
     label: 'チャイナ服（トップス／スリットドレス）',
-    defaults: { ...DEFAULT_CHINA },
+    defaults: { ...DEFAULT_CHINA, ...EXT_DEFAULTS },
     requirements: CHINA_REQUIREMENTS,
     fields: [
       { kind: 'select', key: 'length', label: '丈', options: Object.entries(CHINA_LENGTH_LABEL) as [string, string][] },
@@ -1018,6 +1049,7 @@ const ITEM_LIST_RAW: ItemDef[] = [
       { ...dartField, show: (_p, ctx) => ctx.bustLarge },
       { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions },
       { kind: 'radio', key: 'fitSleeve', label: '袖のフィット', options: fitOptions, show: (p) => chinaHasSleeve(p as unknown as ChinaParams) },
+      ...extFields(() => true),
     ],
     draft: (r, p) => draftChina(r, { ...(p as unknown as ChinaParams), fabric: 'woven' }),
   },

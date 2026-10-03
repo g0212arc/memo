@@ -36,7 +36,7 @@ describe('プリーツスカート（サンプル全ボディ × 設定）', () 
           // たたむとヒップ（ゆとり込み）になる: 布の幅 − ひだに使う分 ＝ ヒップ
           const m = res.info[1].match(/布の幅 合計 ([\d.]+)cm（たたむとヒップ ([\d.]+)cm/)!;
           expect(Number(m[1])).toBeGreaterThan(Number(m[2]) * 1.8);
-          const marks = res.pieces.filter((pc) => pc.id.startsWith('pleats')).reduce((a, pc) => a + (pc.marks?.length ?? 0) * (pc.cut.startsWith('2') ? 2 : 1), 0);
+          const marks = res.pieces.filter((pc) => pc.id.startsWith('pleats')).reduce((a, pc) => a + (pc.marks?.filter((m) => m[0].x > 1e-9).length ?? 0) * (pc.cut.startsWith('2') ? 2 : 1), 0); // 持ち出しの境目（x = 0）は数えない
           expect(marks).toBe(2 * (p.count === 'custom' ? p.countCustom! : Number(p.count)));
           // 前後の脇の長さがそろう
           const sides = res.pieces.filter((pc) => pc.id.startsWith('pleats')).flatMap((pc) => pc.edges.filter((e) => e.name === '脇').map((e) => pathLength(e.segs)));

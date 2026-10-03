@@ -9,6 +9,7 @@ import { rotate, splitCubic } from '../../geometry/transform';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { draftBodice } from '../bodice';
+import { openingExtOf } from '../opening';
 import { useBustDart } from '../bust';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit } from '../fit';
@@ -68,7 +69,7 @@ export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
   ease.armhole += p.extraArmholeEase;
 
   const chest = val('chest_circ');
-  const openingExt = Math.min(1.5, Math.max(0.6, chest * 0.05));
+  const openingExt = openingExtOf(p, chest); // 持ち出しの幅（片側）
   const bodice = draftBodice(
     {
       chest,

@@ -102,13 +102,13 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
   skirt: [
     { a: ['skirt-front/脇'], b: ['skirt-back/脇'] },
     { a: ['skirt-back/後ろ中心'], note: '（左右を縫い合わせる）' },
-    { a: ['skirt-front/ウエスト', 'skirt-back/ウエスト'], b: ['waistband/ウエスト側#0'], check: 'none' },
+    { a: ['skirt-front/ウエスト', 'skirt-back/ウエスト', 'skirt-back/ウエスト（持ち出し）'], b: ['waistband/ウエスト側#0'], check: 'none' },
   ],
 
   pleats: [
     { a: ['pleats-front/脇', 'pleats-back/脇', 'skirt-back/脇'] },
     { a: ['pleats-back/後ろ中心'], note: '（左右を縫い合わせる）' },
-    { a: ['pleats-front/ウエスト', 'pleats-front/ウエスト（ひだ）', 'pleats-back/ウエスト', 'skirt-back/ウエスト'], b: ['waistband/ウエスト側#0'], check: 'none', note: '（ひだをたたんでから）' },
+    { a: ['pleats-front/ウエスト', 'pleats-front/ウエスト（ひだ）', 'pleats-back/ウエスト', 'pleats-back/ウエスト（持ち出し）', 'skirt-back/ウエスト'], b: ['waistband/ウエスト側#0'], check: 'none', note: '（ひだをたたんでから）' },
   ],
 
   camisole: [

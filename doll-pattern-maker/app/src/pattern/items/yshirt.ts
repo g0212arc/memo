@@ -13,7 +13,7 @@ import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit, Fit } from '../fit';
-import { OpeningChoice, resolveOpening } from '../opening';
+import { extMarks, OpeningChoice, openingExtOf, resolveOpening } from '../opening';
 import { DraftResult, Edge, EdgeKind, Fabric, Piece } from '../types';
 import { MissingMeasurementsError } from './tshirt';
 
@@ -153,7 +153,8 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
       hemBelowWaist,
       armholeEase: ease.armhole,
       backOpening: !front_open,
-      openingExt: pw,
+      // 背中開きの持ち出しは「持ち出しの幅」から（前開きは前立ての幅）
+      openingExt: front_open ? pw : openingExtOf(p, chest),
       bustDart: useBustDart(r, p),
     },
   );
@@ -245,6 +246,7 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
         { segs: [line(v(cbX, yokeY), v(cbX, g.backNeckDepth))], kind: cbKind, name: bCB.name },
       ],
       grain: [v(g.chestQ * 0.4, g.backNeckDepth + (yokeY - g.backNeckDepth) * 0.25), v(g.chestQ * 0.4, yokeY - (yokeY - g.backNeckDepth) * 0.15)],
+      ...(front_open ? {} : extMarks(g.backNeckDepth, yokeY, -cbX)),
     });
     pieces.push({
       ...bodice.back,
@@ -256,6 +258,7 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
         { segs: [line(v(cbX, bHemY), v(cbX, yokeY))], kind: cbKind, name: bCB.name },
       ],
       grain: [v(backGrain[0].x, Math.max(backGrain[0].y, yokeY + 0.3)), backGrain[1]],
+      ...(front_open ? { marks: undefined, notes: undefined } : extMarks(yokeY, bHemY, -cbX)),
     });
   } else {
     pieces.push({

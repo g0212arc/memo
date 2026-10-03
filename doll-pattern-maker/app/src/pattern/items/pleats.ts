@@ -7,10 +7,11 @@ import { v, Vec } from '../../geometry/vec';
 import { line, mapSeg } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { DraftResult, Edge, EdgeKind, Piece } from '../types';
+import { extMarks, ExtParams, openingExtOf } from '../opening';
 import {
   bandHeight,
-  bandOverlap,
   centerEdges,
+  extWaistEdge,
   draftSkirt,
   openingLength,
   SKIRT_LENGTH_LABEL,
@@ -23,7 +24,7 @@ import {
 
 export type PleatType = 'knife' | 'box' | 'inverted';
 
-export interface PleatsParams {
+export interface PleatsParams extends ExtParams {
   pleat: PleatType;
   /** ひだの数（プルダウンの値は文字列。custom なら countCustom） */
   count: '8' | '12' | '16' | 'custom';
@@ -61,6 +62,7 @@ export function draftPleats(r: ResolvedBody, p: PleatsParams): DraftResult {
   const unit = s + 2 * d * (knife ? 1 : 2); // ひだ 1 つ分の布の幅
   const waistKind: EdgeKind = belt ? 'seam' : 'hem';
   const yOpen = openingLength(b.wh, L);
+  const ext = belt ? openingExtOf(p, b.hipF) : 0; // 持ち出しの幅（片側）
 
   // 1 枚の布（units 個のひだ）。左右の端はひだの奥（縫い目が隠れる位置）
   const panel = (id: string, name: string, cut: string, units: number, leftCB: boolean): Piece => {
@@ -73,20 +75,22 @@ export function draftPleats(r: ResolvedBody, p: PleatsParams): DraftResult {
     }
     // 左端: 後ろ中心（ベルト付きの後ろ開き）か脇
     const left: Edge[] = leftCB
-      ? centerEdges(L, false, true, 0, yOpen)
+      ? centerEdges(L, false, true, 0, yOpen, 0, ext)
       : [{ segs: [line(v(0, L), v(0, 0))], kind: 'seam', name: '脇' }];
     return {
       id,
       name,
       cut,
       edges: [
+        ...(leftCB && ext > 0 ? [extWaistEdge(ext, 0, waistKind)] : []),
         { segs: [line(v(0, 0), v(w, 0))], kind: waistKind, name: 'ウエスト' },
         { segs: [line(v(w, 0), v(w, L))], kind: 'seam', name: '脇' },
         { segs: [line(v(w, L), v(0, L))], kind: 'hem', name: '裾' },
         ...left,
       ],
       grain: [v(Math.min(w * 0.5, unit * 0.5), L * 0.15), v(Math.min(w * 0.5, unit * 0.5), L * 0.85)],
-      marks,
+      marks: leftCB && ext > 0 ? [...marks, ...extMarks(0, yOpen, ext).marks] : marks,
+      notes: leftCB && ext > 0 ? extMarks(0, yOpen, ext).notes : undefined,
     };
   };
 
@@ -115,11 +119,11 @@ export function draftPleats(r: ResolvedBody, p: PleatsParams): DraftResult {
       : 'たたみ方: 印の線はすべて箱の端です。全部山折りにして、印と印のあいだを 1 つおきに裏へたたみ、隣の箱のひだ山と表で突き合わせます。脇の縫い目は裏の奥に隠れます',
   );
   if (belt) {
-    const overlap = bandOverlap(b.waistF);
+    const overlap = 2 * ext; // ベルトの重なり ＝ 持ち出しの重なり
     const take = (b.hipF - b.waistF) / n;
     pieces.push(waistbandPiece(b.waistF + overlap, bandH));
     info.push(`ウエストでは、ひだを 1 本あたり ${fmt(take)}cm ずつ深く重ねてウエスト ${fmt(b.waistF)}cm にし、ヒップまで縫い止めます`);
-    info.push(`ベルト ${fmt(b.waistF + overlap)}cm × 仕上がりの高さ ${fmt(bandH)}cm（重なり ${fmt(overlap)}cm）／ 後ろ開き ${fmt(yOpen)}cm`);
+    info.push(`ベルト ${fmt(b.waistF + overlap)}cm × 仕上がりの高さ ${fmt(bandH)}cm（重なり ${fmt(overlap)}cm）／ 後ろ開き ${fmt(yOpen)}cm・持ち出し ${fmt(ext)}cm`);
   } else {
     info.push(`ウエスト: ひだをたたんで縫い止め（ヒップ ${fmt(b.hipF)}cm）、三つ折りにしてゴムを通します（ゴムの長さの目安 ${fmt(b.waist * 0.95)}cm）`);
   }
@@ -130,7 +134,7 @@ export function draftPleats(r: ResolvedBody, p: PleatsParams): DraftResult {
 
 /** インバーテッド（前だけ）: セミタイトのスカートの前中心に、ひだ分（深さ×2）を足す */
 function draftInverted(r: ResolvedBody, p: PleatsParams): DraftResult {
-  const base = draftSkirt(r, { flare: 'semi', flareCustom: null, length: p.length, lengthCustom: p.lengthCustom, waist: p.waist, slit: false });
+  const base = draftSkirt(r, { flare: 'semi', flareCustom: null, length: p.length, lengthCustom: p.lengthCustom, waist: p.waist, slit: false, extWidth: p.extWidth, extWidthCustom: p.extWidthCustom });
   const b = skirtBase(r, p.length, p.lengthCustom);
   const front = base.pieces.find((pc) => pc.id === 'skirt-front')!;
   const fold = front.edges.find((e) => e.kind === 'fold')!;

@@ -9,6 +9,7 @@ import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
 import { draftBodice } from '../bodice';
+import { extMarks, openingExtOf } from '../opening';
 import { useBustDart } from '../bust';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit, Fit } from '../fit';
@@ -142,7 +143,7 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
 
   const chest = val('chest_circ');
   const shoulder = val('shoulder_width');
-  const openingExt = Math.min(1.5, Math.max(0.6, chest * 0.05));
+  const openingExt = openingExtOf(p, chest); // 持ち出しの幅（片側）
   const bodice = draftBodice(
     {
       chest,
@@ -310,7 +311,9 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
       const bx = Math.min(chestQ * 0.38, sideWaistX - dartW); // 布目線（幅の半分）と重ならない位置
       marks.push(waistDart(bx, g.chestY + (g.waistY - g.chestY) * 0.2, g.waistY, Math.min(g.waistY + wh * 0.8, bHemY - 0.3)));
     }
-    return { ...pc, edges, marks: marks.length ? marks : undefined };
+    // 持ち出しは後ろ開きの範囲（ドレスはヒップまで）
+    const ext = extMarks(g.backNeckDepth, yOpen, openingExt);
+    return { ...pc, edges, marks: [...marks, ...ext.marks], notes: ext.notes };
   };
   const rebuildFront = (): Piece => {
     const pc = bodice.front;
