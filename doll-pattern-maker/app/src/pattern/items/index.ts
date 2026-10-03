@@ -41,6 +41,7 @@ import {
 import { CAPE_COLLAR_LABEL, CAPE_FLARE_LABEL, CAPE_LENGTH_LABEL, CAPE_REQUIREMENTS, CapeParams, capeIsLong, DEFAULT_CAPE, draftCape } from './cape';
 import { DEFAULT_HOODIE, draftHoodie, HOODIE_LENGTH_LABEL, HOODIE_REQUIREMENTS, HoodieParams } from './hoodie';
 import { HEAD_SIZES } from '../hood';
+import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, YukataParams } from './yukata';
 import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
 
 type Params = Record<string, unknown>;
@@ -616,6 +617,38 @@ export const ITEMS: ItemDef[] = [
       { kind: 'checkbox', key: 'rib', label: '袖口・裾にリブを付ける' },
     ],
     draft: (r, p) => draftHoodie(r, p as unknown as HoodieParams),
+  },
+  {
+    id: 'yukata',
+    label: '浴衣',
+    defaults: { ...DEFAULT_YUKATA },
+    requirements: YUKATA_REQUIREMENTS,
+    fields: [
+      {
+        kind: 'radio',
+        key: 'build',
+        label: '作り',
+        options: [['simple', 'ドール向けの簡単な作り'], ['authentic', '本来の作り']],
+        help: '簡単な作りは衽を前身頃と一緒に裁ち、共衿を省きます（縫い目と厚みが減ります）。',
+      },
+      { kind: 'radio', key: 'gender', label: '仕立て', options: [['women', '女物'], ['men', '男物']], help: '女物はおはしょり・身八つ口・振りがあります。' },
+      { kind: 'radio', key: 'sleeveShape', label: '袖の形', options: [['square', '普通の袖'], ['genroku', '元禄袖']] },
+      { kind: 'select', key: 'sleeveLen', label: '袖丈', options: Object.entries(SLEEVE_LEN_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'sleeveLenCustom',
+        label: '袖丈',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.sleeveLen === 'custom',
+      },
+      { kind: 'radio', key: 'obi', label: '帯', options: [['hanhaba', '半幅帯'], ['heko', '兵児帯']] },
+      { kind: 'checkbox', key: 'tsukuri', label: '作り帯にする（結んだ形を別に作って留める）' },
+    ],
+    draft: (r, p) => draftYukata(r, p as unknown as YukataParams),
   },
 ];
 
