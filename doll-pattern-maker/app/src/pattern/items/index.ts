@@ -42,6 +42,8 @@ import { CAPE_COLLAR_LABEL, CAPE_FLARE_LABEL, CAPE_LENGTH_LABEL, CAPE_REQUIREMEN
 import { DEFAULT_HOODIE, draftHoodie, HOODIE_LENGTH_LABEL, HOODIE_REQUIREMENTS, HoodieParams } from './hoodie';
 import { HEAD_SIZES } from '../hood';
 import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, YukataParams } from './yukata';
+import { TIGHTS_BUST_DART_RATIO } from '../bust';
+import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
 import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
 
 type Params = Record<string, unknown>;
@@ -51,6 +53,8 @@ export interface FieldCtx {
   category: Category | null;
   /** 胸ダーツを選べるボディか */
   bustLarge: boolean;
+  /** 胸囲 ÷ ウエスト（アイテムごとに基準を変えるとき用） */
+  bustRatio: number;
 }
 
 /** 選択肢を、ボディによって出したり隠したりする */
@@ -649,6 +653,55 @@ export const ITEMS: ItemDef[] = [
       { kind: 'checkbox', key: 'tsukuri', label: '作り帯にする（結んだ形を別に作って留める）' },
     ],
     draft: (r, p) => draftYukata(r, p as unknown as YukataParams),
+  },
+  {
+    id: 'tights',
+    label: '色移り防止タイツ',
+    defaults: { ...DEFAULT_TIGHTS },
+    requirements: TIGHTS_REQUIREMENTS,
+    fields: [
+      {
+        kind: 'number',
+        key: 'stretch',
+        label: '伸び率',
+        step: 5,
+        min: 5,
+        max: 200,
+        unit: '%',
+        help: '布を横に引っぱったとき何％伸びるか。小さくする量の計算に使います。',
+      },
+      { kind: 'select', key: 'coverage', label: '覆う範囲', options: Object.entries(COVERAGE_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖'], ['half', '半袖'], ['none', 'なし']] },
+      { kind: 'radio', key: 'neck', label: '首', options: [['turtle', 'タートル（首まで）'], ['scoop', '普通の襟ぐり']] },
+      {
+        kind: 'radio',
+        key: 'opening',
+        label: '開き',
+        options: [['none', '開きなし'], ['zip', '背中ファスナー']],
+        help: '開きなしは伸ばして着せるので小さめ、ファスナーありはほぼぴったりで作ります。',
+      },
+      { kind: 'select', key: 'snug', label: 'ぴったり具合', options: Object.entries(SNUG_LABEL) as [string, string][] },
+      {
+        kind: 'checkbox',
+        key: 'bustDart',
+        label: '胸ダーツを入れる',
+        help: '胸がとても大きいボディ向け。伸びる布でも胸の下にすき間やしわが出ないよう、脇から胸へダーツを入れます。',
+        show: (_p, ctx) => ctx.bustRatio >= TIGHTS_BUST_DART_RATIO,
+      },
+      {
+        kind: 'number',
+        key: 'reduceCustom',
+        label: '周りを小さくする量',
+        step: 1,
+        min: 0,
+        max: 50,
+        unit: '%',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.snug === 'custom',
+      },
+    ],
+    draft: (r, p) => draftTights(r, p as unknown as TightsParams),
   },
 ];
 
