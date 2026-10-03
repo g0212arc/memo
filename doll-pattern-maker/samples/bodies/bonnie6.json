@@ -1,0 +1,33 @@
+{
+  "schema": "doll-body/v1",
+  "name": "ボニバニ6（1/8）",
+  "maker": "COME4FREE",
+  "source": "PRODUCT DATA 产品数据（Bonnie）",
+  "category": "小六",
+  "measurements": {
+    "height_with_head": { "value": 20.5, "raw_label": "身高" },
+    "height": { "value": 16, "raw_label": "素体身高" },
+    "neck_circ": { "value": 4.1, "raw_label": "脖围" },
+    "shoulder_width": { "value": 2.5, "raw_label": "肩宽" },
+    "arm_length": { "value": 4.7, "raw_label": "臂长" },
+    "upper_arm_circ": { "value": 3.8, "raw_label": "臂围" },
+    "hand_length": { "value": 1.4, "raw_label": "手长" },
+    "chest_circ": { "value": 8.4, "raw_label": "胸围" },
+    "waist_circ": { "value": 9.5, "raw_label": "腰围" },
+    "hip_circ": { "value": 12, "raw_label": "臀围" },
+    "thigh_circ": { "value": 6.8, "raw_label": "大腿围" },
+    "calf_circ": { "value": 5.2, "raw_label": "小腿围" },
+    "inseam": { "value": 8.4, "raw_label": "腿长" },
+    "foot_length": { "value": 2.3, "raw_label": "脚长" },
+    "foot_width": { "value": 1.2, "raw_label": "脚宽" }
+  },
+  "unmapped": [
+    { "raw_label": "図の縦の寸法（肩から足裏まで）", "value": 13 }
+  ],
+  "ambiguities": [
+    "1/8 サイズ。カテゴリは小六に入れ、名前に（1/8）と書いた",
+    "「身高」20.5 は頭込み、「素体身高」16 は頭なしとして扱った",
+    "「腰围」はウエストとして扱った（臀围が別にある）。ウエストが胸囲より大きい体型",
+    "「臂围」は上腕回り、「腿长」は股下として扱った"
+  ]
+}

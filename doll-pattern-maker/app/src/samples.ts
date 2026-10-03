@@ -24,6 +24,7 @@ const ORDER = [
   'kk', // KK体（1/4）
   'cherry', // 车厘子体（チェリー体）
   'mofumofu', // モフモフおやすみ（小六）
+  'bonnie6', // ボニバニ6（1/8。カテゴリは小六）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');
