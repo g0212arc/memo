@@ -49,6 +49,13 @@ describe('ケモミミの大きさ', () => {
     expect(h[0]).toBeLessThan(h[1]);
     expect(h[1]).toBeLessThan(h[2]);
   });
+  it('頭囲 6〜7 < 7〜8 < 9〜10 インチ（ボディに関係なく同じ）', () => {
+    const h = (['6-7', '7-8', '9-10'] as const).map((head) => Number(draftEars(r, { ...DEFAULT_EARS, head }).info[0].match(/耳の高さ ([\d.]+)cm/)![1]));
+    expect(h[0]).toBeLessThan(h[1]);
+    expect(h[1]).toBeLessThan(h[2]);
+    const other = resolveBody(SAMPLE_BODIES.find((b) => b.name !== 'MDD')!);
+    expect(draftEars(other, DEFAULT_EARS).info[0]).toBe(draftEars(r, DEFAULT_EARS).info[0]);
+  });
   it('磁石が大きすぎると警告', () => {
     const res = draftEars(r, { ...DEFAULT_EARS, attach: 'magnet', magnet: 'custom', magnetCustom: 5 });
     expect(res.warnings.some((w) => w.includes('磁石が入りません'))).toBe(true);

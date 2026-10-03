@@ -1,5 +1,6 @@
 // ケモミミ（カチューシャに付ける耳）。耳 1 つ ＝ 表と裏の 2 枚を中表に縫って返す。根元にタックを入れて少し丸める。
 // マグネットのときは根元に楕円の底布を付けて、中に磁石を入れる。
+// 大きさの基準はボディではなく、選んだ頭囲（ウィッグサイズのインチ）。範囲の真ん中の値で作る。
 // 座標: 耳の先が (0, 0)、根元が y = h（下向き）。左右対称。
 
 import { Vec, v } from '../../geometry/vec';
@@ -7,13 +8,17 @@ import { Seg, cubic, line, pathLength } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { DraftResult, Piece } from '../types';
-import { MissingMeasurementsError } from './tshirt';
 
 export type EarShape = 'cat' | 'fox' | 'dog' | 'dogDrop' | 'rabbit' | 'bear';
 export type EarSize = 'small' | 'normal' | 'large' | 'custom';
 export type MagnetSize = '0.5' | '0.6' | '0.8' | '1' | 'custom';
+export type EarHead = '9-10' | '7-8' | '6-7' | 'custom';
 
 export interface EarsParams {
+  /** 頭囲（ウィッグサイズ）。ボディには関係なく選ぶ */
+  head: EarHead;
+  /** head が custom のときの頭囲（cm） */
+  headCustom: number | null;
   shape: EarShape;
   size: EarSize;
   /** size が custom のときの耳の高さ（cm） */
@@ -25,13 +30,19 @@ export interface EarsParams {
   inner: 'same' | 'small';
 }
 
-export const DEFAULT_EARS: EarsParams = { shape: 'cat', size: 'normal', sizeCustom: null, attach: 'headband', magnet: '0.6', magnetCustom: null, inner: 'small' };
+export const DEFAULT_EARS: EarsParams = { head: '7-8', headCustom: null, shape: 'cat', size: 'normal', sizeCustom: null, attach: 'headband', magnet: '0.6', magnetCustom: null, inner: 'small' };
 
 export const EAR_SHAPE_LABEL: Record<EarShape, string> = { cat: '猫', fox: '狐', dog: '犬（立ち耳）', dogDrop: '犬（垂れ耳）', rabbit: 'うさぎ', bear: 'くま' };
 export const EAR_SIZE_LABEL: Record<EarSize, string> = { small: '小さめ', normal: '普通', large: '大きめ', custom: '自分で入力' };
 export const MAGNET_LABEL: Record<MagnetSize, string> = { '0.5': '5mm', '0.6': '6mm', '0.8': '8mm', '1': '10mm', custom: '自分で入力' };
 
-export const EARS_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [{ key: 'neck_circ', hard: false }];
+export const EAR_HEAD_LABEL: Record<EarHead, string> = { '9-10': '9〜10インチ', '7-8': '7〜8インチ', '6-7': '6〜7インチ', custom: '自分で入力' };
+/** 範囲の真ん中（インチ） */
+const HEAD_INCH: Record<Exclude<EarHead, 'custom'>, number> = { '9-10': 9.5, '7-8': 7.5, '6-7': 6.5 };
+const INCH = 2.54;
+
+/** ボディの採寸値は使わない */
+export const EARS_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [];
 
 /** 形ごとの 耳の高さ ÷ 頭囲、幅 ÷ 高さ、先の形 */
 const SHAPE: Record<EarShape, { h: number; w: number; tip: 'point' | 'round' | 'circle' }> = {
@@ -81,12 +92,11 @@ function ellipse(a: number, b: number): Seg[] {
   ];
 }
 
-export function draftEars(r: ResolvedBody, p: EarsParams): DraftResult {
-  const missing = EARS_REQUIREMENTS.filter((q) => r.values[q.key] === undefined && r.values.head_circ === undefined).map((q) => q.key);
-  if (missing.length > 0) throw new MissingMeasurementsError(missing);
+export function draftEars(_r: ResolvedBody, p: EarsParams): DraftResult {
   const warnings: string[] = [];
   const info: string[] = [];
-  const head = r.values.head_circ ?? (r.values.neck_circ as number) * 2.4;
+  const head =
+    p.head === 'custom' && finite(p.headCustom) && p.headCustom > 0 ? p.headCustom : HEAD_INCH[p.head === 'custom' ? '7-8' : p.head] * INCH;
   const sh = SHAPE[p.shape];
   const h = p.size === 'custom' && finite(p.sizeCustom) ? p.sizeCustom : head * sh.h * SIZE_K[p.size === 'custom' ? 'normal' : p.size];
   const w = h * sh.w;
@@ -174,7 +184,7 @@ export function draftEars(r: ResolvedBody, p: EarsParams): DraftResult {
     info.push('根元から返して綿を少し入れ、タックを縫ってからカチューシャに縫い付けるかボンドで貼ります');
   }
   info.unshift(
-    `${EAR_SHAPE_LABEL[p.shape]} ／ 耳の高さ ${fmt(h)}cm・根元の幅 ${fmt(w)}cm（頭囲 ${fmt(head)}cm${r.values.head_circ === undefined ? '・首回りから推定' : ''}）`,
+    `${EAR_SHAPE_LABEL[p.shape]} ／ 耳の高さ ${fmt(h)}cm・根元の幅 ${fmt(w)}cm（頭囲 ${fmt(head)}cm・${EAR_HEAD_LABEL[p.head]}）`,
     `根元のタック 幅 ${fmt(tw)}cm（印の V を中表につまんで縫う）／ 縁の長さ ${fmt(pathLength(outline))}cm`,
   );
   if (p.inner === 'small') info.push('内側の布は縫い代を 0.3cm くらいに切ってから折り込み、表の印の位置にまつり付けます（根元は表と一緒に縫い代に挟む）');

@@ -50,7 +50,7 @@ import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEV
 import { applyMatches } from '../match';
 import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
 import { MATCH_RULES } from './matches';
-import { DEFAULT_EARS, draftEars, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
+import { DEFAULT_EARS, draftEars, EAR_HEAD_LABEL, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -1060,8 +1060,26 @@ const ITEM_LIST_RAW: ItemDef[] = [
     defaults: { ...DEFAULT_EARS },
     requirements: EARS_REQUIREMENTS,
     fields: [
+      {
+        kind: 'select',
+        key: 'head',
+        label: '頭囲（ウィッグサイズ）',
+        options: Object.entries(EAR_HEAD_LABEL) as [string, string][],
+        help: 'ボディに関係なく、付ける頭の大きさで選びます。範囲の真ん中の値で作ります。',
+      },
+      {
+        kind: 'number',
+        key: 'headCustom',
+        label: '頭囲',
+        step: 0.1,
+        min: 5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '7〜8インチ',
+        show: (p) => p.head === 'custom',
+      },
       { kind: 'select', key: 'shape', label: '耳の形', options: Object.entries(EAR_SHAPE_LABEL) as [string, string][] },
-      { kind: 'select', key: 'size', label: '大きさ', options: Object.entries(EAR_SIZE_LABEL) as [string, string][], help: 'ボディの頭囲から決めます（頭囲がなければ首回りから推定）。' },
+      { kind: 'select', key: 'size', label: '大きさ', options: Object.entries(EAR_SIZE_LABEL) as [string, string][], help: '頭囲に対する割合で決めます。' },
       {
         kind: 'number',
         key: 'sizeCustom',
