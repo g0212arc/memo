@@ -419,7 +419,11 @@ document.addEventListener('click', async (ev) => {
           alert(sel.error);
           return;
         }
-        const doc = buildPdf(c.cmds, c.layout.width * 10, c.layout.height * 10, canvasRasterizer(), sel.pages);
+        // 作り方メモはページの空いているところに入れる（入らなければページを足す。ページを指定したときは足したページは出さない）
+        const { withMemo } = await import('./render/memo');
+        const m = c.draft ? withMemo(c.layout, st.sa, c.cmds, c.item.id, st.params[c.item.id], c.draft) : { cmds: c.cmds, heightMm: c.layout.height * 10, extraPage: false };
+        const pages = pdfPages.trim() === '' ? undefined : sel.pages;
+        const doc = buildPdf(m.cmds, c.layout.width * 10, m.heightMm, canvasRasterizer(), pages);
         download(`${safeName(c.body.name)}_${c.item.label}.pdf`, doc.output('blob'));
       } finally {
         el.removeAttribute('disabled');
