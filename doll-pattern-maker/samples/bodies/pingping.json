@@ -1,0 +1,28 @@
+{
+  "schema": "doll-body/v1",
+  "name": "苹苹体",
+  "maker": "",
+  "source": "普六分尺寸（採寸画像）",
+  "category": "1/6",
+  "measurements": {
+    "height": { "value": 23, "raw_label": "身高" },
+    "neck_circ": { "value": 5.3, "raw_label": "脖围" },
+    "shoulder_width": { "value": 5.9, "raw_label": "肩宽" },
+    "chest_circ": { "value": 11.8, "raw_label": "胸围" },
+    "waist_circ": { "value": 11.3, "raw_label": "腰围" },
+    "hip_circ": { "value": 14, "raw_label": "臀围" },
+    "arm_length": { "value": 7.5, "raw_label": "臂长" },
+    "thigh_circ": { "value": 8.3, "raw_label": "大腿围" },
+    "calf_circ": { "value": 6.2, "raw_label": "小腿围" },
+    "foot_length": { "value": 3.8, "raw_label": "脚长" },
+    "foot_width": { "value": 1.7, "raw_label": "脚宽" }
+  },
+  "unmapped": [
+    { "raw_label": "腿长（从胯不含脚球）", "value": 11.3, "note": "股から足首まで（足の球体関節を含まない）。足裏までの股下とは別物" }
+  ],
+  "ambiguities": [
+    "「身高」23 はヘッドなしの写真なので、頭なし身長として扱った",
+    "「腰围」はウエストとして扱った（臀围が別にある）",
+    "「腿长」は股から足首までで足を含まないため、股下としては取り込まず、その他に回した"
+  ]
+}

@@ -20,6 +20,7 @@ const ORDER = [
   'kohaku',
   'kakoi-h', // 囝囝体（ファイル名は id を保つため変えない）
   'songbai', // 松柏体（叔体）
+  'pingping', // 苹苹体（1/6）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

@@ -25,7 +25,9 @@ export function loadBodies(): Body[] {
   try {
     const raw = localStorage.getItem(BODIES_KEY);
     const arr = raw ? (JSON.parse(raw) as Body[]) : [];
-    return Array.isArray(arr) ? arr : [];
+    // カテゴリのないボディ（カテゴリを取り込みで決めるようになる前に保存したもの。画面では「（仮）」）は、
+    // もうカテゴリを付けられないので読み込まない（次に保存したときに消える）。2026-10-03
+    return Array.isArray(arr) ? arr.filter((b) => !!b && !!b.category) : [];
   } catch {
     return [];
   }
