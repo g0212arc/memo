@@ -5,41 +5,103 @@
   "source": "採寸画像（手作業の採寸）",
   "category": "特四",
   "measurements": {
-    "height": { "value": 44, "raw_label": "身高不含头" },
-    "neck_circ": { "value": 7, "raw_label": "脖围" },
-    "shoulder_width": { "value": 11.8, "raw_label": "肩宽" },
-    "chest_circ": { "value": 21.6, "raw_label": "胸围" },
-    "waist_circ": { "value": 14.5, "raw_label": "腰围" },
-    "hip_circ": { "value": 20.8, "raw_label": "臀围" },
-    "thigh_circ": { "value": 11.5, "raw_label": "大腿围" },
-    "calf_circ": { "value": 8.5, "raw_label": "小腿围" },
-    "upper_arm_circ": { "value": 7, "raw_label": "大臂围" },
-    "forearm_circ": { "value": 6.5, "raw_label": "小臂围" },
-    "wrist_joint_diam": { "value": 1.1, "raw_label": "手球直径" },
-    "foot_length": { "value": 5.6, "raw_label": "平底脚 脚长" },
-    "foot_width": { "value": 2, "raw_label": "平底脚 脚宽" },
-    "ankle_joint_diam": { "value": 1.5, "raw_label": "平底脚 脚球" }
+    "height": {
+      "value": 44,
+      "raw_label": "身高不含头"
+    },
+    "neck_circ": {
+      "value": 7,
+      "raw_label": "脖围"
+    },
+    "shoulder_width": {
+      "value": 11.8,
+      "raw_label": "肩宽"
+    },
+    "chest_circ": {
+      "value": 21.6,
+      "raw_label": "胸围"
+    },
+    "waist_circ": {
+      "value": 14.5,
+      "raw_label": "腰围"
+    },
+    "hip_circ": {
+      "value": 20.8,
+      "raw_label": "臀围"
+    },
+    "thigh_circ": {
+      "value": 11.5,
+      "raw_label": "大腿围"
+    },
+    "calf_circ": {
+      "value": 8.5,
+      "raw_label": "小腿围"
+    },
+    "inseam": {
+      "value": 28.7,
+      "raw_label": "腿长含脚"
+    },
+    "upper_arm_circ": {
+      "value": 7,
+      "raw_label": "大臂围"
+    },
+    "forearm_circ": {
+      "value": 6.5,
+      "raw_label": "小臂围"
+    },
+    "wrist_joint_diam": {
+      "value": 1.1,
+      "raw_label": "手球直径"
+    },
+    "foot_length": {
+      "value": 5.6,
+      "raw_label": "平底脚 脚长"
+    },
+    "foot_width": {
+      "value": 2,
+      "raw_label": "平底脚 脚宽"
+    },
+    "ankle_joint_diam": {
+      "value": 1.5,
+      "raw_label": "平底脚 脚球"
+    }
   },
   "types": [
-    { "label": "平底脚", "measurements": {} },
+    {
+      "label": "平底脚",
+      "measurements": {}
+    },
     {
       "label": "高跟脚",
       "measurements": {
-        "foot_length": { "value": 5.3, "raw_label": "高跟脚 脚长" },
-        "foot_height": { "value": 2.7, "raw_label": "高跟脚 脚高" }
+        "foot_length": {
+          "value": 5.3,
+          "raw_label": "高跟脚 脚长"
+        },
+        "foot_height": {
+          "value": 2.7,
+          "raw_label": "高跟脚 脚高"
+        }
       }
     }
   ],
   "unmapped": [
-    { "raw_label": "手臂含手", "value": 19.5, "note": "手を含む腕の長さ。手首までの腕の長さとは別物" },
-    { "raw_label": "腿长含脚", "value": 28.7, "note": "足を含む脚の長さ。測り始めが股か腰かはっきりしないため、股下・外脚長には使わない" },
-    { "raw_label": "加增高节身高", "value": 45.5, "note": "背を高くするジョイントを付けたときの身長" }
+    {
+      "raw_label": "手臂含手",
+      "value": 19.5,
+      "note": "手を含む腕の長さ。手首までの腕の長さとは別物"
+    },
+    {
+      "raw_label": "加增高节身高",
+      "value": 45.5,
+      "note": "背を高くするジョイントを付けたときの身長"
+    }
   ],
   "ambiguities": [
     "「腰围」はウエストとして扱った（臀围が別にある）",
     "「手臂含手」は手を含むので腕の長さ（手首まで）には入れず、その他に回した（腕の長さは身長から推定）",
-    "「腿长含脚」は測り始めがはっきりしないので股下には入れず、その他に回した（股下は推定）",
     "タイプ「平底脚」「高跟脚」は足の寸法だけが違う",
-    "手作業の採寸なので誤差がある（画像の注記）"
+    "手作業の採寸なので誤差がある（画像の注記）",
+    "「腿长含脚」28.7 は股下（股から足裏まで）として扱った。身長に対して長いが、脚の長い体型（2026-10-03 確認）"
   ]
 }
