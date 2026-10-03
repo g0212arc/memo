@@ -1,0 +1,38 @@
+{
+  "schema": "doll-body/v1",
+  "name": "松柏体",
+  "maker": "",
+  "source": "松柏体数据（rednote の採寸画像 2 枚）",
+  "category": "叔体",
+  "measurements": {
+    "height": { "value": 64.5, "raw_label": "身高" },
+    "neck_circ": { "value": 10.4, "raw_label": "脖围" },
+    "shoulder_width": { "value": 16, "raw_label": "肩宽／肩峰距离" },
+    "chest_circ": { "value": 31, "raw_label": "胸围" },
+    "waist_circ": { "value": 21.5, "raw_label": "腰围" },
+    "hip_circ": { "value": 27.6, "raw_label": "臀围" },
+    "thigh_circ": { "value": 16.5, "raw_label": "大腿围" },
+    "calf_circ": { "value": 12, "raw_label": "小腿围" },
+    "inseam": { "value": 38, "raw_label": "内腿长" },
+    "upper_arm_circ": { "value": 9.8, "raw_label": "大臂围" },
+    "forearm_circ": { "value": 8.8, "raw_label": "小臂围" },
+    "foot_length": { "value": 8.5, "raw_label": "脚长" },
+    "foot_width": { "value": 3.5, "raw_label": "脚宽" },
+    "wrist_joint_circ": { "value": 6.3, "raw_label": "手球圆周长" },
+    "wrist_joint_diam": { "value": 2, "raw_label": "手球直径" },
+    "ankle_joint_circ": { "value": 8, "raw_label": "脚球圆周长" },
+    "ankle_joint_diam": { "value": 2.4, "raw_label": "脚球直径" }
+  },
+  "unmapped": [
+    { "raw_label": "外腿长", "value": 40, "note": "図では股関節のあたりから測っているため、ウエストからの外脚長としては使わない" },
+    { "raw_label": "缝纫数据（首の付け根を通る肩の長さ）", "value": 16.5 },
+    { "raw_label": "大臂高点距离（左右の上腕の外側の間）", "value": 17 }
+  ],
+  "ambiguities": [
+    "「身高」64.5 はヘッドなしの写真なので、頭なし身長として扱った",
+    "肩幅は「肩峰距离」16 を使った（縫製用の 16.5 は首の付け根を通る長さ）",
+    "「腰围」はウエストとして扱った（臀围が別にある）",
+    "「外腿长」40 は股関節あたりからの長さに見えるため取り込まず、その他に回した",
+    "手作業の採寸なので誤差がある（画像の注記）"
+  ]
+}
