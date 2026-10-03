@@ -74,6 +74,13 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
   // 首の長さ
   if (has('height')) est('neck_length', val('height') * 0.055, '頭なし身長 × 0.055');
 
+  // 股下（足裏まで）＝ 股から足首 ＋ 足の高さ（足を含まない「腿长」などから）
+  if (!has('inseam') && has('crotch_to_ankle')) {
+    if (has('foot_height')) est('inseam', val('crotch_to_ankle') + val('foot_height'), '股から足首 ＋ 足の高さ');
+    else if (has('foot_length')) est('inseam', val('crotch_to_ankle') + val('foot_length') * 0.35, '股から足首 ＋ 足の長さ × 0.35');
+    else est('inseam', val('crotch_to_ankle') * 1.12, '股から足首 × 1.12');
+  }
+
   // 股上
   if (!has('rise') && has('hip_circ')) {
     const fallback = val('hip_circ') * 0.25;
@@ -171,6 +178,11 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
   if (has('height')) est('foot_length', val('height') * 0.15, '頭なし身長 × 0.15');
   else if (has('inseam')) est('foot_length', val('inseam') * 0.26, '股下 × 0.26');
   if (has('foot_length')) est('foot_pass_circ', val('foot_length') * 1.5, '足の長さ × 1.5');
+  // 股から足首（ズボンのくるぶし丈）＝ 股下 − 足の高さ
+  if (has('inseam')) {
+    if (has('foot_height')) est('crotch_to_ankle', val('inseam') - val('foot_height'), '股下 − 足の高さ');
+    else est('crotch_to_ankle', val('inseam') * 0.94, '股下 × 0.94');
+  }
 
   return res;
 }

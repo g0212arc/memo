@@ -48,6 +48,7 @@ wrist_joint_diam: 手球, 手球直径
 wrist_joint_circ: 手球圆周长
 outer_leg_length: 外腿长, 腿长含脚
 inseam: 内腿长, 裆至脚底, 裆到脚底腿长, 股下
+crotch_to_ankle: 股から足首, 腿长（図で股から足首まで・足を含まないとき）
 navel_to_sole: 肚脐至脚底
 thigh_circ: 大腿围, 太もも
 calf_circ: 小腿围, ふくらはぎ

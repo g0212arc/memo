@@ -59,6 +59,7 @@ export const PANTS_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [
   { key: 'rise', hard: false },
   { key: 'waist_to_hip', hard: false },
   { key: 'inseam', hard: false },
+  { key: 'crotch_to_ankle', hard: false },
   { key: 'thigh_circ', hard: false },
   { key: 'calf_circ', hard: false },
   { key: 'knee_height', hard: false },
@@ -107,7 +108,6 @@ export function draftPants(r: ResolvedBody, p: PantsParams): DraftResult {
   const C = val('calf_circ');
   const kneeH = val('knee_height');
   const footPass = val('foot_pass_circ');
-  const ankleH = r.values.foot_height ?? I * 0.06;
 
   // ゆとり（フィット感の掛け率は脚の太さにも効かせる。足・ふくらはぎが通る余裕には効かせない）
   const shape: Fit = p.fit === 'custom' ? 'normal' : p.fit;
@@ -145,7 +145,8 @@ export function draftPants(r: ResolvedBody, p: PantsParams): DraftResult {
 
   // 脚の周り（片脚）
   const kneeY = D + Math.max(I - kneeH, I * 0.25);
-  const ankleY = D + Math.max(I - ankleH, I * 0.5);
+  // くるぶし丈は「股から足首」（足を含まない長さ。腿长など）をそのまま使う
+  const ankleY = D + Math.max(val('crotch_to_ankle'), I * 0.5);
   const kneeFull = Math.max(thighFull * LEG_SHAPE[shape].knee, C + passEase + thighEase * 0.5);
   const ankleFull = Math.max(thighFull * LEG_SHAPE[shape].ankle, footPass * stretchK + passEase);
   let widened = false;
