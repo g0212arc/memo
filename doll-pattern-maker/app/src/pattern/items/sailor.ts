@@ -2,11 +2,13 @@
 // 前は V 字の襟ぐり。前開き（重なり＋見返し）か、背中開き（前は飾りボタン）を選ぶ。
 // セーラー襟は、前後の身頃を肩線で合わせた状態で、後ろ襟ぐり → 前の V 字に沿って引く。
 
-import { Vec, v, add, sub, mul, dot, normalize, perpLeft, lineIntersect, polar } from '../../geometry/vec';
+import { Vec, v, add, sub, mul, normalize, polar } from '../../geometry/vec';
+import { angleOf, frontToBack, insetPolyline } from '../../geometry/transform';
 import { cubic, flatten, line, pathLength, Seg } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
-import { Category, CATEGORY_EASE } from '../../model/category';
+import { CATEGORY_EASE } from '../../model/category';
+import { BACK_OPENING_CATEGORIES, OpeningChoice, resolveOpening } from '../opening';
 import { draftBodice } from '../bodice';
 import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
@@ -18,7 +20,7 @@ import { MissingMeasurementsError } from './tshirt';
 export type SailorLength = 'short' | 'waist' | 'hip' | 'custom';
 export type CollarShape = 'square' | 'round' | 'cut';
 export type Size3 = 'small' | 'normal' | 'large' | 'custom';
-export type SailorOpening = 'auto' | 'front' | 'back';
+export type SailorOpening = OpeningChoice;
 
 export interface SailorParams {
   fabric: Fabric;
@@ -63,13 +65,8 @@ export const DEFAULT_SAILOR: SailorParams = {
   lining: true,
 };
 
-/** 「自動」のとき背中開きにするカテゴリ（前にボタンホールを作るのが大変な小さいボディ） */
-export const BACK_OPENING_CATEGORIES: readonly Category[] = ['特六', '小六', '1/6', '棍六'];
-
-export function sailorOpening(category: Category | null, opening: SailorOpening): 'front' | 'back' {
-  if (opening !== 'auto') return opening;
-  return category !== null && BACK_OPENING_CATEGORIES.includes(category) ? 'back' : 'front';
-}
+export { BACK_OPENING_CATEGORIES };
+export const sailorOpening = resolveOpening;
 
 export const SAILOR_LENGTH_LABEL: Record<SailorLength, string> = {
   short: 'ショート（胸下〜ウエスト）',
@@ -99,41 +96,6 @@ export const SAILOR_REQUIREMENTS: { key: MeasurementKey; hard: boolean }[] = [
 const fmt = (x: number) => (Math.round(x * 10) / 10).toFixed(1);
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const finite = (x: number | null): x is number => x !== null && Number.isFinite(x);
-const rad = (d: number) => (d * Math.PI) / 180;
-
-function rotate(p: Vec, c: Vec, deg: number): Vec {
-  const a = rad(deg);
-  const d = sub(p, c);
-  return add(c, v(d.x * Math.cos(a) - d.y * Math.sin(a), d.x * Math.sin(a) + d.y * Math.cos(a)));
-}
-
-/** 点 p を、c を通り角度 deg の直線で折り返す */
-function reflect(p: Vec, c: Vec, deg: number): Vec {
-  const u = v(Math.cos(rad(deg)), Math.sin(rad(deg)));
-  const d = sub(p, c);
-  const along = mul(u, dot(d, u));
-  return add(c, sub(mul(along, 2), d));
-}
-
-/** 折れ線を内側（toward の点の側）へ d だけ平行移動した線。角は隣どうしの交点でつなぐ */
-function insetPolyline(pts: Vec[], d: number, toward: Vec): Vec[] {
-  const lines: [Vec, Vec][] = [];
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1];
-    const b = pts[i];
-    let n = perpLeft(normalize(sub(b, a)));
-    const mid = mul(add(a, b), 0.5);
-    if (dot(n, sub(toward, mid)) < 0) n = mul(n, -1);
-    lines.push([add(a, mul(n, d)), add(b, mul(n, d))]);
-  }
-  const out: Vec[] = [lines[0][0]];
-  for (let i = 1; i < lines.length; i++) {
-    const x = lineIntersect(lines[i - 1][0], lines[i - 1][1], lines[i][0], lines[i][1]);
-    out.push(x ?? lines[i][0]);
-  }
-  out.push(lines[lines.length - 1][1]);
-  return out;
-}
 
 export function draftSailor(r: ResolvedBody, p: SailorParams): DraftResult {
   const missing = SAILOR_REQUIREMENTS.filter((q) => r.values[q.key] === undefined).map((q) => q.key);
@@ -269,9 +231,8 @@ export function draftSailor(r: ResolvedBody, p: SailorParams): DraftResult {
 
   // ---- セーラー襟 ----
   // 後ろ身頃の座標で作る。前身頃は、肩線が後ろの肩線と重なるよう回してから肩線で折り返す
-  const backSlope = (Math.atan2(g.backSP.y - g.snp.y, g.backSP.x - g.snp.x) * 180) / Math.PI;
-  const frontSlope = (Math.atan2(g.frontSP.y - g.snp.y, g.frontSP.x - g.snp.x) * 180) / Math.PI;
-  const toBack = (q: Vec) => reflect(rotate(q, g.snp, backSlope - frontSlope), g.snp, backSlope);
+  const backSlope = angleOf(g.snp, g.backSP);
+  const toBack = frontToBack(g.snp, g.frontSP, g.backSP);
   const vInBack = toBack(vPt);
   const shoulderLen = pathLength([line(g.snp, g.backSP)]);
   const sizeK = { small: 0.75, normal: 0.9, large: 1.0, custom: 0.9 }[p.collarSize];

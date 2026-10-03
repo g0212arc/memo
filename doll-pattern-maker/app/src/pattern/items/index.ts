@@ -28,6 +28,7 @@ import {
   SailorParams,
   V_DEPTH_LABEL,
 } from './sailor';
+import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
 
 type Params = Record<string, unknown>;
 
@@ -368,6 +369,62 @@ export const ITEMS: ItemDef[] = [
       { kind: 'checkbox', key: 'lining', label: '身頃に裏地を付ける' },
     ],
     draft: (r, p) => draftSailor(r, p as unknown as SailorParams),
+  },
+  {
+    id: 'yshirt',
+    label: 'Yシャツ',
+    defaults: { ...DEFAULT_YSHIRT },
+    requirements: YSHIRT_REQUIREMENTS,
+    fields: [
+      fabricFields[0],
+      fabricFields[1],
+      dartField,
+      {
+        kind: 'select',
+        key: 'opening',
+        label: '開き',
+        options: [
+          ['auto', `自動（${BACK_OPENING_CATEGORIES.join('・')}は背中開き）`],
+          ['front', '前開き（ボタン）'],
+          ['back', '背中開き（前は飾り）'],
+        ],
+      },
+      {
+        kind: 'select',
+        key: 'collar',
+        label: '襟',
+        options: Object.entries(SHIRT_COLLAR_LABEL) as [string, string][],
+        help: 'シャツ襟は、前開きなら台襟付き、背中開きなら台襟なしの 1 枚襟になります。',
+      },
+      { kind: 'select', key: 'fit', label: '身幅', options: [...fitOptions, ['custom', '自分で入力']] },
+      {
+        kind: 'number',
+        key: 'chestEaseCustom',
+        label: '胸のゆとり',
+        step: 0.1,
+        min: 0,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通と同じ',
+        show: (p) => p.fit === 'custom',
+      },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SHIRT_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '着丈（ウエストから下へ）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'hem', label: '裾', options: [['tail', 'シャツテール'], ['straight', 'まっすぐ']] },
+      { kind: 'radio', key: 'sleeve', label: '袖', options: [['long', '長袖（カフス付き）'], ['half', '半袖']] },
+      { kind: 'checkbox', key: 'yoke', label: 'ヨーク（肩の切り替え）を付ける' },
+      { kind: 'checkbox', key: 'pocket', label: '胸ポケットを付ける' },
+    ],
+    draft: (r, p) => draftYshirt(r, p as unknown as YshirtParams),
   },
 ];
 
