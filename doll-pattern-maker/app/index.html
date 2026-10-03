@@ -32,6 +32,11 @@
             <div><button type="button" id="copy-prompt">指示文をコピー</button> <span id="copy-status"></span></div>
           </li>
           <li>Claude の返答を<strong>そのまま全部</strong>下に貼り付けます。</li>
+          <li>
+            カテゴリを選びます。
+            <div class="row"><select id="import-category"></select></div>
+            <span class="help">「自動」は返答に書かれたサイズ表記（特六・四分など）を使います。表記がないときは選んでください。</span>
+          </li>
         </ol>
         <textarea id="import-text" rows="10" placeholder="ここに貼り付け"></textarea>
         <div id="import-result"></div>

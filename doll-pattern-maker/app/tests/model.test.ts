@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseImport, extractJsonCandidates } from '../src/model/body';
+import { parseImport, extractJsonCandidates, assignImportCategory } from '../src/model/body';
 import { resolveBody } from '../src/model/estimate';
 import { buildImportPrompt } from '../src/model/prompt';
 import { SAMPLE_BODIES } from '../src/samples';
@@ -133,5 +133,19 @@ describe('タイプ（同じボディの別タイプ）', () => {
     expect(resolveBody(r.bodies[0], {}, 1).values.chest_circ).toBe(18);
     const one = parseImport('{"name":"B","measurements":{"chest_circ":15},"types":[{"label":"標準","measurements":{}}]}');
     expect(one.bodies[0].types).toBeUndefined();
+  });
+});
+
+describe('取り込み時のカテゴリ', () => {
+  const base = { id: 'x', name: 'テスト', measurements: {}, unmapped: [], ambiguities: [] } as unknown as Parameters<typeof assignImportCategory>[0][0];
+  it('選んだカテゴリが返答の表記より優先される', () => {
+    const r = assignImportCategory([{ ...base, category: '1/4' }], '特六');
+    expect(r.accepted[0].category).toBe('特六');
+  });
+  it('自動のときは返答の表記を使い、表記がなければ取り込まない', () => {
+    expect(assignImportCategory([{ ...base, category: '大四' }], null).accepted[0].category).toBe('大四');
+    const r = assignImportCategory([base], null);
+    expect(r.accepted).toHaveLength(0);
+    expect(r.needCategory).toHaveLength(1);
   });
 });

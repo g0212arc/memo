@@ -133,6 +133,21 @@ export function parseImport(text: string): ImportResult {
   return res;
 }
 
+/**
+ * 取り込み画面で選んだカテゴリを付ける。
+ * 選んでいれば返答の表記より優先。「自動」で返答にも表記がないボディは取り込まない（カテゴリを選んでもらう）。
+ */
+export function assignImportCategory(bodies: Body[], chosen: Category | null): { accepted: Body[]; needCategory: Body[] } {
+  const accepted: Body[] = [];
+  const needCategory: Body[] = [];
+  for (const b of bodies) {
+    if (chosen) accepted.push({ ...b, category: chosen });
+    else if (b.category) accepted.push(b);
+    else needCategory.push(b);
+  }
+  return { accepted, needCategory };
+}
+
 function parseMeasurements(
   mRaw: Record<string, unknown>,
   unmapped: Unmapped[],

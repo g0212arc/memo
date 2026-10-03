@@ -1,6 +1,6 @@
 // 画面の組み立て。状態が変わるたびに全体を描き直す（画面が小さいので単純さを優先）。
 
-import { Body, measurementsOf, newId, parseImport } from './model/body';
+import { assignImportCategory, Body, measurementsOf, newId, parseImport } from './model/body';
 import { resolveBody, ResolvedBody } from './model/estimate';
 import { DEF_BY_KEY, MEASUREMENTS, MeasurementKey } from './model/schema';
 import { buildImportPrompt } from './model/prompt';
@@ -92,10 +92,6 @@ function renderPanel(cur: Current) {
     return `<optgroup label="${c ?? '未分類'}">${items.map((b) => option(b, catOf(b).guessed)).join('')}</optgroup>`;
   });
   const opts = groups.join('');
-  const bodyCat = catOf(body);
-  const catOpts = CATEGORIES.map(
-    (c) => `<option value="${c}"${c === bodyCat.cat ? ' selected' : ''}>${c}${c === bodyCat.cat && bodyCat.guessed ? '（仮）' : ''}</option>`,
-  ).join('');
 
   const ms = measurementsOf(body, typeIndexOf(body));
   const variantRows = (Object.entries(ms) as [MeasurementKey, NonNullable<Body['measurements'][MeasurementKey]>][])
@@ -132,7 +128,6 @@ function renderPanel(cur: Current) {
     <h2>ボディ</h2>
     <div class="row"><select id="body-select">${opts}</select></div>
     ${body.types ? `<div class="row"><label>タイプ</label><select id="body-type">${body.types.map((t, i) => `<option value="${i}"${i === typeIndexOf(body) ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}</select></div>` : ''}
-    <div class="row"><label>カテゴリ</label><select id="body-category">${bodyCat.cat ? '' : '<option value="" selected>未分類</option>'}${catOpts}</select>${bodyCat.guessed && bodyCat.cat ? '<span class="help">身長からの仮のカテゴリです。正しいカテゴリを選んでください。</span>' : ''}</div>
     <div class="row">
       <button id="open-import" class="primary">採寸を取り込む</button>
       <button id="export-body">JSONで保存</button>
@@ -276,8 +271,6 @@ document.addEventListener('change', (ev) => {
     zoom = Number(el.value);
   } else if (el.id === 'body-type') {
     st.types = { ...st.types, [currentBody().id]: Number(el.value) };
-  } else if (el.id === 'body-category') {
-    if (isCategory(el.value)) editableBody().category = el.value;
   } else if (el.dataset.variant) {
     const b = currentBody();
     st.variants[b.id] = { ...st.variants[b.id], [el.dataset.variant]: Number(el.value) };
@@ -324,6 +317,8 @@ document.addEventListener('click', async (ev) => {
   switch (el.id) {
     case 'open-import':
       $('import-result').innerHTML = '';
+      $('import-category').innerHTML =
+        '<option value="">自動（返答の表記から）</option>' + CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
       $<HTMLDialogElement>('import-dialog').showModal();
       break;
     case 'copy-prompt': {
@@ -339,14 +334,27 @@ document.addEventListener('click', async (ev) => {
     }
     case 'do-import': {
       const r = parseImport($<HTMLTextAreaElement>('import-text').value);
-      bodies.push(...r.bodies);
-      if (r.bodies.length) st.bodyId = r.bodies[0].id;
+      const chosen = $<HTMLSelectElement>('import-category').value;
+      const assigned = assignImportCategory(r.bodies, isCategory(chosen) ? chosen : null);
+      const needCategory = assigned.needCategory;
+      // 1体でもカテゴリ待ちがあれば全部取り込まない（選び直して押したときに二重にならないように）
+      const accepted = needCategory.length ? [] : assigned.accepted;
+      bodies.push(...accepted);
+      if (accepted.length) st.bodyId = accepted[0].id;
       const parts: string[] = [];
-      if (r.bodies.length) parts.push(`<div class="msg info">取り込みました: ${r.bodies.map((b) => esc(b.name)).join('、')}</div>`);
+      if (accepted.length) {
+        parts.push(`<div class="msg info">取り込みました: ${accepted.map((b) => `${esc(b.name)}（${b.category}）`).join('、')}</div>`);
+      }
+      if (needCategory.length) {
+        parts.push(
+          `<div class="msg err">${needCategory.map((b) => esc(b.name)).join('、')} はカテゴリの表記がなかったので、まだ何も取り込んでいません。上の「カテゴリ」で選んでから、もう一度「取り込む」を押してください。</div>`,
+        );
+      }
       if (r.errors.length) parts.push(`<div class="msg err"><ul>${r.errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>`);
       if (r.warnings.length) parts.push(`<div class="msg warn">確認してください<ul>${r.warnings.map((e) => `<li>${esc(e)}</li>`).join('')}</ul></div>`);
       $('import-result').innerHTML = parts.join('');
-      if (r.bodies.length) $<HTMLTextAreaElement>('import-text').value = '';
+      // カテゴリ待ちのボディがあるときは、選び直して押せるよう貼り付けた内容を残す
+      if (accepted.length) $<HTMLTextAreaElement>('import-text').value = '';
       persist();
       render();
       break;
