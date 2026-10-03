@@ -26,6 +26,7 @@ const ORDER = [
   'mofumofu', // モフモフおやすみ（小六）
   'bonnie6', // ボニバニ6（1/8。カテゴリは小六）
   'ruri', // 琉璃体（特四）
+  'mihong', // 咪哄体（1/6）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

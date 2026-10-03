@@ -1,0 +1,30 @@
+{
+  "schema": "doll-body/v1",
+  "name": "咪哄体",
+  "maker": "",
+  "source": "通販の商品ページの採寸画像",
+  "category": "1/6",
+  "measurements": {
+    "height": { "value": 21, "raw_label": "素体高（不含头）" },
+    "neck_circ": { "value": 5, "raw_label": "脖围" },
+    "shoulder_width": { "value": 5.3, "raw_label": "肩宽" },
+    "chest_circ": { "value": 10.4, "raw_label": "胸围" },
+    "waist_circ": { "value": 12, "raw_label": "腰围" },
+    "hip_circ": { "value": 16, "raw_label": "臀围" },
+    "arm_length": { "value": 7, "raw_label": "臂长" },
+    "upper_arm_circ": { "value": 4, "raw_label": "臂围" },
+    "thigh_circ": { "value": 8.2, "raw_label": "大腿围" },
+    "calf_circ": { "value": 6.5, "raw_label": "小腿围" },
+    "foot_length": { "value": 3.7, "raw_label": "脚长" },
+    "foot_width": { "value": 1.8, "raw_label": "脚宽" }
+  },
+  "unmapped": [
+    { "raw_label": "腿长", "value": 10.8, "note": "図では股から足首まで（足を含まない）。足裏までの股下とは別物" }
+  ],
+  "ambiguities": [
+    "身長は画像の上の見出しが切れていて「（不含头）… 21cm」だけ読めたため、頭なし身長 21cm として扱った",
+    "「腰围」12 は胸围 10.4 より大きいが、そのままウエストとして扱った（おなかの出た体型）",
+    "「臂围」は図で上腕の位置なので、上腕回りとして扱った",
+    "「腿长」は股から足首までで足を含まないため、股下としては取り込まず、その他に回した"
+  ]
+}
