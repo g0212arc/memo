@@ -50,6 +50,7 @@ import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEV
 import { applyMatches } from '../match';
 import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../opening';
 import { MATCH_RULES } from './matches';
+import { DEFAULT_EARS, draftEars, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -1053,6 +1054,42 @@ const ITEM_LIST_RAW: ItemDef[] = [
     ],
     draft: (r, p) => draftChina(r, { ...(p as unknown as ChinaParams), fabric: 'woven' }),
   },
+  {
+    id: 'ears',
+    label: 'ケモミミ',
+    defaults: { ...DEFAULT_EARS },
+    requirements: EARS_REQUIREMENTS,
+    fields: [
+      { kind: 'select', key: 'shape', label: '耳の形', options: Object.entries(EAR_SHAPE_LABEL) as [string, string][] },
+      { kind: 'select', key: 'size', label: '大きさ', options: Object.entries(EAR_SIZE_LABEL) as [string, string][], help: 'ボディの頭囲から決めます（頭囲がなければ首回りから推定）。' },
+      {
+        kind: 'number',
+        key: 'sizeCustom',
+        label: '耳の高さ（根元から先まで）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.size === 'custom',
+      },
+      { kind: 'radio', key: 'attach', label: '付け方', options: [['headband', 'カチューシャに付ける'], ['magnet', 'マグネット（根元に底布を付けて磁石を入れる）']] },
+      { kind: 'select', key: 'magnet', label: '磁石の直径', options: Object.entries(MAGNET_LABEL) as [string, string][], show: (p) => p.attach === 'magnet' },
+      {
+        kind: 'number',
+        key: 'magnetCustom',
+        label: '磁石の直径',
+        step: 0.1,
+        min: 0.2,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '6mm',
+        show: (p) => p.attach === 'magnet' && p.magnet === 'custom',
+      },
+      { kind: 'radio', key: 'inner', label: '内側の布', options: [['small', '一回り小さい（縁取りのように見える）'], ['same', '外側と同じ形']] },
+    ],
+    draft: (r, p) => draftEars(r, p as unknown as EarsParams),
+  },
 ];
 
 /** 作図の結果に合印（A・B・C…）を付ける。対応表は matches.ts */
@@ -1086,6 +1123,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   tights: '下着・小物',
   socks: '下着・小物',
   shorts: '下着・小物',
+  ears: '下着・小物',
 };
 export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他';
 
