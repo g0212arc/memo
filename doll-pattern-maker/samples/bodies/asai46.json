@@ -1,0 +1,26 @@
+{
+  "schema": "doll-body/v1",
+  "name": "asai46",
+  "maker": "",
+  "source": "rednote の採寸画像",
+  "category": "大四",
+  "measurements": {
+    "height": { "value": 41.5, "raw_label": "身高（不含头）" },
+    "neck_circ": { "value": 7.2, "raw_label": "颈围" },
+    "shoulder_width": { "value": 11, "raw_label": "肩宽（含肩膀）" },
+    "chest_circ": { "value": 20.2, "raw_label": "胸围" },
+    "waist_circ": { "value": 14.2, "raw_label": "腰围" },
+    "hip_circ": { "value": 19, "raw_label": "臀围" },
+    "arm_length": { "value": 14, "raw_label": "手臂长（不含手）" },
+    "crotch_to_ankle": { "value": 25, "raw_label": "腿长（不含脚）" },
+    "foot_length": { "value": 5.7, "raw_label": "脚长" },
+    "foot_width": { "value": 2, "raw_label": "脚宽" }
+  },
+  "unmapped": [],
+  "ambiguities": [
+    "「腰围」はウエストとして扱った（臀围が別にある）",
+    "「肩宽（含肩膀）」は肩のパーツを含めた幅。肩先から肩先までとして使ったが、肩線が少し長めに出る可能性がある",
+    "「手臂长（不含手）」は手首までの腕の長さとして扱った",
+    "「腿长（不含脚）」は足を含まないので「股から足首」として取り込んだ（股下は 足の長さ × 0.35 を足して推定）"
+  ]
+}

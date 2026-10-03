@@ -27,6 +27,7 @@ const ORDER = [
   'bonnie6', // ボニバニ6（1/8。カテゴリは小六）
   'ruri', // 琉璃体（特四）
   'mihong', // 咪哄体（1/6）
+  'asai46', // asai46（大四）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');
