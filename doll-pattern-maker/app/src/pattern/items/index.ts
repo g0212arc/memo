@@ -44,6 +44,7 @@ import { HEAD_SIZES } from '../hood';
 import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, YukataParams } from './yukata';
 import { TIGHTS_BUST_DART_RATIO } from '../bust';
 import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
+import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -308,6 +309,49 @@ const ITEM_LIST: ItemDef[] = [
       },
     ],
     draft: (r, p) => draftPants(r, p as unknown as PantsParams),
+  },
+  {
+    id: 'skirt',
+    label: 'スカート',
+    defaults: { ...DEFAULT_SKIRT },
+    requirements: SKIRT_REQUIREMENTS,
+    fields: [
+      { kind: 'select', key: 'flare', label: '広がり', options: Object.entries(SKIRT_FLARE_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'flareCustom',
+        label: '広がりの角度（スカート全体）',
+        step: 5,
+        min: 0,
+        max: 360,
+        unit: '°',
+        nullable: true,
+        placeholder: 'Aライン（48°）',
+        help: 'スカートを広げて置いたとき何度の円になるか。タイト 0°・Aライン 48°・半円 180°・全円 360°。',
+        show: (p) => p.flare === 'custom',
+      },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'waist', label: 'ウエスト', options: [['elastic', 'ゴム'], ['belt', 'ベルト付き（後ろ開き）']] },
+      {
+        kind: 'checkbox',
+        key: 'slit',
+        label: '後ろにスリットを入れる',
+        help: `広がりが ${SLIT_MAX_ANGLE}° 以下（タイト・セミタイト）のときに選べます。`,
+        show: (p) => slitAvailable(p as unknown as SkirtParams),
+      },
+    ],
+    draft: (r, p) => draftSkirt(r, p as unknown as SkirtParams),
   },
   {
     id: 'camisole',
@@ -874,6 +918,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   hoodie: 'トップス',
   jacket: 'トップス',
   pants: 'ボトムス',
+  skirt: 'ボトムス',
   camisole: 'その他',
   cape: 'その他',
   yukata: 'その他',
