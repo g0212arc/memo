@@ -30,6 +30,30 @@ function helper(r: DraftResult, p: P): H {
   };
 }
 
+/** ブラウス（ワンピースは dress = true で裾の行を出さない） */
+function blouseSteps(h: H, dress = false): string[] {
+  const s: string[] = [`肩を縫う${paren(h.l('肩'))}`];
+  if (h.has('jabot')) s.unshift('胸元のフリルにギャザーを寄せ、印に縫い付ける');
+  if (h.has('sleeve')) {
+    const gathered = h.l('sleeve/袖山（前・ギャザー）', 'sleeve/袖山（後ろ・ギャザー）');
+    s.push(`${gathered ? '袖山に粗ミシンでギャザーを寄せて' : ''}袖を付ける${paren(gathered || h.l('袖山（前）', '袖山（後ろ）'))}`);
+    s.push(`袖下から脇まで続けて縫う${paren([h.l('袖下'), h.l('脇')].filter(Boolean).join('→'))}`);
+  } else {
+    s.push(`脇を縫う${paren(h.l('脇'))}`);
+    if (h.has('armhole-binding')) s.push(`袖ぐりを縁取り布で始末する${paren(h.l('armhole-binding/縁取り'))}`);
+  }
+  if (h.has('frill-collar')) s.push(`フリル襟にギャザーを寄せて襟ぐりに仮止めし、縁取り布で始末する${paren(h.l('襟付け（ギャザー）'))}`);
+  else if (h.has('binding')) s.push(`襟ぐりを縁取り布で始末する${paren(h.l('binding/縁取り'))}`);
+  else if (h.has('bow')) s.push(`${h.has('ribbon') ? '襟ぐりの帯を付け、リボンを結んで前中心に縫い付ける' : 'ボウタイの印のあいだを襟ぐりに付ける'}${paren(h.l('bow/襟付け'))}`);
+  else s.push(`襟を作って付ける${paren(h.l('襟付け'))}`);
+  if (h.has('cuff')) s.push(`袖口にギャザーを寄せてカフスを付ける${paren(h.l('袖口側'))}`);
+  else if (h.has('sleeve') && h.p.sleeve === 'puff-short' && h.p.cuff === 'frill') s.push('袖口を三つ折りし、印にゴムを縫い付ける');
+  else if (h.has('sleeve') && h.p.sleeve === 'puff-short') s.push('袖口を三つ折りしてゴムを通す');
+  else if (h.has('sleeve')) s.push('袖口を三つ折り');
+  if (!dress) s.push('前立て・裾を始末し、ボタン（スナップ）を付ける');
+  return s;
+}
+
 /** 身頃＋袖の共通の流れ（肩 → 袖付け → 袖下〜脇） */
 function bodice(h: H, opt: { neck?: string; sleeveless?: string } = {}): string[] {
   const s: string[] = [`肩を縫う${paren(h.l('肩'))}`];
@@ -90,6 +114,17 @@ const STEPS: Record<string, (h: H) => string[]> = {
     `襟を作って付ける${paren(h.l('襟付け'))}`,
     h.has('cuff') ? `カフスを付ける${paren(h.l('袖口側'))}` : '袖口を三つ折り',
     '前立て・裾を始末し、ボタン（スナップ）を付ける',
+  ],
+  blouse: (h) => blouseSteps(h),
+  'blouse-dress': (h) => [
+    ...blouseSteps(h, true),
+    h.has('skirt-front')
+      ? `スカートの脇（と開きの下）を縫い、ウエストを身頃に付ける${paren([h.l('skirt-front/脇'), h.l('front/ウエスト', 'back/ウエスト')].filter(Boolean).join('→'))}`
+      : '',
+    h.has('tier2-front') ? `スカートの段を上から順にギャザーを寄せて付ける${paren(h.l('段の下'))}` : '',
+    h.has('skirt-front') ? '' : '後ろ中心を開きの下から裾まで縫う（背中開きのとき）',
+    '開き・裾を始末し、ボタン（スナップ）を付ける',
+    h.has('sash') ? 'サッシュベルトを筒に縫って返す' : '',
   ],
   jacket: (h) => [
     `背中心・肩・脇を縫う${paren(h.l('back/背中心', 'front/肩', 'front/脇'))}`,

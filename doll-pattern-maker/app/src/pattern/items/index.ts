@@ -46,6 +46,24 @@ import { TIGHTS_BUST_DART_RATIO } from '../bust';
 import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
 import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
 import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
+import {
+  BLOUSE_COLLAR_LABEL,
+  BLOUSE_CUFF_LABEL,
+  BLOUSE_DRESS_REQUIREMENTS,
+  BLOUSE_LENGTH_LABEL,
+  BLOUSE_PUFF_LABEL,
+  BLOUSE_REQUIREMENTS,
+  BLOUSE_SLEEVE_LABEL,
+  BlouseDressParams,
+  BlouseParams,
+  DEFAULT_BLOUSE,
+  DEFAULT_BLOUSE_DRESS,
+  draftBlouse,
+  draftBlouseDress,
+  DRESS_SILHOUETTE_LABEL,
+  DRESS_SKIRT_LABEL,
+  isPuffy,
+} from './blouse';
 import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
@@ -184,6 +202,40 @@ const fineFields = (withSleeve: (p: Params) => boolean = () => true): FieldSpec[
     show: withSleeve,
   },
   { kind: 'number', key: 'extraArmholeEase', label: '袖ぐりのゆとりを足す', step: 0.1, unit: 'cm' },
+];
+
+/** ブラウス・ブラウスワンピースに共通の設定（開き・袖・襟・飾り・身幅） */
+const blouseFields = (): FieldSpec[] => [
+  dartField,
+  {
+    kind: 'select',
+    key: 'opening',
+    label: '開き',
+    options: [
+      ['auto', `自動（${BACK_OPENING_CATEGORIES.join('・')}は背中開き）`],
+      ['front', '前開き（ボタン）'],
+      ['back', '背中開き（前は飾り）'],
+    ],
+  },
+  { kind: 'select', key: 'sleeve', label: '袖', options: Object.entries(BLOUSE_SLEEVE_LABEL) as [string, string][] },
+  { kind: 'select', key: 'puff', label: '袖のふくらみ', options: Object.entries(BLOUSE_PUFF_LABEL) as [string, string][], show: (p) => isPuffy(p.sleeve as never) },
+  {
+    kind: 'number',
+    key: 'puffCustom',
+    label: '袖のふくらみ（袖幅の倍率）',
+    step: 0.1,
+    min: 1,
+    max: 3,
+    unit: '倍',
+    nullable: true,
+    placeholder: '1.6',
+    show: (p) => isPuffy(p.sleeve as never) && p.puff === 'custom',
+  },
+  { kind: 'radio', key: 'cuff', label: '袖口', options: Object.entries(BLOUSE_CUFF_LABEL) as [string, string][], show: (p) => p.sleeve === 'puff-short' },
+  { kind: 'select', key: 'collar', label: '襟', options: Object.entries(BLOUSE_COLLAR_LABEL) as [string, string][] },
+  { kind: 'checkbox', key: 'jabot', label: '胸元にフリルを付ける（ジャボ風）' },
+  { kind: 'radio', key: 'fit', label: '身幅', options: [['normal', '普通'], ['loose', 'ゆったり']] },
+  ...extFields((p, ctx) => resolveOpening(ctx.category, p.opening as OpeningChoice) === 'back'),
 ];
 
 const ITEM_LIST_RAW: ItemDef[] = [
@@ -726,6 +778,54 @@ const ITEM_LIST_RAW: ItemDef[] = [
       ...extFields((p, ctx) => resolveOpening(ctx.category, p.opening as OpeningChoice) === 'back'),
     ],
     draft: (r, p) => draftYshirt(r, p as unknown as YshirtParams),
+  },
+  {
+    id: 'blouse',
+    label: 'ブラウス',
+    defaults: { ...DEFAULT_BLOUSE, ...EXT_DEFAULTS },
+    requirements: BLOUSE_REQUIREMENTS,
+    fields: [
+      ...blouseFields(),
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(BLOUSE_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '着丈（ウエストから下へ）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '腰丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'hem', label: '裾', options: [['straight', 'まっすぐ'], ['round', 'シャツのような丸い裾']] },
+    ],
+    draft: (r, p) => draftBlouse(r, p as unknown as BlouseParams),
+  },
+  {
+    id: 'blouse-dress',
+    label: 'ブラウスワンピース',
+    defaults: { ...DEFAULT_BLOUSE_DRESS, ...EXT_DEFAULTS },
+    requirements: BLOUSE_DRESS_REQUIREMENTS,
+    fields: [
+      ...blouseFields(),
+      { kind: 'radio', key: 'shape', label: '形', options: [['waist', 'ウエスト切り替え'], ['none', '切り替えなし']] },
+      { kind: 'radio', key: 'skirt', label: 'スカート', options: Object.entries(DRESS_SKIRT_LABEL) as [string, string][], show: (p) => p.shape === 'waist' },
+      { kind: 'radio', key: 'silhouette', label: 'シルエット', options: Object.entries(DRESS_SILHOUETTE_LABEL) as [string, string][], show: (p) => p.shape === 'none' },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'checkbox', key: 'sash', label: 'ウエストのリボン（共布のサッシュベルト）を付ける' },
+    ],
+    draft: (r, p) => draftBlouseDress(r, p as unknown as BlouseDressParams),
   },
   {
     id: 'jacket',
@@ -1285,6 +1385,8 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   cardigan: 'アウター',
   trench: 'アウター',
   yshirt: 'トップス',
+  blouse: 'トップス',
+  'blouse-dress': 'その他',
   sailor: 'トップス',
   hoodie: 'トップス',
   jacket: 'アウター',

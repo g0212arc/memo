@@ -13,14 +13,14 @@ import { useBustDart } from '../bust';
 import { draftSleeve } from '../sleeve';
 import { defaultEase, scaleEase } from '../ease';
 import { applyFit, Fit } from '../fit';
-import { extMarks, OpeningChoice, openingExtOf, resolveOpening } from '../opening';
+import { extMarks, ExtParams, OpeningChoice, openingExtOf, resolveOpening } from '../opening';
 import { DraftResult, Edge, EdgeKind, Fabric, Piece } from '../types';
 import { MissingMeasurementsError } from './tshirt';
 
 export type ShirtLength = 'short' | 'normal' | 'long' | 'custom';
 export type ShirtCollar = 'shirt' | 'round' | 'stand';
 
-export interface YshirtParams {
+export interface YshirtParams extends ExtParams {
   fabric: Fabric;
   stretch: number;
   bustDart: boolean;
@@ -35,6 +35,8 @@ export interface YshirtParams {
   sleeve: 'long' | 'half';
   yoke: boolean;
   pocket: boolean;
+  /** 裾がウエストのとき脇をウエストに向けて細くする（ブラウスワンピースの身頃用。画面には出さない） */
+  waistTaper?: boolean;
 }
 
 export const DEFAULT_YSHIRT: YshirtParams = {
@@ -156,6 +158,7 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
       // 背中開きの持ち出しは「持ち出しの幅」から（前開きは前立ての幅）
       openingExt: front_open ? pw : openingExtOf(p, chest),
       bustDart: useBustDart(r, p),
+      waistTaper: p.waistTaper,
     },
   );
   warnings.push(...bodice.warnings);
