@@ -45,6 +45,7 @@ import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, Yuk
 import { TIGHTS_BUST_DART_RATIO } from '../bust';
 import { DEFAULT_RAGLAN, draftRaglan, RAGLAN_REQUIREMENTS, RAGLAN_SLEEVE_LABEL, RaglanParams } from './raglan';
 import { DEFAULT_SKIRT, draftSkirt, SKIRT_FLARE_LABEL, SKIRT_LENGTH_LABEL as SKIRT_ITEM_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtParams, slitAvailable, SLIT_MAX_ANGLE } from './skirt';
+import { DEFAULT_PLEATS, draftPleats, PLEAT_LABEL, PLEATS_REQUIREMENTS, PleatsParams } from './pleats';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
@@ -352,6 +353,49 @@ const ITEM_LIST: ItemDef[] = [
       },
     ],
     draft: (r, p) => draftSkirt(r, p as unknown as SkirtParams),
+  },
+  {
+    id: 'pleats',
+    label: 'プリーツスカート',
+    defaults: { ...DEFAULT_PLEATS },
+    requirements: PLEATS_REQUIREMENTS,
+    fields: [
+      { kind: 'radio', key: 'pleat', label: 'ひだの種類', options: Object.entries(PLEAT_LABEL) as [string, string][] },
+      {
+        kind: 'select',
+        key: 'count',
+        label: 'ひだの数',
+        options: [['8', '8 本'], ['12', '12 本'], ['16', '16 本'], ['custom', '自分で入力']],
+        help: 'ひだの深さは、ひだの数とヒップから自動で決まります。',
+        show: (p) => p.pleat !== 'inverted',
+      },
+      {
+        kind: 'number',
+        key: 'countCustom',
+        label: 'ひだの数',
+        step: 1,
+        min: 4,
+        max: 60,
+        unit: '本',
+        nullable: true,
+        placeholder: '12',
+        show: (p) => p.pleat !== 'inverted' && p.count === 'custom',
+      },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'waist', label: 'ウエスト', options: [['elastic', 'ゴム'], ['belt', 'ベルト付き（後ろ開き）']] },
+    ],
+    draft: (r, p) => draftPleats(r, p as unknown as PleatsParams),
   },
   {
     id: 'camisole',
@@ -919,6 +963,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   jacket: 'トップス',
   pants: 'ボトムス',
   skirt: 'ボトムス',
+  pleats: 'ボトムス',
   camisole: 'その他',
   cape: 'その他',
   yukata: 'その他',
