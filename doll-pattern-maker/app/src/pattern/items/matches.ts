@@ -42,6 +42,27 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['front/前端（見返しと縫う）'], b: ['front-facing/前端（見返しと縫う）'] },
   ],
 
+  trench: [
+    { a: ['front/肩'], b: ['back/肩'] },
+    { a: ['front/脇'], b: ['back/脇'] },
+    { a: ['front/袖ぐり'], b: ['sleeve/袖山（前）'], check: 'ease' },
+    { a: ['back/袖ぐり'], b: ['sleeve/袖山（後ろ）'], check: 'ease' },
+    { a: ['front/ラグラン線'], b: ['sleeve-front/ラグラン線（前）'] },
+    { a: ['back/ラグラン線'], b: ['sleeve-back/ラグラン線（後ろ）'] },
+    { a: ['front/袖ぐり（袖下）'], b: ['sleeve-front/袖下カーブ（前）'] },
+    { a: ['back/袖ぐり（袖下）'], b: ['sleeve-back/袖下カーブ（後ろ）'] },
+    { a: ['sleeve-back/肩・袖の外側'], b: ['sleeve-front/肩・袖の外側'] },
+    { a: ['sleeve/袖下', 'sleeve-back/袖下', 'sleeve-front/袖下'] },
+    { a: ['front/前端（見返しと縫う）'], b: ['front-facing/前端（見返しと縫う）'] },
+    {
+      a: ['front/襟ぐり', 'back/襟ぐり', 'sleeve-front/襟ぐり（前）', 'sleeve-back/襟ぐり（後ろ）'],
+      b: ['stand/襟付け'],
+      check: 'none',
+    },
+    { a: ['stand/上襟付け'], b: ['collar/台襟付け'], check: 'none' },
+    { a: ['front-lining/脇'], b: ['back-lining/脇'] },
+  ],
+
   turtleneck: [
     ...BODICE,
     { a: NECK, b: ['turtle/襟ぐり側#0'], check: 'none' },

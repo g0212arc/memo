@@ -61,6 +61,15 @@ const STEPS: Record<string, (h: H) => string[]> = {
     h.has('front-band') ? `前立てリブを裾から襟ぐりまで付ける${paren(h.l('前端・襟ぐり側'))}` : `見返しを付けて返し、襟ぐりを縁取る${paren([h.l('前端（見返しと縫う）'), h.l('縁取り')].filter(Boolean).join('・'))}`,
     h.p.closure === 'none' ? '' : h.p.closure === 'button' ? '印の位置にボタンホールとボタン' : '印の位置にスナップ',
   ],
+  trench: (h) => [
+    h.has('pocket-flap') ? 'フラップを作って印の線に付ける（肩章・袖ベルト・タブも作っておく）' : '肩章・袖ベルト・タブを作っておく',
+    h.has('sleeve-front') || h.has('sleeve-back')
+      ? `袖を身頃に付け、袖下から脇まで縫う${paren([h.l('ラグラン線'), h.l('袖下'), h.l('脇')].filter(Boolean).join('→'))}`
+      : `肩・袖付け・袖下〜脇を縫う${paren([h.l('肩'), h.l('袖山（前）', '袖山（後ろ）'), h.l('脇')].filter(Boolean).join('→'))}`,
+    `襟を作って付ける${paren(h.l('襟付け'))}`,
+    `見返し${h.has('front-lining') ? '・裏地' : ''}を付けて返す${paren(h.l('前端（見返しと縫う）'))}`,
+    '裾・袖口を始末し、ボタン（スナップ）・ベルト通しを付ける',
+  ],
   turtleneck: (h) => [
     ...bodice(h, { sleeveless: `袖ぐりを縁取る${paren(h.l('縁'))}` }),
     `タートルを二つ折りにして襟ぐりに付ける${paren(h.l('襟ぐり側'))}`,

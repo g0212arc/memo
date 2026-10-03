@@ -52,6 +52,7 @@ import { EXT_DEFAULTS, EXT_LABEL, OpeningChoice, resolveOpening } from '../openi
 import { MATCH_RULES } from './matches';
 import { BERET_FIT_LABEL, BERET_HEAD_LABEL, BERET_PUFF_LABEL, BERET_REQUIREMENTS, BeretParams, DEFAULT_BERET, draftBeret } from './beret';
 import { CARDIGAN_LENGTH_LABEL, CARDIGAN_REQUIREMENTS, CARDIGAN_SLEEVE_LABEL, CardiganParams, DEFAULT_CARDIGAN, draftCardigan } from './cardigan';
+import { DEFAULT_TRENCH, draftTrench, TRENCH_LENGTH_LABEL, TRENCH_REQUIREMENTS, TrenchParams } from './trench';
 import { DEFAULT_EARS, draftEars, EAR_HEAD_LABEL, EAR_SHAPE_LABEL, EAR_SIZE_LABEL, EARS_REQUIREMENTS, EarsParams, MAGNET_LABEL } from './ears';
 import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
@@ -309,6 +310,33 @@ const ITEM_LIST_RAW: ItemDef[] = [
       { kind: 'checkbox', key: 'pocket', label: 'ポケットを付ける（前に貼り付け）' },
     ],
     draft: (r, p) => draftCardigan(r, p as unknown as CardiganParams),
+  },
+  {
+    id: 'trench',
+    label: 'トレンチ',
+    // 胸ダーツの欄（布帛のとき出る）のために fabric を持つ。トレンチはいつも布帛
+    defaults: { ...DEFAULT_TRENCH, fabric: 'woven' },
+    requirements: TRENCH_REQUIREMENTS,
+    fields: [
+      { kind: 'radio', key: 'sleeveType', label: '袖', options: [['raglan', 'ラグラン袖'], ['set', '普通の袖（肩に縫い目）']] },
+      { kind: 'radio', key: 'front', label: '前', options: [['double', 'ダブル（ボタン 2 列）'], ['single', 'シングル（1 列）']] },
+      { kind: 'select', key: 'buttons', label: 'ボタンの数', options: [['auto', '自動（丈から）'], ['custom', '自分で入力']], help: 'ダブルは 1 列の数。印は「ボタンの位置」なので、スナップでも使えます。' },
+      { kind: 'number', key: 'buttonsCustom', label: 'ボタンの数（1 列）', step: 1, min: 1, max: 10, unit: '個', nullable: true, placeholder: '自動', show: (p) => p.buttons === 'custom' },
+      { kind: 'radio', key: 'collar', label: '襟', options: [['stand', '立ち襟＋のど元のタブ'], ['collar', '台襟付きの折り襟']] },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(TRENCH_LENGTH_LABEL) as [string, string][] },
+      { kind: 'number', key: 'lengthCustom', label: '着丈（ウエストから下へ）', step: 0.1, unit: 'cm', nullable: true, placeholder: 'ショート', show: (p) => p.length === 'custom' },
+      { kind: 'checkbox', key: 'epaulette', label: '肩章（エポレット）' },
+      { kind: 'checkbox', key: 'belt', label: 'ウエストベルト（ベルト通し付き）' },
+      { kind: 'checkbox', key: 'sleeveStrap', label: '袖ベルト' },
+      { kind: 'checkbox', key: 'pocket', label: 'フラップポケット' },
+      { kind: 'checkbox', key: 'gunFlap', label: 'ガンフラップ（右胸の当て布）', help: '小さいドールでは布が重なって分厚くなりやすいです。' },
+      { kind: 'checkbox', key: 'cape', label: '背中のケープ（肩の後ろの当て布）' },
+      { kind: 'checkbox', key: 'lining', label: '裏地を付ける', help: 'なしのときは見返しだけで始末します。' },
+      dartField,
+      { kind: 'radio', key: 'fitBody', label: '身幅', options: fitOptions, help: 'コートなので重ね着の分のゆとりは足してあります。ゆったりめにしたいときは「余裕あり」。' },
+      { kind: 'radio', key: 'fitSleeve', label: '袖', options: fitOptions },
+    ],
+    draft: (r, p) => draftTrench(r, p as unknown as TrenchParams),
   },
   {
     id: 'turtleneck',
@@ -1218,6 +1246,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   turtleneck: 'トップス',
   raglan: 'トップス',
   cardigan: 'トップス',
+  trench: 'トップス',
   yshirt: 'トップス',
   sailor: 'トップス',
   hoodie: 'トップス',
