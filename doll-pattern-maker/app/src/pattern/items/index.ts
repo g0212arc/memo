@@ -43,6 +43,7 @@ import { DEFAULT_HOODIE, draftHoodie, HOODIE_LENGTH_LABEL, HOODIE_REQUIREMENTS, 
 import { HEAD_SIZES } from '../hood';
 import { DEFAULT_YUKATA, draftYukata, SLEEVE_LEN_LABEL, YUKATA_REQUIREMENTS, YukataParams } from './yukata';
 import { TIGHTS_BUST_DART_RATIO } from '../bust';
+import { DEFAULT_SHORTS, draftShorts, SHORTS_REQUIREMENTS, SHORTS_RISE_LABEL, SHORTS_SHAPE_LABEL, ShortsParams } from './shorts';
 import { DEFAULT_SOCKS, draftSocks, SOCK_LENGTH_LABEL, SOCKS_REQUIREMENTS, SocksParams } from './socks';
 import { COVERAGE_LABEL, DEFAULT_TIGHTS, draftTights, SNUG_LABEL, TIGHTS_REQUIREMENTS, TightsParams } from './tights';
 import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
@@ -757,6 +758,59 @@ const ITEM_LIST: ItemDef[] = [
     ],
     draft: (r, p) => draftSocks(r, { ...(p as unknown as SocksParams), seams: Number(p.seams) === 1 ? 1 : 2 }),
   },
+  {
+    id: 'shorts',
+    label: 'ショーツ',
+    defaults: { ...DEFAULT_SHORTS },
+    requirements: SHORTS_REQUIREMENTS,
+    fields: [
+      {
+        kind: 'number',
+        key: 'stretch',
+        label: '伸び率',
+        step: 5,
+        min: 5,
+        max: 200,
+        unit: '%',
+        help: '布を横に引っぱったとき何％伸びるか。小さくする量の計算に使います。',
+      },
+      { kind: 'select', key: 'shape', label: '形', options: Object.entries(SHORTS_SHAPE_LABEL) as [string, string][] },
+      { kind: 'select', key: 'rise', label: '股上', options: Object.entries(SHORTS_RISE_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'riseCustom',
+        label: '股上（ウエストラインから股まで）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.rise === 'custom',
+      },
+      {
+        kind: 'radio',
+        key: 'crotch',
+        label: 'クロッチ（股の部分）',
+        options: [['integrated', '前・後ろと一続き'], ['separate', '別に裁つ（当て布）']],
+        help: '別に裁つと、股の部分を 2 枚重ねにできます。',
+      },
+      { kind: 'radio', key: 'edge', label: '縁の始末', options: [['elastic', 'ゴム縫い付け'], ['hem', '三つ折り']] },
+      { kind: 'select', key: 'snug', label: 'ぴったり具合', options: Object.entries(SNUG_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'reduceCustom',
+        label: '周りを小さくする量',
+        step: 1,
+        min: 0,
+        max: 50,
+        unit: '%',
+        nullable: true,
+        placeholder: '普通',
+        show: (p) => p.snug === 'custom',
+      },
+    ],
+    draft: (r, p) => draftShorts(r, p as unknown as ShortsParams),
+  },
 ];
 
 /** 並び順で常に一番下にするアイテム（下着のように服の下に着るもの）。アイテムを足すときも、この順は自動で保たれる */
@@ -779,6 +833,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   yukata: 'その他',
   tights: '下着・小物',
   socks: '下着・小物',
+  shorts: '下着・小物',
 };
 export const groupOf = (id: string): ItemGroup => ITEM_GROUP[id] ?? 'その他';
 
