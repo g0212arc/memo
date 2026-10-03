@@ -57,7 +57,7 @@ describe('アイテムの並び順', () => {
 });
 
 describe('アイテムの種類の並び', () => {
-  it('トップス → ボトムス → その他 → 下着・小物 の順', () => {
+  it('トップス → ボトムス → アウター → その他・小物 の順', () => {
     const order = ITEMS.map((i) => ITEM_GROUPS.indexOf(groupOf(i.id)));
     for (let k = 1; k < order.length; k++) expect(order[k]).toBeGreaterThanOrEqual(order[k - 1]);
   });
