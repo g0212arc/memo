@@ -38,6 +38,7 @@ import {
   LAPEL_LABEL,
   ROLL_LABEL,
 } from './jacket';
+import { CAPE_COLLAR_LABEL, CAPE_FLARE_LABEL, CAPE_LENGTH_LABEL, CAPE_REQUIREMENTS, CapeParams, capeIsLong, DEFAULT_CAPE, draftCape } from './cape';
 import { DEFAULT_YSHIRT, draftYshirt, SHIRT_COLLAR_LABEL, SHIRT_LENGTH_LABEL, YSHIRT_REQUIREMENTS, YshirtParams } from './yshirt';
 
 type Params = Record<string, unknown>;
@@ -519,6 +520,39 @@ export const ITEMS: ItemDef[] = [
       { kind: 'checkbox', key: 'lining', label: '裏地を付ける' },
     ],
     draft: (r, p) => draftJacket(r, { ...(p as unknown as JacketParams), buttons: Number(p.buttons) }),
+  },
+  {
+    id: 'cape',
+    label: 'マント・ケープ',
+    defaults: { ...DEFAULT_CAPE },
+    requirements: CAPE_REQUIREMENTS,
+    fields: [
+      fabricFields[0],
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(CAPE_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（首の付け根から）',
+        step: 0.1,
+        min: 0.5,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '腰まで',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'select', key: 'flare', label: '広がり', options: Object.entries(CAPE_FLARE_LABEL) as [string, string][] },
+      { kind: 'select', key: 'collar', label: '襟', options: Object.entries(CAPE_COLLAR_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'closure', label: '首元', options: [['ribbon', 'リボン'], ['snap', 'スナップ']] },
+      {
+        kind: 'checkbox',
+        key: 'slit',
+        label: '腕のスリットを付ける',
+        help: '手を前に出すための切り込み。腰より長い丈のときだけ付きます。',
+        show: (p) => capeIsLong(p as unknown as CapeParams),
+      },
+      { kind: 'checkbox', key: 'lining', label: '裏地を付ける' },
+    ],
+    draft: (r, p) => draftCape(r, p as unknown as CapeParams),
   },
 ];
 
