@@ -31,6 +31,7 @@ const ORDER = [
   'telesthesia-75v2', // 叔体二代 75cm（Telesthesiadoll）
   'id75', // ID75（叔体）
   'obitsu30', // オビツ30（特六）
+  'unoa-boy', // ユノア少年（1/4）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

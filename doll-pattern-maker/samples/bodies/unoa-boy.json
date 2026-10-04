@@ -1,0 +1,32 @@
+{
+  "schema": "doll-body/v1",
+  "name": "ユノア少年",
+  "maker": "",
+  "source": "【ユノア少年・ボディサイズ】の表",
+  "category": "1/4",
+  "measurements": {
+    "height_with_head": { "value": 43, "raw_label": "身長…約43cm" },
+    "head_circ": { "value": 16.5, "raw_label": "頭周り16.5cm" },
+    "shoulder_width": { "value": 8, "raw_label": "肩幅…8cm（胸パーツ6.5cm＋腕肩左右0.7cmずつ）" },
+    "chest_circ": { "value": 15.5, "raw_label": "Bバスト…15.5cm" },
+    "waist_circ": { "value": 13.5, "raw_label": "Wウエスト…13.5cm" },
+    "hip_circ": { "value": 18, "raw_label": "Hヒップ…18cm" },
+    "back_length": { "value": 7, "raw_label": "背丈（W〜首）…7cm" },
+    "inseam": { "value": 21, "raw_label": "股下（股〜地面）…21cm" },
+    "outer_leg_length": { "value": 28, "raw_label": "股下（W〜地面）…28cm" },
+    "foot_length": { "value": 5.5, "raw_label": "足の大きさ…縦5.5cm（レギュラー足）" },
+    "foot_width": { "value": 2.5, "raw_label": "幅約2.5cm" }
+  },
+  "unmapped": [
+    { "raw_label": "MHミドルヒップ", "value": 17 },
+    { "raw_label": "ウィッグ 6.5インチ（6-7インチ推奨）", "note": "ケモミミ・ベレー帽の頭囲の目安" },
+    { "raw_label": "ドールアイ 12mm（10〜14mm に変更可）" },
+    { "raw_label": "コンパクト足（ちび・姉）縦5cm／幅2cm にも取り替え可能" }
+  ],
+  "ambiguities": [
+    "「身長」約43cm は頭込みの全高として扱った",
+    "「股下（W〜地面）」28cm はウエストから床までなので外脚長に入れた（股上は 28 − 21 ＝ 7cm になる）",
+    "表の（＋）（−）は少女サイズとの差なので取り込んでいない",
+    "首回り・腕の長さは表にないので推定になる（首回りは実測をおすすめ）"
+  ]
+}
