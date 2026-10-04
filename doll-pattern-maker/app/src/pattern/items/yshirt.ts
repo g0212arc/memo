@@ -209,12 +209,29 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
     marks.push([v(-r0, y), v(r0, y)], [v(0, y - r0), v(0, y + r0)]);
   }
   // 胸ポケットの位置（左前）
-  const pocketW = g.chestQ * 0.36;
-  const pocketH = pocketW * 1.15;
+  let pocketW = g.chestQ * 0.36;
+  let pocketH = pocketW * 1.15;
   const pocketX = g.chestQ * 0.3;
-  const pocketY = g.chestY - (g.chestY - g.frontSP.y) * 0.15;
+  let pocketY = g.chestY - (g.chestY - g.frontSP.y) * 0.15;
+  if (p.pocket && g.dartApplied && bodice.front.marks?.[0]) {
+    // 胸ダーツがあるときは、ダーツより上に置く（入らなければ小さくする）
+    const dartTop = Math.min(...bodice.front.marks[0].map((q) => q.y)) - 0.3;
+    if (pocketY + pocketH > dartTop) {
+      pocketY = Math.max(g.frontSP.y + (g.chestY - g.frontSP.y) * 0.3, dartTop - pocketH);
+      if (pocketY + pocketH > dartTop) {
+        pocketH = Math.max(0.6, dartTop - pocketY);
+        pocketW = Math.min(pocketW, pocketH / 1.15);
+      }
+    }
+  }
   if (p.pocket) {
     marks.push([v(pocketX, pocketY), v(pocketX + pocketW, pocketY), v(pocketX + pocketW, pocketY + pocketH), v(pocketX, pocketY + pocketH), v(pocketX, pocketY)]);
+  }
+  // 布目線はポケット・胸ダーツの下から
+  {
+    const below = [p.pocket ? pocketY + pocketH : -Infinity, ...(g.dartApplied && bodice.front.marks?.[0] ? bodice.front.marks[0].map((q) => q.y) : [])];
+    const gy = Math.max(...below) + 0.4;
+    if (front.grain[0].y < gy && front.grain[1].y - gy > 1) front.grain = [v(front.grain[0].x, gy), front.grain[1]];
   }
   front.marks = marks;
   const pieces: Piece[] = [front];

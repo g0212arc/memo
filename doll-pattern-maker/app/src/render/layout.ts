@@ -86,6 +86,17 @@ export function layoutPieces(pieces: Piece[], sa: SeamAllowance): Layout {
     if (x + w > width - MARGIN + 1e-9 && x > MARGIN + 1e-9) newRow();
     // 縦: ページの下の境目にかかるなら、次のページの頭から新しい行
     if (fitsPageH && y + h > pageBottom(y) - MARGIN + 1e-9) newRow(pageBottom(y) + MARGIN);
+    // 型紙だけなら A4 に収まるが、ラベルを入れると収まらないパーツ: 次のページの頭に置き、ラベルは型紙の内側の上に書く
+    const boxH = box.maxY - box.minY;
+    if (!fitsPageH && boxH <= PH - MARGIN * 2) {
+      if (x > MARGIN + 1e-9) newRow();
+      const pageTop = Math.floor(y / PH + 1e-9) * PH;
+      if (y > pageTop + MARGIN + 1e-9 || y + boxH > pageBottom(y) - MARGIN + 1e-9) newRow(pageBottom(y) + MARGIN);
+      placed.push({ piece, offset: v(x - box.minX, y - box.minY), labelAt: v(x + 0.2, y + 0.2) });
+      x += w + GAP;
+      rowH = Math.max(rowH, boxH);
+      continue;
+    }
     // A4 より大きいパーツは、ページの頭から置く（途中から置くと余計に分かれるため）
     if (!fitsPageH && y > Math.floor(y / PH + 1e-9) * PH + MARGIN + TITLE_H + 1e-9) {
       if (x > MARGIN + 1e-9) newRow();
