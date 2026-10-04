@@ -3,7 +3,7 @@
 
 import { Body, ValueSource, measurementsOf } from './body';
 import { MeasurementKey } from './schema';
-import { armRatios, Category, guessCategory } from './category';
+import { armRatios, Category, guessCategory, headlessRatio } from './category';
 
 export type VariantSelection = Partial<Record<MeasurementKey, number>>;
 
@@ -52,7 +52,8 @@ export function resolveBody(body: Body, sel: VariantSelection = {}, typeIndex = 
 
   // 身長（頭なし）
   if (!has('height') && has('height_with_head')) {
-    est('height', val('height_with_head') * 0.8, '頭込み身長 × 0.8');
+    const k = headlessRatio(res.category);
+    est('height', val('height_with_head') * k, `頭込み身長 × ${k}（${res.category ?? 'カテゴリなし'}）`);
   }
 
   // 首回り（襟ぐりの大きさに直結するので、推定したら必ず実測をすすめる）

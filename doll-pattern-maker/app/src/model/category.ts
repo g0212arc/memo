@@ -71,3 +71,20 @@ export function guessCategory(body: Body): Category | null {
   if (total <= 50) return '1/4';
   return '1/3';
 }
+
+/**
+ * 頭なし身長 ÷ 頭込み身長（頭込みの身長しか分からないときの推定に使う）。
+ * 大きいボディほど頭の割合が小さい。サンプルの実測（2026-10-04）: 小六 0.76〜0.78・棍六 0.84・1/4 0.86〜0.88・大四 0.88〜0.91・叔体 0.91〜0.92
+ */
+export const HEADLESS_RATIO: Record<Category, number> = {
+  特六: 0.77,
+  小六: 0.77,
+  '1/6': 0.77,
+  棍六: 0.84,
+  '1/4': 0.87,
+  大四: 0.9,
+  特四: 0.9,
+  '1/3': 0.91,
+  叔体: 0.91,
+};
+export const headlessRatio = (c: Category | null) => (c ? HEADLESS_RATIO[c] : 0.85);
