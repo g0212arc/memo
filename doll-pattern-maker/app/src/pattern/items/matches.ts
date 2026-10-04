@@ -188,6 +188,17 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['front/脇'], b: ['back/脇'] },
   ],
 
+  salopette: [
+    { a: ['front-pants/脇'], b: ['back-pants/脇'] },
+    { a: ['front-pants/股下'], b: ['back-pants/股下'] },
+    { a: ['front-pants/前中心', 'front-pants/股ぐり'], note: '（左右を縫い合わせる）' },
+    { a: ['back-pants/後ろ中心', 'back-pants/股ぐり'], note: '（左右を縫い合わせる）' },
+    { a: ['skirt-front/脇'], b: ['skirt-back/脇'] },
+    { a: ['skirt-back/後ろ中心'], note: '（左右を縫い合わせる）' },
+    { a: ['front-pants/ウエスト', 'skirt-front/ウエスト'], b: ['bib/ウエスト付け', 'front-band/ウエスト側#0'], check: 'none', note: '（胸当てはタックで合わせる）' },
+    { a: ['back-pants/ウエスト', 'back-pants/ウエスト（持ち出し）', 'skirt-back/ウエスト', 'skirt-back/ウエスト（持ち出し）'], b: ['back-band/ウエスト側#0'], check: 'none' },
+  ],
+
   jsk: [
     { a: ['front/肩'], b: ['back/肩'] },
     { a: ['front/脇'], b: ['back/脇'] },

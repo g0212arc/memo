@@ -66,6 +66,7 @@ import {
 } from './blouse';
 import { DEFAULT_JSK, draftJsk, JSK_BODICE_LABEL, JSK_NECK_LABEL, JSK_REQUIREMENTS, JSK_SKIRT_LABEL, JSK_WAIST_LABEL, JskParams } from './jsk';
 import { DEFAULT_VEST, draftVest, VEST_LENGTH_LABEL, VEST_REQUIREMENTS, VestParams } from './vest';
+import { DEFAULT_SALOPETTE, draftSalopette, SALOPETTE_BOTTOM_LABEL, SALOPETTE_REQUIREMENTS, SalopetteParams } from './salopette';
 import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
@@ -900,6 +901,32 @@ const ITEM_LIST_RAW: ItemDef[] = [
     draft: (r, p) => draftVest(r, p as unknown as VestParams),
   },
   {
+    id: 'salopette',
+    label: 'サロペット／オーバーオール',
+    defaults: { ...DEFAULT_SALOPETTE },
+    requirements: SALOPETTE_REQUIREMENTS,
+    fields: [
+      { kind: 'select', key: 'bottom', label: '下の形', options: Object.entries(SALOPETTE_BOTTOM_LABEL) as [string, string][] },
+      { kind: 'checkbox', key: 'bib', label: '胸当てを付ける（外すとサスペンダー付き）' },
+      { kind: 'radio', key: 'straps', label: '肩ひも', options: [['cross', '背中でクロス'], ['straight', 'まっすぐ']] },
+      { kind: 'radio', key: 'strapFix', label: '肩ひもの留め方', options: [['button', '前でボタン'], ['sewn', '縫い付け']] },
+      {
+        kind: 'radio',
+        key: 'opening',
+        label: '開き',
+        options: [['side', '脇のボタン開き'], ['back', '後ろ開き']],
+        help: 'スカートのときは後ろ開きになります。',
+        show: (p) => p.bottom !== 'skirt',
+      },
+      { kind: 'checkbox', key: 'bibPocket', label: '胸当てのポケット', show: (p) => p.bib === true },
+      { kind: 'checkbox', key: 'frontPocket', label: '前の貼りポケット', show: (p) => p.bottom !== 'skirt' },
+      { kind: 'checkbox', key: 'backPocket', label: '後ろのポケット', show: (p) => p.bottom !== 'skirt' },
+      { kind: 'radio', key: 'hem', label: '裾', options: [['fold', '三つ折り'], ['rollup', 'ロールアップ']], show: (p) => p.bottom !== 'skirt' },
+      { kind: 'radio', key: 'fit', label: 'ゆとり', options: [['normal', '普通'], ['loose', '余裕あり']] },
+    ],
+    draft: (r, p) => draftSalopette(r, p as unknown as SalopetteParams),
+  },
+  {
     id: 'jacket',
     label: 'ジャケット',
     // プルダウンの値は文字列なので、ボタンの数も文字列で持つ
@@ -1461,6 +1488,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   vest: 'トップス',
   'blouse-dress': 'その他',
   jsk: 'その他',
+  salopette: 'その他',
   sailor: 'トップス',
   hoodie: 'トップス',
   jacket: 'アウター',
