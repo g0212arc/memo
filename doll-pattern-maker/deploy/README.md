@@ -28,6 +28,8 @@
 | `compose.yaml` | ポート・メモリ上限・読み取り専用・ヘルスチェック・ログの上限 |
 | `nginx-site.conf` | ホストの nginx 用の見本（初回に1回だけコピーする） |
 | `deploy.sh` | 更新用。取得 → ビルド → 入れ替え → 動作確認 → 古いイメージ削除 |
+| `security-headers.conf` | コンテナ内の nginx が付けるセキュリティ用の応答ヘッダー（CSP など） |
+| `harden-host-nginx.sh` | ホストの nginx の守り（バージョンを隠す・HTTPS の強制・アクセス回数の制限）。sudo で1回実行 |
 
 ---
 
@@ -98,6 +100,20 @@ ssh vps 'getent hosts tcpattern.duckdns.org'   # 160.251.176.139 が出ること
 certbot の後に行った場合、443 側の server ブロックにも `auth_basic` の2行が入っているか確認する（certbot は元の server ブロックを 443 用に書き換えるので、通常はそのまま引き継がれる）。
 
 ---
+
+### 7. （任意）ホストの nginx の守りを固める
+
+バージョンを出さない（`server_tokens off`）、HTTPS を強制する（HSTS）、同じ IP からのアクセス回数を制限する（1 秒に 20 回、まとめて 60 回まで。超えたら 429）。
+サイトの設定ファイルは置き換えず、`server_name` の行の下に include を 1 行足すだけなので、certbot の HTTPS の設定は消えない。
+控えを取ってから変更し、`nginx -t` に失敗したら元に戻す。何回実行しても同じ結果になる。
+
+```bash
+! ssh -t vps "sudo bash /home/deploy/apps/doll-pattern-maker/doll-pattern-maker/deploy/harden-host-nginx.sh"
+curl -sI https://tcpattern.duckdns.org/ | grep -iE 'server|strict-transport'   # Server: nginx（バージョンなし）と Strict-Transport-Security が出れば OK
+```
+
+> `server_tokens off` は `/etc/nginx/conf.d/` に置くので、この VPS の nginx の全サイトに効く（バージョンが出なくなるだけで、ほかのサイトの動きは変わらない）。
+> 元に戻す方法は、実行したときの最後に表示される。
 
 ## push で自動デプロイ（GitHub Actions）
 
