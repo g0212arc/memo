@@ -420,9 +420,16 @@ draftTshirt(body: 解決済み採寸値, params: Tシャツのパラメータ) �
 
 ## 7. 公開
 
-- 自分の VPS に docker compose で置く（nginx:alpine のコンテナ1つ、127.0.0.1:8200、メモリ上限 64MB）。ホストの nginx が https://tcpattern.duckdns.org で受けて転送する
+- 自分の VPS に docker compose で置く（root で動かない nginx-unprivileged のコンテナ1つ、127.0.0.1:8200 → コンテナの 8080、メモリ上限 64MB）。ホストの nginx が https://tcpattern.duckdns.org で受けて転送する
+- **セキュリティ**（2026-10-04、無料でできるもの）
+  - 応答ヘッダー（`deploy/security-headers.conf`）: CSP（自分のサイト以外のスクリプト・スタイル・接続を許さない。画像は data:・blob: も可。埋め込み禁止 frame-ancestors 'none'）、X-Content-Type-Options、X-Frame-Options、Referrer-Policy、Permissions-Policy、COOP・CORP
+  - コンテナの nginx: バージョンを出さない（server_tokens off）、GET・HEAD 以外は 405
+  - コンテナ: root で動かない nginx、読み取り専用、権限をすべて外す（cap_drop ALL）、権限が上がらない（no-new-privileges）、プロセス数の上限 100
+  - GitHub Actions: 権限は読み取りだけ、使う部品はコミットで固定、`npm audit --omit=dev --audit-level=high` で重大な脆弱性があればデプロイしない、CodeQL（security-extended）でコードを自動チェック
+  - リポジトリ（全ブランチ・全履歴）に鍵・トークン・パスワードが入っていないことを確認済み
+  - 残り（ホストの nginx の HSTS・アクセス回数の制限、VPS・GitHub・DuckDNS のアカウントの守り）は手作業で入れる
 - 手順は [deploy/README.md](deploy/README.md)。更新は VPS で `deploy.sh` を実行
-- `.github/workflows/doll-pattern-maker.yml` は、`doll-pattern-maker/` を変更して push するとテストとビルドを実行する（公開はしない）
+- `.github/workflows/doll-pattern-maker.yml` は、`doll-pattern-maker/` を変更して push するとテストとビルドを実行し、通れば VPS で deploy.sh を実行する
 - 当初は GitHub Pages を予定していたが、VPS があるため変更（デフォルトブランチや非公開リポジトリの制約を避けられる）
 
 ## 8. フェーズ1でやらないこと（後のフェーズ）

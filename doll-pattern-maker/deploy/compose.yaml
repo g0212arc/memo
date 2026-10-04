@@ -8,18 +8,24 @@ services:
     image: doll-pattern-maker:latest
     # 127.0.0.1 だけで待ち受ける。外からはホストの nginx 経由
     ports:
-      - "127.0.0.1:${PORT:-8200}:80"
+      - "127.0.0.1:${PORT:-8200}:8080"
     restart: unless-stopped
     # 静的ファイルを配るだけなので小さく制限する（実測 数MB）
     mem_limit: 64m
     cpus: 0.5
     read_only: true
+    # 権限をすべて外し、あとから権限が上がらないようにする（静的ファイルを配るだけなので何もいらない）
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
     tmpfs:
       - /var/cache/nginx
       - /var/run
       - /tmp
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 60s
       timeout: 5s
       retries: 3
