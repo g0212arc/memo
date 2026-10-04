@@ -466,3 +466,33 @@ document.addEventListener('click', async (ev) => {
 });
 
 render();
+
+// ---------------- 注意書き（初めて開いたとき） ----------------
+// 読んだにチェックして Enter で閉じる。そのブラウザでは次から出さない。注意書きを書き直したら NOTICE_VERSION を上げる（全員にもう一度出る）
+const NOTICE_KEY = 'dpm-notice-read';
+const NOTICE_VERSION = '2026-10-04';
+(() => {
+  const dlg = document.getElementById('notice-dialog') as HTMLDialogElement | null;
+  const check = document.getElementById('notice-read') as HTMLInputElement | null;
+  const enter = document.getElementById('notice-enter') as HTMLButtonElement | null;
+  if (!dlg || !check || !enter) return;
+  let read = false;
+  try {
+    read = localStorage.getItem(NOTICE_KEY) === NOTICE_VERSION;
+  } catch {
+    /* 保存できない環境では毎回出す */
+  }
+  if (read) return;
+  dlg.addEventListener('cancel', (e) => e.preventDefault()); // Esc では閉じない
+  check.addEventListener('change', () => (enter.disabled = !check.checked));
+  enter.addEventListener('click', () => {
+    if (!check.checked) return;
+    try {
+      localStorage.setItem(NOTICE_KEY, NOTICE_VERSION);
+    } catch {
+      /* 保存できなくても閉じる */
+    }
+    dlg.close();
+  });
+  dlg.showModal();
+})();

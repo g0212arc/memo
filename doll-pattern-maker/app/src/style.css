@@ -318,3 +318,37 @@ dialog {
     margin-left: 0;
   }
 }
+
+/* 注意書き（初めて開いたとき） */
+.notice-link {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--accent);
+}
+dialog.notice {
+  width: min(420px, 92vw);
+  text-align: center;
+}
+dialog.notice::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+dialog.notice a {
+  color: var(--accent);
+  font-weight: bold;
+}
+.notice-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.notice-actions {
+  justify-content: center;
+}
+.notice-actions button {
+  min-width: 140px;
+  font-size: 15px;
+  padding: 8px 16px;
+}

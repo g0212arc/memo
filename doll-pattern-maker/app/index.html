@@ -10,6 +10,7 @@
     <header class="app-header">
       <h1>ドール服パターンメーカー</h1>
       <span class="phase">試作版</span>
+      <a class="notice-link" href="https://note.com/tea_pod0212/n/n804b3217e5b9" target="_blank" rel="noopener">注意書き</a>
     </header>
     <main class="app">
       <aside class="panel" id="panel"></aside>
@@ -22,6 +23,19 @@
     <footer class="app-footer">
       この型紙は、既存の型紙や型紙本をもとにしたものではありません。製図の手順をプログラムにして、ボディの採寸値から毎回新しく計算しています。
     </footer>
+
+    <!-- 初めて開いたときの注意書き（読んだにチェックして Enter で閉じる。Esc・外側では閉じない） -->
+    <dialog id="notice-dialog" class="notice">
+      <div class="dialog-body">
+        <h2>型紙メーカーにようこそ</h2>
+        <p>まずは注意書きを読んでください</p>
+        <p><a href="https://note.com/tea_pod0212/n/n804b3217e5b9" target="_blank" rel="noopener">注意書き</a></p>
+        <label class="notice-check"><input type="checkbox" id="notice-read"> リンク先を読んだ</label>
+        <div class="dialog-actions notice-actions">
+          <button type="button" id="notice-enter" class="primary" disabled>Enter</button>
+        </div>
+      </div>
+    </dialog>
 
     <dialog id="import-dialog">
       <form method="dialog" class="dialog-body">
