@@ -1,0 +1,29 @@
+{
+  "schema": "doll-body/v1",
+  "name": "オビツ30",
+  "maker": "オビツ製作所",
+  "source": "採寸画像（平置き・円周の図）",
+  "category": "特六",
+  "measurements": {
+    "height": { "value": 28, "raw_label": "約28cm（首の上から足裏まで・頭なし）" },
+    "shoulder_width": { "value": 5.5, "raw_label": "約5.5cm（背中側の肩の幅）" },
+    "chest_circ": { "value": 14.2, "raw_label": "約14.2cm（胸）" },
+    "waist_circ": { "value": 10.4, "raw_label": "約10.4cm（ウエスト）" },
+    "hip_circ": { "value": 13.1, "raw_label": "約13.1cm（ヒップ）" },
+    "upper_arm_circ": { "value": 4.7, "raw_label": "約4.7cm（上腕）" },
+    "forearm_circ": { "value": 4.3, "raw_label": "約4.3cm（肘のあたり）" },
+    "thigh_circ": { "value": 8.2, "raw_label": "約8.2cm（太もも）" },
+    "calf_circ": { "value": 5.6, "raw_label": "約5.6cm（膝のあたり）" },
+    "inseam": { "value": 14.8, "raw_label": "約14.8cm（股から足裏まで）" },
+    "foot_length": { "value": 3.6, "raw_label": "約3.6cm（足の長さ）" }
+  },
+  "unmapped": [
+    { "raw_label": "約12.3cm（肩から指先のあたりまでの縦の線）", "value": 12.3, "note": "線が手の先まで引かれているので、肩から手首までの腕の長さとしては使っていない（手首までなら図から約9.8cm）" },
+    { "raw_label": "約1.6cm（足首の幅・平置き）", "value": 1.6 }
+  ],
+  "ambiguities": [
+    "「約28cm」は頭のない素体の高さ（首の上から足裏まで）として、頭なし身長に入れた",
+    "「約4.3cm」は肘のあたりの円周なので前腕回り、「約5.6cm」は膝のあたりの円周なのでふくらはぎ回りとして扱った",
+    "腕の長さ・首回りは画像にないので推定になる（首回りは実測をおすすめ）"
+  ]
+}
