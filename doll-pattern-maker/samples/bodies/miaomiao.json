@@ -1,0 +1,79 @@
+{
+  "schema": "doll-body/v1",
+  "name": "ミャオミャオ体",
+  "maker": "",
+  "source": "ボディサイズ（BODY MEASUREMENTS）の表",
+  "category": "1/4",
+  "measurements": {
+    "height_with_head": {
+      "value": 42,
+      "raw_label": "A.ヘッドなし（図の A の線は頭のてっぺんから床まで）"
+    },
+    "head_circ": {
+      "value": 18,
+      "raw_label": "頭囲サイズ"
+    },
+    "neck_circ": {
+      "value": 6.7,
+      "raw_label": "C.首周り"
+    },
+    "shoulder_width": {
+      "value": 8.75,
+      "raw_label": "D.肩幅"
+    },
+    "chest_circ": {
+      "value": 16.5,
+      "raw_label": "E.バスト"
+    },
+    "upper_arm_circ": {
+      "value": 5.1,
+      "raw_label": "F.上腕周り"
+    },
+    "forearm_circ": {
+      "value": 5.5,
+      "raw_label": "G.前腕周り"
+    },
+    "wrist_joint_diam": {
+      "value": 1.15,
+      "raw_label": "H.手首球径"
+    },
+    "waist_circ": {
+      "value": 12.7,
+      "raw_label": "I.ウエスト"
+    },
+    "hip_circ": {
+      "value": 20.3,
+      "raw_label": "J.ヒップ"
+    },
+    "thigh_circ": {
+      "value": 11.3,
+      "raw_label": "K.太もも周り"
+    },
+    "calf_circ": {
+      "value": 7.8,
+      "raw_label": "L.ふくらはぎ周り"
+    },
+    "inseam": {
+      "value": 21.5,
+      "raw_label": "M.股下"
+    },
+    "foot_length": {
+      "value": 5.4,
+      "raw_label": "N.足長"
+    },
+    "foot_width": {
+      "value": 2.1,
+      "raw_label": "O.足幅"
+    },
+    "ankle_joint_diam": {
+      "value": 1.5,
+      "raw_label": "O.足首球径"
+    }
+  },
+  "unmapped": [],
+  "ambiguities": [
+    "「A.ヘッドなし」42cm は、図の A の線が頭のてっぺんから床まで引かれていて、股下 21.5cm とのつり合いも頭込みの高さに合うので、頭込みの身長として扱った（頭なしとして入れると胴が長くなりすぎる）",
+    "「股下」21.5cm は図の線（股から床まで）のとおり股下として扱った",
+    "腕の長さ・背丈は表にないので推定になる"
+  ]
+}

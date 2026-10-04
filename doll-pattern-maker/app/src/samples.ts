@@ -32,6 +32,8 @@ const ORDER = [
   'id75', // ID75（叔体）
   'obitsu30', // オビツ30（特六）
   'unoa-boy', // ユノア少年（1/4）
+  'miaomiao', // ミャオミャオ体（1/4）
+  'nannan', // 囡囡体（UFdoll 1/4 Lady。胸 S・M・L をタイプで切り替え）
 ];
 
 const slugOf = (path: string) => path.split('/').pop()!.replace(/\.json$/, '');

@@ -1,0 +1,36 @@
+{
+  "schema": "doll-body/v1",
+  "name": "囡囡体（UFdoll 1/4 Lady）",
+  "maker": "UFdoll",
+  "source": "UFdoll 1/4 Lady Size の表（展示は L 胸）",
+  "category": "1/4",
+  "measurements": {
+    "height": { "value": 37.8, "raw_label": "不含头身高" },
+    "neck_circ": { "value": 6.6, "raw_label": "脖围" },
+    "shoulder_width": { "value": 8.6, "raw_label": "肩宽" },
+    "chest_circ": { "value": 17, "raw_label": "胸围 S胸" },
+    "waist_circ": { "value": 12.8, "raw_label": "腰围" },
+    "hip_circ": { "value": 20.5, "raw_label": "臀围" },
+    "thigh_circ": { "value": 11.5, "raw_label": "大腿围" },
+    "calf_circ": { "value": 8.1, "raw_label": "小腿围" },
+    "upper_arm_circ": { "value": 5.5, "raw_label": "上臂围" },
+    "forearm_circ": { "value": 5.5, "raw_label": "下臂围" },
+    "arm_length": { "value": 12.2, "raw_label": "手臂长" },
+    "inseam": { "value": 22, "raw_label": "腿长" },
+    "foot_length": { "value": 5.2, "raw_label": "脚长" },
+    "foot_width": { "value": 2.1, "raw_label": "脚宽" }
+  },
+  "unmapped": [],
+  "ambiguities": [
+    "胸のサイズ（S胸 17・M胸 18・L胸 19.5）をタイプで切り替える。最初は S胸",
+    "「腰围」はウエスト、「臀围」はヒップとして扱った",
+    "「腿长」22 は股下として扱った（ほかのボディと同じ）",
+    "「下臂围」は前腕回り、「手臂长」は腕の長さとして扱った",
+    "背丈は表にないので推定になる。表の注記: 手作業の採寸なので誤差がある"
+  ],
+  "types": [
+    { "label": "S胸（17cm）", "measurements": {} },
+    { "label": "M胸（18cm）", "measurements": { "chest_circ": { "value": 18, "raw_label": "胸围 M胸" } } },
+    { "label": "L胸（19.5cm）", "measurements": { "chest_circ": { "value": 19.5, "raw_label": "胸围 L胸" } } }
+  ]
+}
