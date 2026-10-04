@@ -92,6 +92,7 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
     p.fitBody,
     p.fitSleeve,
   );
+  const fitChest = ease.chest;
   ease.chest += p.extraChestEase;
   ease.armhole += p.extraArmholeEase;
 
@@ -180,6 +181,7 @@ export function draftTshirt(r: ResolvedBody, p: TshirtParams): DraftResult {
     pieces: [bodice.front, bodice.back, sleeve.piece, binding],
     warnings: [...bodice.warnings, ...sleeve.warnings],
     info,
+    refs: { fitBody: fitChest, fitSleeve: ease.arm, length: p.hemBelowWaist ?? val('waist_to_hip') * { short: 0.4, normal: 0.8, long: 1.3 }[p.length] },
   };
 }
 

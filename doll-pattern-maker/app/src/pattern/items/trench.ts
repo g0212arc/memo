@@ -306,5 +306,5 @@ export function draftTrench(r: ResolvedBody, p: TrenchParams): DraftResult {
   info.unshift(`${p.sleeveType === 'raglan' ? 'ラグラン袖' : '普通の袖'} ／ ${TRENCH_LENGTH_LABEL[p.length]} ウエストから ${fmt(hemBelowWaist)}cm ／ ${p.collar === 'stand' ? '立ち襟＋タブ' : '台襟付きの折り襟'}`);
   info.push(`重ね着の分のゆとり 胸 ＋${fmt(common.extraChestEase)}cm`);
   info.push(...base.info.filter((s) => s.startsWith('カテゴリ')));
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fitBody: (base.refs?.fitBody ?? 0) + common.extraChestEase, fitSleeve: base.refs?.fitSleeve ?? 0, length: hemBelowWaist } };
 }

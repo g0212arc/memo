@@ -461,5 +461,5 @@ export function draftYshirt(r: ResolvedBody, p: YshirtParams): DraftResult {
   if (sleeve.widenedHem || sleeve.widenedWidth) info.push('肘が通るように袖口を広げました');
   if (g.dartApplied) info.push(`胸ダーツ ${fmt(g.bustDelta)}cm（前丈と背丈の差）`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fit: ease.chest, length: hemBelowWaist } };
 }

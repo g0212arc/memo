@@ -412,7 +412,7 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
   info.push('前の打ち合わせは見た目だけです。印の曲線（着る人の右側だけ）にパイピングや縁取りを縫い付け、端にチャイナボタンを付けると本物らしくなります');
   info.push(`背中開き: ${dress ? `首からヒップまで（${fmt(yOpen - g.backNeckDepth)}cm）、その下は縫い合わせ` : '首から裾まで'} ／ 持ち出し ${fmt(openingExt)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: dress ? hemBelowWaist : NaN } }; // トップス丈は自分で入力（ドレスの丈）では作れないので目安に出さない
 }
 
 function flattenCubic(c: CubicSeg, n = 16): Vec[] {

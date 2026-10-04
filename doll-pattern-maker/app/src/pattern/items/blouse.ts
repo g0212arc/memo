@@ -113,6 +113,8 @@ interface Core {
   /** 前立て（前開きの重なり）の幅・背中開きの持ち出しの幅 */
   pw: number;
   ext: number;
+  /** 身幅の参考値（胸のゆとり） */
+  fitRef: number;
 }
 
 /** 身頃＋袖＋襟（ブラウスとワンピースで共通） */
@@ -209,7 +211,7 @@ function draftCore(r: ResolvedBody, p: BlouseCommon, hemBelowWaist: number, opts
     }
   }
   pieces = pieces.map((pc) => (pc.id === 'front' ? front : pc));
-  return { pieces, warnings, info, frontOpen, pw, ext };
+  return { pieces, warnings, info, frontOpen, pw, ext, fitRef: base.refs?.fit ?? 0 };
 }
 
 /** パフスリーブ（半袖・長袖）・ビショップスリーブ */
@@ -324,7 +326,7 @@ export function draftBlouse(r: ResolvedBody, p: BlouseParams): DraftResult {
   const hemBelowWaist = p.length === 'custom' && finite(p.lengthCustom) ? p.lengthCustom : (wth ?? 0) * LENGTH_RATIO[p.length === 'custom' ? 'hip' : p.length];
   const c = draftCore(r, p, hemBelowWaist, { hem: p.hem === 'round' ? 'tail' : 'straight', waistTaper: false });
   c.info.splice(1, 0, `ブラウス ${BLOUSE_LENGTH_LABEL[p.length]} ウエストから ${fmt(hemBelowWaist)}cm ／ ${BLOUSE_SLEEVE_LABEL[p.sleeve]} ／ ${BLOUSE_COLLAR_LABEL[p.collar]}`);
-  return { pieces: c.pieces, warnings: c.warnings, info: c.info };
+  return { pieces: c.pieces, warnings: c.warnings, info: c.info, refs: { fit: c.fitRef, length: hemBelowWaist } };
 }
 
 export function draftBlouseDress(r: ResolvedBody, p: BlouseDressParams): DraftResult {
@@ -410,5 +412,5 @@ export function draftBlouseDress(r: ResolvedBody, p: BlouseDressParams): DraftRe
     pieces.push(rect('sash', 'サッシュベルト（高さ方向に二つ折りで筒に縫って返す）', '1枚', sl, sw * 2, ['縁', '端', '縁', '端']));
     info.push(`サッシュベルト ${fmt(sl)}cm × 仕上がりの幅 ${fmt(sw)}cm（ウエストで結ぶ）`);
   }
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fit: c.fitRef, length: L } };
 }

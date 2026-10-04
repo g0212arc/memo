@@ -295,6 +295,6 @@ export function draftCardigan(r: ResolvedBody, p: CardiganParams): DraftResult {
   );
   if (rib) info.push(`裾リブ ${fmt(hemCirc * ribK)}cm × 仕上がりの高さ ${fmt(ribH)}cm ／ 袖口リブ 高さ ${fmt(cuffH)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: totalBelow } };
 }
 

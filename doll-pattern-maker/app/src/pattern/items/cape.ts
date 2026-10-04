@@ -238,5 +238,5 @@ export function draftCape(r: ResolvedBody, p: CapeParams): DraftResult {
   );
   if (lined) info.push('裏地: 表と同じ形。前端と裾を中表に縫って返します');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { length: L } };
 }

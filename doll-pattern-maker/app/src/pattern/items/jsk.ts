@@ -191,5 +191,5 @@ export function draftJsk(r: ResolvedBody, p: JskParams): DraftResult {
   );
   if (g.dartApplied) info.push(`胸ダーツ ${fmt(g.bustDelta)}cm`);
   info.push(`胸のゆとり ${fmt(ease.chest)}cm（ブラウスの上に着る分を含む）`, `カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { length: b.length } };
 }

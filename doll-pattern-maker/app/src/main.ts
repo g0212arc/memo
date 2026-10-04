@@ -14,6 +14,7 @@ import { DraftResult } from './pattern/types';
 import { A4_PRINT_H, A4_PRINT_W, layoutPieces, Layout, parsePages } from './render/layout';
 import { drawCommands, Cmd, SUB_SIZE, subtitleHeight } from './render/draw';
 import { settingsEntries, wrapEntries } from './pattern/settings-text';
+import { optionRefs, OptionRefs, refFieldOf, withRef } from './pattern/refs';
 import { toSvg } from './render/svg';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -147,7 +148,11 @@ function renderPanel(cur: Current) {
     ${otherKeys.length ? `<h2>その他の採寸値</h2><table class="measure">${otherKeys.map(row).join('')}</table>` : ''}
 
     <h2>${esc(cur.item.label)}の設定</h2>
-    ${renderFields(cur.item.fields, st.params[cur.item.id], { category: cur.resolved.category, bustLarge: bustLarge(cur.resolved.values), bustRatio: bustRatio(cur.resolved.values) })}
+    ${(() => {
+      const ctx: FieldCtx = { category: cur.resolved.category, bustLarge: bustLarge(cur.resolved.values), bustRatio: bustRatio(cur.resolved.values) };
+      const p = st.params[cur.item.id];
+      return renderFields(cur.item.fields, p, ctx, optionRefs(cur.item, cur.resolved, p, ctx), cur.item.id);
+    })()}
 
     <h2>縫い代</h2>
     <div class="row"><label>縫い合わせ</label><input type="number" data-sa="seam" step="1" min="0" value="${Math.round(st.sa.seam * 10)}"> mm</div>
@@ -157,14 +162,17 @@ function renderPanel(cur: Current) {
 }
 
 /** アイテムの設定欄を fields の定義から作る */
-function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: FieldCtx): string {
+/** 「自分で入力」に切り替える直前に選んでいた選択肢（アイテム → 項目 → 値）。入力欄のプレースホルダーに使う */
+const lastPreset: Record<string, Record<string, string>> = {};
+
+function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: FieldCtx, refs: OptionRefs = {}, itemId = ''): string {
   return fields
     .filter((f) => !f.show || f.show(p, ctx))
     .map((f) => {
-      const help = f.help ? `<span class="help">${esc(f.help)}</span>` : '';
+      let help = f.help ? `<span class="help">${esc(f.help)}</span>` : '';
       if (f.kind === 'radio' || f.kind === 'select') {
-        // ボディによって選べない選択肢は隠し、選ばれていたら先頭を選んだ表示にする
-        const options = f.options.filter(([v]) => !f.available || f.available(v, ctx));
+        // ボディによって選べない選択肢は隠し、選ばれていたら先頭を選んだ表示にする（参考値があれば付ける）
+        const options = f.options.filter(([v]) => !f.available || f.available(v, ctx)).map(([v, l]) => [v, withRef(l, f.key, refs[f.key]?.[v])] as [string, string]);
         const selected = options.some(([v]) => v === p[f.key]) ? p[f.key] : options[0]?.[0];
         if (f.kind === 'select') {
           const opts = options.map(([v, l]) => `<option value="${v}"${selected === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
@@ -179,7 +187,18 @@ function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: Fiel
         return `<div class="row"><label><input type="checkbox" data-field="${f.key}"${p[f.key] ? ' checked' : ''}> ${esc(f.label)}</label>${help}</div>`;
       }
       const val = p[f.key] === null || p[f.key] === undefined ? '' : String(p[f.key]);
-      return `<div class="row"><label>${esc(f.label)}</label><input type="number" data-field="${f.key}" step="${f.step}"${f.min !== undefined ? ` min="${f.min}"` : ''}${f.max !== undefined ? ` max="${f.max}"` : ''} value="${val}"${f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : ''}>${f.unit ? ` ${f.unit}` : ''}${help}</div>`;
+      // 自分で入力の欄: 目安（選択肢ごとの数値）と、直前に選んでいた選択肢の数値をプレースホルダーに
+      let placeholder = f.placeholder;
+      const g = refFieldOf(fields, f, p, ctx);
+      const m = g ? refs[g.key] : undefined;
+      if (g && m && (g.kind === 'radio' || g.kind === 'select')) {
+        const list = g.options.filter(([v]) => m[v] !== undefined).map(([v, l]) => `${l.replace(/（[^）]*）/g, '')} ${m[v].toFixed(1)}`);
+        help = `<span class="help">目安（cm）: ${esc(list.join('・'))}</span>${help}`;
+        const cur = p[g.key] !== 'custom' ? String(p[g.key]) : lastPreset[itemId]?.[g.key];
+        const ref = cur !== undefined ? m[cur] : undefined;
+        if (ref !== undefined) placeholder = ref.toFixed(1);
+      }
+      return `<div class="row"><label>${esc(f.label)}</label><input type="number" data-field="${f.key}" step="${f.step}"${f.min !== undefined ? ` min="${f.min}"` : ''}${f.max !== undefined ? ` max="${f.max}"` : ''} value="${val}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ''}>${f.unit ? ` ${f.unit}` : ''}${help}</div>`;
     })
     .join('');
 }
@@ -328,7 +347,11 @@ document.addEventListener('change', (ev) => {
         if (inp.value === '' || !Number.isFinite(n)) return;
         p[f.key] = n;
       }
-    } else p[f.key] = el.value;
+    } else {
+      // 自分で入力に切り替えるときは、直前の選択肢を覚えておく（プレースホルダーにその数値を出す）
+      if (el.value === 'custom' && p[f.key] !== 'custom') lastPreset[item.id] = { ...lastPreset[item.id], [f.key]: String(p[f.key]) };
+      p[f.key] = el.value;
+    }
   } else if (el.dataset.sa) {
     const n = Number(el.value);
     if (Number.isFinite(n) && n >= 0) st.sa[el.dataset.sa as 'seam' | 'hem' | 'opening'] = n / 10;

@@ -87,12 +87,14 @@ export function draftSalopette(r: ResolvedBody, p: SalopetteParams): DraftResult
   let frontWaist = 0; // 前のウエスト（半分）
   let backWaist = 0; // 後ろのウエスト（半分。持ち出しは除く）
   let wh: number;
+  let fitRef: number | undefined; // ゆとりの参考値（パンツのヒップのゆとり）
 
   if (!skirt) {
     // ---- パンツ ----
     const base = { ...DEFAULT_PANTS, fabric: 'woven' as const, waist: 'elastic' as const, fit: p.fit };
     const preset = p.bottom === 'long' ? { length: 'long' as const } : p.bottom === 'short' ? { length: 'short' as const } : { length: 'custom' as const, inseamCustom: val('inseam') * 0.3 };
     let res = draftPants(r, { ...base, ...preset });
+    fitRef = res.refs?.fit;
     if (roll > 0) {
       // ロールアップ: 股下に折り返す分（2 回折る）を足して作り直す
       const m = res.info.join(' ').match(/股下 ([\d.]+)cm/);
@@ -241,5 +243,5 @@ export function draftSalopette(r: ResolvedBody, p: SalopetteParams): DraftResult
     `サロペット ${SALOPETTE_BOTTOM_LABEL[p.bottom]} ／ ${p.bib ? '胸当てあり' : '胸当てなし（サスペンダー）'} ／ 肩ひも ${cross ? '背中でクロス' : 'まっすぐ'} ／ ${opening === 'side' ? '脇開き' : '後ろ開き'} ／ ${p.fit === 'loose' ? '余裕あり' : '普通'}`,
   );
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: fitRef !== undefined ? { fit: fitRef } : undefined };
 }

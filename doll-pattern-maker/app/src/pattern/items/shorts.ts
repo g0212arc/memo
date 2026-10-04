@@ -166,5 +166,5 @@ export function draftShorts(r: ResolvedBody, p: ShortsParams): DraftResult {
   if (p.crotch === 'integrated') info.push('真ん中の 2 本の線のあいだが股の部分です（脇だけを縫います）');
   info.push('布は伸びる薄手（ナイロンスムース・ストレッチ天竺など）を');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { rise: R * (1 - lowF) } };
 }

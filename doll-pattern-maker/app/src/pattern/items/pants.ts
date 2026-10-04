@@ -389,5 +389,5 @@ export function draftPants(r: ResolvedBody, p: PantsParams): DraftResult {
   if (widened) info.push('足が通るように裾を広げました');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
 
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { fit: hipEase, length: inseamLen } };
 }

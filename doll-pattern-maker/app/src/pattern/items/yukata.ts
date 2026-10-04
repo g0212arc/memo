@@ -270,5 +270,5 @@ export function draftYukata(r: ResolvedBody, p: YukataParams): DraftResult {
   if (women) info.push(`おはしょり: 着せるときに腰で ${fmt(ohashori)}cm 分を折り上げて、腰ひもで留めます`);
   info.push('身頃と袖の真ん中の線は肩山（折り目）です。布を二つ折りにせず、1 枚の長い布として裁ちます');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { sleeveLen: sodetake } };
 }

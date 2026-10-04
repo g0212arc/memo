@@ -54,4 +54,9 @@ export interface DraftResult {
   info: string[];
   /** 合印の一覧（例: A: 前身頃「肩」⇔ 後ろ身頃「肩」） */
   matches?: string[];
+  /**
+   * 設定の参考値（cm）。キーは設定の項目（fit・length など）で、値はこの作図で実際に使った数値。
+   * 画面で選択肢ごとに作図して「普通（2.7cm）」のように出し、自分で入力の目安にする
+   */
+  refs?: Record<string, number>;
 }
