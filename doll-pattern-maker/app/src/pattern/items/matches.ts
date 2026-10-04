@@ -183,6 +183,22 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['tier3-front/脇', 'tier3-back/脇'] },
   ],
 
+  jsk: [
+    { a: ['front/肩'], b: ['back/肩'] },
+    { a: ['front/脇'], b: ['back/脇'] },
+    { a: ['front/襟ぐり', 'front/襟ぐり（前立て）', 'back/襟ぐり', 'back/襟ぐり（持ち出し）'], b: ['binding/縁取り#0'], check: 'none' },
+    { a: ['front/袖ぐり', 'back/袖ぐり'], b: ['armhole-binding/縁取り#0'], check: 'none' },
+    { a: ['front/ウエスト'], b: ['skirt-front/ウエスト', 'skirt-front/ウエスト（ギャザーを寄せる）', 'skirt-front/ウエスト（ひだをたたむ）', 'skirt-front/ウエスト（持ち出し）'], check: 'none' },
+    { a: ['back/ウエスト'], b: ['skirt-back/ウエスト', 'skirt-back/ウエスト（ギャザーを寄せる）', 'skirt-back/ウエスト（ひだをたたむ）', 'skirt-back/ウエスト（持ち出し）'], check: 'none' },
+    { a: ['skirt-front/脇', 'skirt-back/脇'] },
+    { a: ['skirt-front/前中心'], note: '（左右を縫い合わせる）' },
+    { a: ['skirt-back/後ろ中心'], note: '（左右を縫い合わせる）' },
+    { a: ['skirt-front/段の下', 'skirt-back/段の下'], b: ['tier2-front/段の上（ギャザー）', 'tier2-back/段の上（ギャザー）'], check: 'none', note: '（ギャザーを寄せて）' },
+    { a: ['tier2-front/脇', 'tier2-back/脇'] },
+    { a: ['tier2-front/段の下', 'tier2-back/段の下'], b: ['tier3-front/段の上（ギャザー）', 'tier3-back/段の上（ギャザー）'], check: 'none', note: '（ギャザーを寄せて）' },
+    { a: ['tier3-front/脇', 'tier3-back/脇'] },
+  ],
+
   camisole: [
     { a: ['front/脇'], b: ['back/脇'] },
     { a: ['front-lining/脇'], b: ['back-lining/脇'] },

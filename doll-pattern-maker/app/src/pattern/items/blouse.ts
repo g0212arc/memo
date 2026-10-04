@@ -5,7 +5,7 @@
 //   着るときヒップが通るよう、開きはスカートの途中（ヒップの下）まで延ばす。
 
 import { v, Vec } from '../../geometry/vec';
-import { CubicSeg, cubic, line, pathLength, Seg } from '../../geometry/path';
+import { CubicSeg, cubic, line, pathLength } from '../../geometry/path';
 import { ResolvedBody } from '../../model/estimate';
 import { MeasurementKey } from '../../model/schema';
 import { CATEGORY_EASE } from '../../model/category';
@@ -15,8 +15,8 @@ import { applyFit } from '../fit';
 import { extMarks, ExtParams, OpeningChoice, openingExtOf, resolveOpening } from '../opening';
 import { DraftResult, Edge, EdgeKind, Piece } from '../types';
 import { DEFAULT_YSHIRT, draftYshirt, YSHIRT_REQUIREMENTS } from './yshirt';
-import { centerEdges, extWaistEdge, openingLength, SKIRT_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtLength, skirtBase } from './skirt';
-import { DEFAULT_TIERED, draftTiered } from './tiered';
+import { openingLength, SKIRT_LENGTH_LABEL, SKIRT_REQUIREMENTS, SkirtLength, skirtBase } from './skirt';
+import { dressSkirt, GATHER, rect } from './dress-skirt';
 
 export type BlouseSleeve = 'puff-short' | 'puff-long' | 'bishop' | 'short' | 'long' | 'none';
 export type BlousePuff = 'small' | 'normal' | 'large' | 'custom';
@@ -82,8 +82,6 @@ export const DRESS_SILHOUETTE_LABEL = { straight: 'ストン', aline: 'Aライ�
 const PUFF_RATIO: Record<Exclude<BlousePuff, 'custom'>, number> = { small: 1.3, normal: 1.6, large: 2 };
 /** ウエストからの着丈 ÷ ウエスト〜ヒップ */
 const LENGTH_RATIO: Record<Exclude<BlouseLength, 'custom'>, number> = { waist: 0.4, hip: 0.9, tunic: 1.8 };
-/** ギャザースカート・フリルの寄せ分（倍） */
-const GATHER = 1.6;
 const FRILL = 1.8;
 
 export const BLOUSE_REQUIREMENTS = YSHIRT_REQUIREMENTS;
@@ -101,45 +99,10 @@ export const puffRatio = (p: Pick<BlouseCommon, 'puff' | 'puffCustom'>) =>
   p.puff === 'custom' ? clamp(finite(p.puffCustom) ? p.puffCustom : 1.6, 1, 3) : PUFF_RATIO[p.puff];
 export const isPuffy = (s: BlouseSleeve) => s === 'puff-short' || s === 'puff-long' || s === 'bishop';
 
-function rect(id: string, name: string, cut: string, w: number, h: number, names: [string, string, string, string], kinds: EdgeKind[] = ['seam', 'seam', 'seam', 'seam']): Piece {
-  return {
-    id,
-    name,
-    cut,
-    edges: [
-      { segs: [line(v(0, 0), v(w, 0))], kind: kinds[0], name: names[0] },
-      { segs: [line(v(w, 0), v(w, h))], kind: kinds[1], name: names[1] },
-      { segs: [line(v(w, h), v(0, h))], kind: kinds[2], name: names[2] },
-      { segs: [line(v(0, h), v(0, 0))], kind: kinds[3], name: names[3] },
-    ],
-    grain: w > h ? [v(w * 0.5 - Math.min(w * 0.3, 3), h * 0.5), v(w * 0.5 + Math.min(w * 0.3, 3), h * 0.5)] : [v(w * 0.5, h * 0.2), v(w * 0.5, h * 0.8)],
-  };
-}
 /** バイアスの縁取り布（仕上がり幅 finished の二つ折り） */
 function bias(id: string, name: string, cut: string, len: number, finished: number): Piece {
   const bw = finished * 2;
   return { ...rect(id, name, cut, len, bw, ['縁取り', '端', '縁取り', '端']), grain: [v(len * 0.5 - bw * 0.35, bw * 0.85), v(len * 0.5 + bw * 0.35, bw * 0.15)] };
-}
-
-/**
- * 中心が「わ」の最後の辺（下 → 上）を、開き（上から yOpen）＋縫い目に変える。持ち出し ext は中心の外へ。
- * front なら名前の「後ろ」を「前」にする
- */
-function openCenter(pc: Piece, front: boolean, yOpen: number, ext: number): Piece {
-  const c = pc.edges[pc.edges.length - 1];
-  if (c.kind !== 'fold') return pc;
-  const bottom = c.segs[0].from.y;
-  const top = c.segs[c.segs.length - 1].to.y;
-  const yo = Math.min(yOpen, bottom - top - 0.3);
-  const rename = (e: Edge): Edge => (front ? { ...e, name: e.name.replace('後ろ', '前') } : e);
-  const em = extMarks(top, top + yo, ext);
-  return {
-    ...pc,
-    cut: '2枚（左右反転）',
-    edges: [extWaistEdge(ext, top, 'seam'), ...pc.edges.slice(0, -1), ...centerEdges(bottom, false, true, 0, yo, top, ext).map(rename)],
-    marks: [...(pc.marks ?? []), ...em.marks],
-    notes: [...(pc.notes ?? []), ...em.notes],
-  };
 }
 
 interface Core {
@@ -434,61 +397,11 @@ export function draftBlouseDress(r: ResolvedBody, p: BlouseDressParams): DraftRe
     const back = pieces.find((pc) => pc.id === 'back')!;
     const fHalf = edgeLen(front, (e) => e.name === 'ウエスト') - (c.frontOpen ? c.pw : 0);
     const bHalf = edgeLen(back, (e) => e.name === 'ウエスト') - extB;
-    const bodiceWaist = 2 * (fHalf + bHalf);
-    const open = (pc: Piece): Piece => {
-      const isF = pc.id.endsWith('front');
-      if (isF && c.frontOpen) return openCenter(pc, true, yOpen, c.pw);
-      if (!isF && !c.frontOpen) return openCenter(pc, false, yOpen, extB);
-      return pc;
-    };
-    let skirt: Piece[];
-    if (p.skirt === 'tiered') {
-      const t = draftTiered(r, { ...DEFAULT_TIERED, top: 'gather', waist: 'elastic', length: 'custom', lengthCustom: L });
-      skirt = t.pieces.map((pc) => ({ ...pc, edges: pc.edges.map((e) => (e.name === 'ウエスト' ? { ...e, kind: 'seam' as EdgeKind, name: 'ウエスト（ギャザーを寄せる）' } : e)) }));
-      // 1 段目はほかのスカートと同じ id にする（合印の対応表をそろえる）
-      skirt = skirt.map((pc) => (pc.id.startsWith('tier1-') ? open({ ...pc, id: pc.id.replace('tier1-', 'skirt-') }) : pc));
-      info.push(...t.info.filter((s) => /^(\d段目|ヨーク):/.test(s)), '段は粗ミシンでギャザーを寄せて上の段に付けます');
-    } else if (p.skirt === 'gather') {
-      const fw = Math.max(b.hipF / 4, fHalf * GATHER);
-      const bw = Math.max(b.hipF / 4, bHalf * GATHER);
-      const mk = (id: string, name: string, w: number, isF: boolean): Piece => ({
-        ...rect(id, name, '1枚（わ）', w, L, ['ウエスト（ギャザーを寄せる）', '脇', '裾', isF ? '前中心（わ）' : '後ろ中心（わ）'], ['seam', 'seam', 'hem', 'fold']),
-        grain: [v(w * 0.4, L * 0.15), v(w * 0.4, L * 0.85)],
-      });
-      skirt = [mk('skirt-front', '前スカート', fw, true), mk('skirt-back', '後ろスカート', bw, false)].map(open);
-      info.push(`ギャザースカート: 周り ${fmt(2 * (fw + bw))}cm × 丈 ${fmt(L)}cm（身頃のウエスト ${fmt(bodiceWaist)}cm に寄せる）`);
-    } else {
-      // 半円（前後とも 1/4 円）。ヒップが通らなければウエストの円を大きくして、余りはギャザー
-      let rIn = bodiceWaist / Math.PI;
-      if ((rIn + b.wh) * Math.PI < b.hipF) rIn = b.hipF / Math.PI - b.wh;
-      const R = rIn + L;
-      const beta = Math.PI / 4;
-      const pt = (rr: number, a: number) => v(rr * Math.sin(a), rr * Math.cos(a));
-      const arc = (rr: number, a0: number, a1: number): Seg => {
-        const k = (4 / 3) * Math.tan((a1 - a0) / 4) * rr;
-        const p0 = pt(rr, a0);
-        const p1 = pt(rr, a1);
-        return cubic(p0, v(p0.x + Math.cos(a0) * k, p0.y - Math.sin(a0) * k), v(p1.x - Math.cos(a1) * k, p1.y + Math.sin(a1) * k), p1);
-      };
-      const gather = rIn * Math.PI - bodiceWaist;
-      const mk = (id: string, name: string, isF: boolean): Piece => ({
-        id,
-        name,
-        cut: '1枚（わ）',
-        edges: [
-          { segs: [arc(rIn, 0, beta)], kind: 'seam', name: 'ウエスト' },
-          { segs: [line(pt(rIn, beta), pt(R, beta))], kind: 'seam', name: '脇' },
-          { segs: [arc(R, beta, 0)], kind: 'hem', name: '裾' },
-          { segs: [line(v(0, R), v(0, rIn))], kind: 'fold', name: isF ? '前中心（わ）' : '後ろ中心（わ）' },
-        ],
-        grain: [v(Math.min(1.5, rIn * 0.3), rIn + L * 0.15), v(Math.min(1.5, rIn * 0.3), R - L * 0.15)],
-      });
-      skirt = [mk('skirt-front', '前スカート', true), mk('skirt-back', '後ろスカート', false)].map(open);
-      info.push(`フレアスカート（半円）: ウエストの半径 ${fmt(rIn)}cm ／ 裾の半径 ${fmt(R)}cm${gather > 0.05 ? `（ヒップが通るよう広げたので、ウエストを ${fmt(gather)}cm 寄せる）` : ''}`);
-    }
+    const sk = dressSkirt(r, { kind: p.skirt, L, wh: b.wh, hipF: b.hipF, fHalf, bHalf, frontOpen: c.frontOpen, pw: c.pw, extB, yOpen });
+    const skirt = sk.pieces;
+    info.push(...sk.info);
     pieces.push(...skirt);
     info.splice(1, 0, `ワンピース ウエスト切り替え（${DRESS_SKIRT_LABEL[p.skirt]}）／ ${SKIRT_LENGTH_LABEL[p.length]} ウエストから ${fmt(L)}cm ／ ${BLOUSE_SLEEVE_LABEL[p.sleeve]} ／ ${BLOUSE_COLLAR_LABEL[p.collar]}`);
-    info.push(`${c.frontOpen ? '前' : '背中'}開きは、スカートのウエストから ${fmt(yOpen)}cm 下まで続けます（ヒップが通るように）`);
   }
 
   if (p.sash) {

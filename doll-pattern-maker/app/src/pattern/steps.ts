@@ -126,6 +126,15 @@ const STEPS: Record<string, (h: H) => string[]> = {
     '開き・裾を始末し、ボタン（スナップ）を付ける',
     h.has('sash') ? 'サッシュベルトを筒に縫って返す' : '',
   ],
+  jsk: (h) => [
+    h.has('binding')
+      ? `肩・脇を縫い、襟ぐりと袖ぐりを縁取り布で始末する${paren([h.l('front/肩'), h.l('front/脇')].filter(Boolean).join('→'))}`
+      : `表と裏をそれぞれ肩を縫い${paren(h.l('front/肩'))}、中表で襟ぐり・袖ぐり・開きを縫って返し、脇を続けて縫う${paren(h.l('front/脇'))}`,
+    h.has('tier2-front') ? `スカートの段を上から順にギャザーを寄せて付ける${paren(h.l('段の下'))}` : '',
+    h.p.skirt === 'pleats' ? '印どおりにひだをたたんでアイロン、ウエストを縫い止める' : '',
+    `スカートの脇（と開きの下）を縫い、身頃に付ける${paren([h.l('skirt-front/脇'), h.l('front/ウエスト', 'back/ウエスト')].filter(Boolean).join('→'))}${h.has('sash') ? '（脇にリボンを挟む）' : ''}`,
+    '開き・裾を始末し、ボタン（スナップ）を付ける',
+  ],
   jacket: (h) => [
     `背中心・肩・脇を縫う${paren(h.l('back/背中心', 'front/肩', 'front/脇'))}`,
     `袖を作って付ける${paren([h.l('sleeve/袖下'), h.l('sleeve/袖山（前）', 'sleeve/袖山（後ろ）')].filter(Boolean).join('→'))}`,

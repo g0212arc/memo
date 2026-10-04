@@ -64,6 +64,7 @@ import {
   DRESS_SKIRT_LABEL,
   isPuffy,
 } from './blouse';
+import { DEFAULT_JSK, draftJsk, JSK_BODICE_LABEL, JSK_NECK_LABEL, JSK_REQUIREMENTS, JSK_SKIRT_LABEL, JSK_WAIST_LABEL, JskParams } from './jsk';
 import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
@@ -828,6 +829,47 @@ const ITEM_LIST_RAW: ItemDef[] = [
     draft: (r, p) => draftBlouseDress(r, p as unknown as BlouseDressParams),
   },
   {
+    id: 'jsk',
+    label: 'ジャンパースカート',
+    defaults: { ...DEFAULT_JSK, ...EXT_DEFAULTS },
+    requirements: JSK_REQUIREMENTS,
+    fields: [
+      dartField,
+      { kind: 'radio', key: 'bodice', label: '身頃の形', options: Object.entries(JSK_BODICE_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'neck', label: '襟ぐり', options: Object.entries(JSK_NECK_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'waistLine', label: '切り替え', options: Object.entries(JSK_WAIST_LABEL) as [string, string][] },
+      { kind: 'select', key: 'skirt', label: 'スカート', options: Object.entries(JSK_SKIRT_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'pleat', label: 'ひだの種類', options: [['knife', '車ひだ'], ['box', '箱ひだ']], show: (p) => p.skirt === 'pleats' },
+      {
+        kind: 'select',
+        key: 'opening',
+        label: '開き',
+        options: [
+          ['auto', `自動（${BACK_OPENING_CATEGORIES.join('・')}は背中開き）`],
+          ['front', '前開き（ボタン）'],
+          ['back', '背中開き'],
+        ],
+        help: 'スカートにもヒップの下まで開きを続けます。',
+      },
+      { kind: 'checkbox', key: 'lining', label: '身頃に裏地を付ける（なしは縁取り布で始末）' },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'checkbox', key: 'sash', label: '後ろで結ぶリボンを付ける' },
+      ...extFields((p, ctx) => resolveOpening(ctx.category, p.opening as OpeningChoice) === 'back'),
+    ],
+    draft: (r, p) => draftJsk(r, p as unknown as JskParams),
+  },
+  {
     id: 'jacket',
     label: 'ジャケット',
     // プルダウンの値は文字列なので、ボタンの数も文字列で持つ
@@ -1387,6 +1429,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   yshirt: 'トップス',
   blouse: 'トップス',
   'blouse-dress': 'その他',
+  jsk: 'その他',
   sailor: 'トップス',
   hoodie: 'トップス',
   jacket: 'アウター',
