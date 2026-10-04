@@ -46,6 +46,9 @@ interface Current {
   missing: MeasurementKey[];
   layout: Layout | null;
   cmds: Cmd[];
+  /** 1 行目（ボディ / アイテム / 日付）と設定の項目。PDF の各ページの余白にも書く */
+  title: string;
+  settings: string[];
 }
 
 function compute(): Current {
@@ -64,10 +67,12 @@ function compute(): Current {
   }
   // 2 行目から: 設定の行（ページの幅で折り返す）
   const ctx: FieldCtx = { category: resolved.category, bustLarge: bustLarge(resolved.values), bustRatio: bustRatio(resolved.values) };
-  const sub = wrapEntries(settingsEntries(item.fields, st.params[item.id], ctx, st.sa), Math.floor(((A4_PRINT_W - 1) * 10) / SUB_SIZE));
+  const settings = settingsEntries(item.fields, st.params[item.id], ctx, st.sa);
+  const sub = wrapEntries(settings, Math.floor(((A4_PRINT_W - 1) * 10) / SUB_SIZE));
+  const title = `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / ${item.label} / ${new Date().toLocaleDateString('ja-JP')}`;
   const layout = draft ? layoutPieces(draft.pieces, st.sa, subtitleHeight(sub.length)) : null;
-  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / ${item.label} / ${new Date().toLocaleDateString('ja-JP')}`, sub) : [];
-  return { item, body, resolved, draft, missing, layout, cmds };
+  const cmds = layout ? drawCommands(layout, st.sa, title, sub) : [];
+  return { item, body, resolved, draft, missing, layout, cmds, title, settings };
 }
 
 function persist() {
@@ -439,7 +444,7 @@ document.addEventListener('click', async (ev) => {
       if (!c.layout) return;
       el.setAttribute('disabled', '');
       try {
-        const { buildPdf, canvasRasterizer } = await import('./render/pdf');
+        const { buildPdf, canvasRasterizer, headerLines } = await import('./render/pdf');
         pdfPages = $<HTMLInputElement>('pdf-pages').value;
         const sel = parsePages(pdfPages, c.layout.cols * c.layout.rows);
         if ('error' in sel) {
@@ -450,7 +455,7 @@ document.addEventListener('click', async (ev) => {
         const { withMemo } = await import('./render/memo');
         const m = c.draft ? withMemo(c.layout, st.sa, c.cmds, c.item.id, st.params[c.item.id], c.draft) : { cmds: c.cmds, heightMm: c.layout.height * 10, extraPage: false };
         const pages = pdfPages.trim() === '' ? undefined : sel.pages;
-        const doc = buildPdf(m.cmds, c.layout.width * 10, m.heightMm, canvasRasterizer(), pages);
+        const doc = buildPdf(m.cmds, c.layout.width * 10, m.heightMm, canvasRasterizer(), pages, { title: c.title, lines: headerLines(c.settings, wrapEntries) });
         download(`${safeName(c.body.name)}_${c.item.label}.pdf`, doc.output('blob'));
       } finally {
         el.removeAttribute('disabled');

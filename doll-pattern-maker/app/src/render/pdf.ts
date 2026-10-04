@@ -37,8 +37,32 @@ export function canvasRasterizer(): TextRasterizer {
 
 const hex = (c: string) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)] as const;
 
-/** pages: 出力するページ番号（1 から。左上から右へ、行ごと）。省略すると全部 */
-export function buildPdf(cmds: Cmd[], widthMm: number, heightMm: number, raster: TextRasterizer, pages?: number[]): jsPDF {
+// 各ページの余白の見出し（2026-10-04）: 下の余白にタイトル（ボディ / アイテム / 日付）、上の余白に設定
+/** 余白の文字の大きさ（mm）と、上の余白に書く設定の行数 */
+const HEAD_SIZE = 1.8;
+const FOOT_SIZE = 2.4;
+const HEAD_LINES = 2;
+
+/** 上の余白に入る設定の行（2 行まで。入りきらない分は「…（続きは1ページ目）」） */
+export function headerLines(settings: string[], wrap: (entries: string[], maxChars: number) => string[]): string[] {
+  const maxChars = Math.floor((PW - 2) / HEAD_SIZE);
+  const lines = wrap(settings, maxChars);
+  if (lines.length <= HEAD_LINES) return lines;
+  const more = '…（続きは1ページ目）';
+  const last = lines[HEAD_LINES - 1];
+  const keep = [...last].slice(0, Math.max(0, maxChars - more.length - 1)).join('');
+  return [...lines.slice(0, HEAD_LINES - 1), keep + more];
+}
+
+/** pages: 出力するページ番号（1 から。左上から右へ、行ごと）。省略すると全部。header: 各ページの余白の見出し */
+export function buildPdf(
+  cmds: Cmd[],
+  widthMm: number,
+  heightMm: number,
+  raster: TextRasterizer,
+  pages?: number[],
+  header?: { title: string; lines: string[] },
+): jsPDF {
   const cols = Math.max(1, Math.ceil(widthMm / PW - 1e-6));
   const rows = Math.max(1, Math.ceil(heightMm / PH - 1e-6));
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
@@ -71,7 +95,13 @@ export function buildPdf(cmds: Cmd[], widthMm: number, heightMm: number, raster:
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
       doc.text(`p.${n} / ${total}${cols > 1 ? `  (row ${r + 1}, col ${c + 1})` : ''}`, PAGE_W - M, PAGE_H - M + 5, { align: 'right' });
-      doc.text('Print at 100% (actual size)', M, PAGE_H - M + 5);
+      if (header) {
+        // 紙の端から 5mm より内側に置く（家庭用プリンターは端が印刷できない）
+        drawCmd(doc, { t: 'text', at: { x: M, y: PAGE_H - M + 5 }, text: `${header.title}　・　原寸（100%）で印刷`, size: FOOT_SIZE, anchor: 'start' }, 0, 0, raster);
+        header.lines.forEach((line, i) => drawCmd(doc, { t: 'text', at: { x: M, y: 7 + i * 2.2 }, text: line, size: HEAD_SIZE, anchor: 'start' }, 0, 0, raster));
+      } else {
+        doc.text('Print at 100% (actual size)', M, PAGE_H - M + 5);
+      }
     }
   }
   return doc;
