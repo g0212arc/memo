@@ -65,6 +65,7 @@ import {
   isPuffy,
 } from './blouse';
 import { DEFAULT_JSK, draftJsk, JSK_BODICE_LABEL, JSK_NECK_LABEL, JSK_REQUIREMENTS, JSK_SKIRT_LABEL, JSK_WAIST_LABEL, JskParams } from './jsk';
+import { DEFAULT_VEST, draftVest, VEST_LENGTH_LABEL, VEST_REQUIREMENTS, VestParams } from './vest';
 import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
@@ -870,6 +871,35 @@ const ITEM_LIST_RAW: ItemDef[] = [
     draft: (r, p) => draftJsk(r, p as unknown as JskParams),
   },
   {
+    id: 'vest',
+    label: 'ベスト',
+    defaults: { ...DEFAULT_VEST },
+    requirements: VEST_REQUIREMENTS,
+    fields: [
+      dartField,
+      { kind: 'radio', key: 'front', label: '前', options: [['single', 'シングル'], ['double', 'ダブル']] },
+      { kind: 'select', key: 'buttons', label: 'ボタンの数', options: [['auto', '自動（丈から）'], ['custom', '自分で入力']] },
+      { kind: 'number', key: 'buttonsCustom', label: 'ボタンの数', step: 1, min: 1, max: 10, unit: '個（ダブルは段）', nullable: true, placeholder: '自動', show: (p) => p.buttons === 'custom' },
+      { kind: 'radio', key: 'neck', label: '襟ぐり', options: [['v', 'V'], ['round', '丸']] },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(VEST_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '着丈（ウエストから下へ）',
+        step: 0.1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: 'ウエスト丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'radio', key: 'hem', label: '裾', options: [['point', '前の先がとがる'], ['straight', 'まっすぐ']] },
+      { kind: 'radio', key: 'backFabric', label: '背中', options: [['same', '表と同じ布'], ['lining', '裏地の布']] },
+      { kind: 'checkbox', key: 'backBelt', label: '背中のベルト（尾錠）を付ける' },
+      { kind: 'checkbox', key: 'pocket', label: '箱ポケット風の口布を付ける' },
+    ],
+    draft: (r, p) => draftVest(r, p as unknown as VestParams),
+  },
+  {
     id: 'jacket',
     label: 'ジャケット',
     // プルダウンの値は文字列なので、ボタンの数も文字列で持つ
@@ -1428,6 +1458,7 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   trench: 'アウター',
   yshirt: 'トップス',
   blouse: 'トップス',
+  vest: 'トップス',
   'blouse-dress': 'その他',
   jsk: 'その他',
   sailor: 'トップス',

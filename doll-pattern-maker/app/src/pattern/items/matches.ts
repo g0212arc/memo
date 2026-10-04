@@ -183,6 +183,11 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['tier3-front/脇', 'tier3-back/脇'] },
   ],
 
+  vest: [
+    { a: ['front/肩'], b: ['back/肩'] },
+    { a: ['front/脇'], b: ['back/脇'] },
+  ],
+
   jsk: [
     { a: ['front/肩'], b: ['back/肩'] },
     { a: ['front/脇'], b: ['back/脇'] },
