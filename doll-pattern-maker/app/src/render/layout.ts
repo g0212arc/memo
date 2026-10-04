@@ -42,6 +42,8 @@ export interface Layout {
   /** ページの並び（横 cols × 縦 rows）。ページ番号は左上から右へ、行ごとに 1, 2, 3… */
   cols: number;
   rows: number;
+  /** 1 ページ目の上のタイトル欄（余白・タイトル・設定の行）の高さ */
+  headerH: number;
 }
 
 /**
@@ -49,7 +51,8 @@ export interface Layout {
  * A4 に収まるパーツはページの境目にかからないよう、はみ出すなら次のページ（列）へ送る。
  * A4 より大きいパーツだけはページの頭から置き、複数ページにまたがる。
  */
-export function layoutPieces(pieces: Piece[], sa: SeamAllowance): Layout {
+/** headerExtra: タイトルの下に足す欄の高さ（cm。設定の行） */
+export function layoutPieces(pieces: Piece[], sa: SeamAllowance, headerExtra = 0): Layout {
   const PW = A4_PRINT_W;
   const PH = A4_PRINT_H;
   const boxes = pieces.map((p) => ({ piece: p, box: pieceBBox(p, sa) }));
@@ -58,7 +61,7 @@ export function layoutPieces(pieces: Piece[], sa: SeamAllowance): Layout {
   const width = cols * PW;
 
   const placed: Placed[] = [];
-  const top = MARGIN + TITLE_H;
+  const top = MARGIN + TITLE_H + headerExtra;
   const testSquareAt = v(MARGIN, top + LABEL_H);
   let x = MARGIN + TEST_SQUARE + GAP;
   let y = top;
@@ -98,7 +101,7 @@ export function layoutPieces(pieces: Piece[], sa: SeamAllowance): Layout {
       continue;
     }
     // A4 より大きいパーツは、ページの頭から置く（途中から置くと余計に分かれるため）
-    if (!fitsPageH && y > Math.floor(y / PH + 1e-9) * PH + MARGIN + TITLE_H + 1e-9) {
+    if (!fitsPageH && y > Math.floor(y / PH + 1e-9) * PH + MARGIN + TITLE_H + headerExtra + 1e-9) {
       if (x > MARGIN + 1e-9) newRow();
       newRow(pageBottom(y) + MARGIN);
     }
@@ -112,7 +115,7 @@ export function layoutPieces(pieces: Piece[], sa: SeamAllowance): Layout {
   }
   const used = y + rowH + MARGIN;
   const rows = Math.max(1, Math.ceil(used / PH - 1e-9));
-  return { placed, width, height: rows * PH, testSquareAt, cols, rows };
+  return { placed, width, height: rows * PH, testSquareAt, cols, rows, headerH: top };
 }
 
 /**

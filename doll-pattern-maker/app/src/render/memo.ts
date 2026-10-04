@@ -6,7 +6,7 @@ import { DraftResult, SeamAllowance } from '../pattern/types';
 import { sewingSteps } from '../pattern/steps';
 import { Cmd } from './draw';
 import { pieceBBox } from './geometry';
-import { A4_PRINT_H, A4_PRINT_W, LABEL_H, Layout, TEST_SQUARE, TITLE_H, labelWidth } from './layout';
+import { A4_PRINT_H, A4_PRINT_W, LABEL_H, Layout, TEST_SQUARE, labelWidth } from './layout';
 
 /** メモの文字の大きさ（mm）。型紙名と同じくらい */
 export const MEMO_SIZE = 3;
@@ -41,7 +41,7 @@ export function memoSize(lines: string[], title: string): { w: number; h: number
 export function placeMemo(layout: Layout, sa: SeamAllowance, lines: string[], title: string): MemoPlacement {
   const { w, h } = memoSize(lines, title);
   const used: Rect[] = [];
-  used.push({ x: 0, y: 0, w: layout.width, h: MARGIN + TITLE_H }); // タイトル
+  used.push({ x: 0, y: 0, w: layout.width, h: layout.headerH }); // タイトル・設定の行
   used.push({ x: layout.testSquareAt.x, y: layout.testSquareAt.y - LABEL_H, w: TEST_SQUARE, h: TEST_SQUARE + LABEL_H + 0.8 });
   for (const pl of layout.placed) {
     const b = pieceBBox(pl.piece, sa);

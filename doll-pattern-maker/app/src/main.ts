@@ -12,7 +12,8 @@ import { bustLarge, bustRatio } from './pattern/bust';
 import { FieldCtx, FieldSpec, groupOf, ITEM_GROUPS, ITEMS, ITEM_BY_ID, ItemDef } from './pattern/items';
 import { DraftResult } from './pattern/types';
 import { A4_PRINT_H, A4_PRINT_W, layoutPieces, Layout, parsePages } from './render/layout';
-import { drawCommands, Cmd } from './render/draw';
+import { drawCommands, Cmd, SUB_SIZE, subtitleHeight } from './render/draw';
+import { settingsEntries, wrapEntries } from './pattern/settings-text';
 import { toSvg } from './render/svg';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -60,8 +61,11 @@ function compute(): Current {
     if (e instanceof MissingMeasurementsError) missing = e.keys;
     else throw e;
   }
-  const layout = draft ? layoutPieces(draft.pieces, st.sa) : null;
-  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / ${item.label} / ${new Date().toLocaleDateString('ja-JP')}`) : [];
+  // 2 行目から: 設定の行（ページの幅で折り返す）
+  const ctx: FieldCtx = { category: resolved.category, bustLarge: bustLarge(resolved.values), bustRatio: bustRatio(resolved.values) };
+  const sub = wrapEntries(settingsEntries(item.fields, st.params[item.id], ctx, st.sa), Math.floor(((A4_PRINT_W - 1) * 10) / SUB_SIZE));
+  const layout = draft ? layoutPieces(draft.pieces, st.sa, subtitleHeight(sub.length)) : null;
+  const cmds = layout ? drawCommands(layout, st.sa, `${body.name}${typeLabel ? `（${typeLabel}）` : ''} / ${item.label} / ${new Date().toLocaleDateString('ja-JP')}`, sub) : [];
   return { item, body, resolved, draft, missing, layout, cmds };
 }
 

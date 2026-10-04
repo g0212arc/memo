@@ -17,7 +17,15 @@ export type Cmd =
 const MM = 10;
 const mm = (p: Vec): Vec => mul(p, MM);
 
-export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): Cmd[] {
+/** subtitle: タイトルの下に書く行（設定の行） */
+/** 設定の行の文字の大きさ・行の間隔（mm）。1 行目のタイトルの下から */
+export const SUB_SIZE = 2.4;
+export const SUB_LINE = 3.1;
+const SUB_GAP = 4;
+/** 設定の行のために、タイトルの下に足す高さ（cm） */
+export const subtitleHeight = (lines: number) => (lines > 0 ? (SUB_GAP - 1 + lines * SUB_LINE) / 10 : 0);
+
+export function drawCommands(layout: Layout, sa: SeamAllowance, title: string, subtitle: string[] = []): Cmd[] {
   const cmds: Cmd[] = [];
 
   // 確認用の正方形
@@ -26,6 +34,7 @@ export function drawCommands(layout: Layout, sa: SeamAllowance, title: string): 
   cmds.push({ t: 'text', at: v(sq.x + (TEST_SQUARE * MM) / 2, sq.y + (TEST_SQUARE * MM) / 2 + 1.5), text: `${TEST_SQUARE}cm`, size: 4, anchor: 'middle' });
   cmds.push({ t: 'text', at: v(sq.x, sq.y + TEST_SQUARE * MM + 4), text: '定規で測って確認', size: 2.5, anchor: 'start' });
   cmds.push({ t: 'text', at: v(5, 8), text: title, size: 3.5, anchor: 'start' });
+  subtitle.forEach((line, i) => cmds.push({ t: 'text', at: v(5, 8 + SUB_GAP + i * SUB_LINE), text: line, size: SUB_SIZE, anchor: 'start' }));
 
   for (const pl of layout.placed) {
     const tr = (p: Vec) => mm(add(p, pl.offset));
