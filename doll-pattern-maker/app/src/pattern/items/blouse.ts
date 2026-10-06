@@ -50,7 +50,7 @@ export interface BlouseDressParams extends BlouseCommon {
   sash: boolean;
 }
 
-const COMMON_DEFAULTS: BlouseCommon = {
+export const COMMON_DEFAULTS: BlouseCommon = {
   bustDart: true,
   opening: 'auto',
   sleeve: 'puff-short',
@@ -215,7 +215,7 @@ function draftCore(r: ResolvedBody, p: BlouseCommon, hemBelowWaist: number, opts
 }
 
 /** パフスリーブ（半袖・長袖）・ビショップスリーブ */
-function puffSleeve(r: ResolvedBody, p: BlouseCommon, frontAH: number, backAH: number): { pieces: Piece[]; info: string[]; warnings: string[] } {
+export function puffSleeve(r: ResolvedBody, p: BlouseCommon, frontAH: number, backAH: number): { pieces: Piece[]; info: string[]; warnings: string[] } {
   const val = (k: MeasurementKey) => r.values[k] as number;
   const k = r.category ? CATEGORY_EASE[r.category] : 1;
   const ease = applyFit(

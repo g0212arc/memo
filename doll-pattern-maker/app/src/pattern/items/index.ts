@@ -67,6 +67,8 @@ import {
 import { DEFAULT_JSK, draftJsk, JSK_BODICE_LABEL, JSK_NECK_LABEL, JSK_REQUIREMENTS, JSK_SKIRT_LABEL, JSK_WAIST_LABEL, JskParams } from './jsk';
 import { DEFAULT_VEST, draftVest, VEST_LENGTH_LABEL, VEST_REQUIREMENTS, VestParams } from './vest';
 import { DEFAULT_SALOPETTE, draftSalopette, SALOPETTE_BOTTOM_LABEL, SALOPETTE_REQUIREMENTS, SalopetteParams } from './salopette';
+import { APRON_REQUIREMENTS, APRON_TYPE_LABEL, ApronParams, DEFAULT_APRON, draftApron } from './apron';
+import { BOLERO_LENGTH_LABEL, BOLERO_REQUIREMENTS, BOLERO_SLEEVE_LABEL, BoleroParams, DEFAULT_BOLERO, draftBolero } from './bolero';
 import { DEFAULT_TIERED, draftTiered, TIERED_GATHER_LABEL, TIERED_HEIGHTS_LABEL, TIERED_REQUIREMENTS, TIERED_TOP_LABEL, TieredParams } from './tiered';
 import { CHINA_COLLAR_LABEL, CHINA_LENGTH_LABEL, CHINA_REQUIREMENTS, CHINA_SLEEVE_LABEL, CHINA_SLIT_LABEL, ChinaParams, chinaHasSleeve, chinaIsDress, DEFAULT_CHINA, draftChina } from './china';
 import { applyMatches } from '../match';
@@ -927,6 +929,47 @@ const ITEM_LIST_RAW: ItemDef[] = [
     draft: (r, p) => draftSalopette(r, p as unknown as SalopetteParams),
   },
   {
+    id: 'bolero',
+    label: 'ボレロ',
+    defaults: { ...DEFAULT_BOLERO },
+    requirements: BOLERO_REQUIREMENTS,
+    fields: [
+      dartField,
+      { kind: 'select', key: 'sleeve', label: '袖', options: Object.entries(BOLERO_SLEEVE_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'length', label: '丈', options: Object.entries(BOLERO_LENGTH_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'front', label: '前の形', options: [['round', '丸くカット'], ['straight', 'まっすぐ']] },
+      { kind: 'radio', key: 'closure', label: '留め方', options: [['none', 'なし'], ['ribbon', 'リボンで結ぶ']] },
+      { kind: 'checkbox', key: 'frill', label: '前端と襟ぐりにフリルを付ける' },
+    ],
+    draft: (r, p) => draftBolero(r, p as unknown as BoleroParams),
+  },
+  {
+    id: 'apron',
+    label: 'エプロン',
+    defaults: { ...DEFAULT_APRON },
+    requirements: APRON_REQUIREMENTS,
+    fields: [
+      { kind: 'radio', key: 'type', label: '形', options: Object.entries(APRON_TYPE_LABEL) as [string, string][] },
+      { kind: 'radio', key: 'skirt', label: 'スカート部', options: [['gather', 'ギャザー'], ['flat', '台形（ギャザーなし）']] },
+      { kind: 'select', key: 'length', label: '丈', options: Object.entries(SKIRT_ITEM_LENGTH_LABEL) as [string, string][] },
+      {
+        kind: 'number',
+        key: 'lengthCustom',
+        label: '丈（ウエストから裾まで）',
+        step: 0.1,
+        min: 1,
+        unit: 'cm',
+        nullable: true,
+        placeholder: '膝丈',
+        show: (p) => p.length === 'custom',
+      },
+      { kind: 'checkbox', key: 'frill', label: 'フリルを付ける（裾と胸当ての周り）' },
+      { kind: 'radio', key: 'straps', label: '肩ひも', options: [['cross', '背中でクロス'], ['neck', '首かけ']], show: (p) => p.type === 'bib' },
+      { kind: 'checkbox', key: 'pocket', label: 'ポケットを付ける' },
+    ],
+    draft: (r, p) => draftApron(r, p as unknown as ApronParams),
+  },
+  {
     id: 'jacket',
     label: 'ジャケット',
     // プルダウンの値は文字列なので、ボタンの数も文字列で持つ
@@ -1489,6 +1532,8 @@ export const ITEM_GROUP: Record<string, ItemGroup> = {
   'blouse-dress': 'その他',
   jsk: 'その他',
   salopette: 'その他',
+  apron: 'その他',
+  bolero: 'アウター',
   sailor: 'トップス',
   hoodie: 'トップス',
   jacket: 'アウター',

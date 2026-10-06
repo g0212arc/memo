@@ -199,6 +199,22 @@ export const MATCH_RULES: Record<string, MatchRule[]> = {
     { a: ['back-pants/ウエスト', 'back-pants/ウエスト（持ち出し）', 'skirt-back/ウエスト', 'skirt-back/ウエスト（持ち出し）'], b: ['back-band/ウエスト側#0'], check: 'none' },
   ],
 
+  bolero: [
+    { a: ['front/肩'], b: ['back/肩'] },
+    { a: ['front/脇'], b: ['back/脇'] },
+    { a: ['front/袖ぐり'], b: ['sleeve/袖山（前）'], check: 'ease' },
+    { a: ['back/袖ぐり'], b: ['sleeve/袖山（後ろ）'], check: 'ease' },
+    { a: ['front/袖ぐり'], b: ['sleeve/袖山（前・ギャザー）'], check: 'none', note: '（ギャザーを寄せて）' },
+    { a: ['back/袖ぐり'], b: ['sleeve/袖山（後ろ・ギャザー）'], check: 'none', note: '（ギャザーを寄せて）' },
+    { a: ['sleeve/袖下'] },
+  ],
+
+  apron: [
+    { a: ['apron-skirt/ウエスト', 'apron-skirt/ウエスト（ギャザーを寄せる）'], b: ['waistband/付け側#0'], check: 'none' },
+    { a: ['apron-skirt/裾（フリル付け）'], b: ['frill/付け側#0'], check: 'none', note: '（ギャザーを寄せて）' },
+    { a: ['bib/脇', 'bib/上端'], b: ['bib-frill/付け側#0'], check: 'none', note: '（ギャザーを寄せて）' },
+  ],
+
   jsk: [
     { a: ['front/肩'], b: ['back/肩'] },
     { a: ['front/脇'], b: ['back/脇'] },
