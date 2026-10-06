@@ -50,6 +50,7 @@ const finite = (x: number | null): x is number => x !== null && Number.isFinite(
 const lerpLine = (a: Vec, b: Vec, t: number) => lerp(a, b, t);
 
 export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
+  let sleeveRef = 0; // 袖丈の参考値
   const missing = RAGLAN_REQUIREMENTS.filter((q) => r.values[q.key] === undefined).map((q) => q.key);
   if (missing.length > 0) throw new MissingMeasurementsError(missing);
   const val = (k: MeasurementKey) => r.values[k] as number;
@@ -264,6 +265,7 @@ export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
   const front = reshape(bodice.front, hf, true);
 
   let len = p.sleeve === 'custom' && finite(p.sleeveCustom) ? p.sleeveCustom : val('arm_length') * SLEEVE_RATIO[p.sleeve === 'custom' ? 'short' : p.sleeve];
+  sleeveRef = len;
   const lowest = Math.max(sb.curve.to.y, sf.curve.to.y);
   if (len < lowest + 0.5) {
     len = lowest + 0.5;
@@ -367,5 +369,5 @@ export function draftRaglan(r: ResolvedBody, p: RaglanParams): DraftResult {
   if (p.neck === 'v') info.push('Vネック: 縁取り布は前中心で V の形に合わせて縫い合わせます');
   if (p.backOpening) info.push(`背中開きの持ち出し ${fmt(openingExt)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
-  return { pieces, warnings, info, refs: { fitBody: fitChest, fitSleeve: ease.arm, length: p.hemBelowWaist ?? val('waist_to_hip') * { short: 0.4, normal: 0.8, long: 1.3 }[p.length] } };
+  return { pieces, warnings, info, refs: { fitBody: fitChest, fitSleeve: ease.arm, length: p.hemBelowWaist ?? val('waist_to_hip') * { short: 0.4, normal: 0.8, long: 1.3 }[p.length], sleeve: sleeveRef, ...(p.backOpening ? { extWidth: openingExt } : {}) } };
 }

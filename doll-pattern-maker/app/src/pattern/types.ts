@@ -59,4 +59,6 @@ export interface DraftResult {
    * 画面で選択肢ごとに作図して「普通（2.7cm）」のように出し、自分で入力の目安にする
    */
   refs?: Record<string, number>;
+  /** 参考値の単位（書いていない項目は cm）。例: flare → '°'、count → '本'、puff → '倍' */
+  refUnits?: Record<string, string>;
 }

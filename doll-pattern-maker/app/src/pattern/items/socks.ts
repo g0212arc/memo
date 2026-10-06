@@ -195,5 +195,5 @@ export function draftSocks(r: ResolvedBody, p: SocksParams): DraftResult {
   if (p.top === 'hem') info.push('履き口: 三つ折り');
   info.push('布は伸びる薄手（ナイロンスムース・ストッキング生地など）を');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { length: topH } };
+  return { pieces, warnings, info, refs: { length: topH, snug: red * 100 }, refUnits: { snug: '%' } };
 }

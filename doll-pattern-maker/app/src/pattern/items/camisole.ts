@@ -316,5 +316,5 @@ export function draftCamisole(r: ResolvedBody, p: CamisoleParams): DraftResult {
   if (p.lining) info.push('身頃の裏地: 表と同じ形。胸元と後ろ開きを中表に縫って返します');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
 
-  return { pieces, warnings, info, refs: { fit: ease.chest, length: skirtLen } };
+  return { pieces, warnings, info, refs: { fit: ease.chest, length: skirtLen, strap: strapW, extWidth: openingExt } };
 }

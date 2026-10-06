@@ -300,6 +300,6 @@ export function draftSkirt(r: ResolvedBody, p: SkirtParams): DraftResult {
   );
   if (slitLen > 0) info.push(`後ろスリット ${fmt(slitLen)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { length: b.length } };
+  return { pieces, warnings, info, refs: { length: b.length, flare: skirtAngle(p), ...(ext > 0 ? { extWidth: ext } : {}) }, refUnits: { flare: '°' } };
 }
 

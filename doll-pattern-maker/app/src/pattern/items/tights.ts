@@ -285,5 +285,5 @@ export function draftTights(r: ResolvedBody, p: TightsParams): DraftResult {
   if (zip) info.push(`ファスナー: 後ろ中心 首〜ウエスト 約 ${fmt(yW + nh)}cm`);
   info.push('布は伸びる薄手（ナイロンスムース・パワーネットなど）を。色移りを防ぐなら白か淡い色がおすすめです');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { snug: red * 100 }, refUnits: { snug: '%' } };
 }

@@ -8,19 +8,31 @@ type Params = Record<string, unknown>;
 /** 項目 → 選択肢 → 数値（cm） */
 export type OptionRefs = Record<string, Record<string, number>>;
 
-const fmt = (x: number) => (Math.round(x * 10) / 10).toFixed(1);
+/** 数えるもの（整数で出す） */
+const COUNT_UNITS = ['本', '段', '個', '枚', '°', '%'];
+const fmtRef = (x: number, unit: string) => (COUNT_UNITS.includes(unit) ? String(Math.round(x)) : (Math.round(x * 10) / 10).toFixed(1));
 /** ゆとりの項目は「ゆとり」と書く */
 const isEase = (key: string) => key === 'fit' || key === 'fitBody' || key === 'fitSleeve';
-export const refText = (key: string, x: number) => `${isEase(key) ? 'ゆとり ' : ''}${fmt(x)}cm`;
+export const refText = (key: string, x: number, unit = 'cm') => `${isEase(key) ? 'ゆとり ' : ''}${fmtRef(x, unit)}${unit}`;
+/** 目安の一覧用（単位なし） */
+export const refNumber = (x: number, unit = 'cm') => fmtRef(x, unit);
 
-/** 選択肢の表示名に参考値を付ける（カッコで終わる名前はカッコの中に足す） */
-export function withRef(label: string, key: string, x: number | undefined): string {
+/**
+ * 選択肢の表示名に参考値を付ける（カッコで終わる名前はカッコの中に足す）。
+ * 名前にもう同じ数値が書いてあるとき（「0.5cm」「8 本」など）は付けない
+ */
+export function withRef(label: string, key: string, x: number | undefined, unit = 'cm'): string {
   if (x === undefined) return label;
-  const t = refText(key, x);
+  const nums = (label.match(/\d+(\.\d+)?/g) ?? []).map(Number);
+  if (nums.some((n) => Math.abs(n - x) < 0.05)) return label;
+  const t = refText(key, x, unit);
   return label.endsWith('）') ? `${label.slice(0, -1)}・${t}）` : `${label}（${t}）`;
 }
 
-export function optionRefs(item: ItemDef, r: ResolvedBody, p: Params, ctx: FieldCtx): OptionRefs {
+/** 項目 → 単位（作図が refUnits に書いた単位。なければ cm） */
+export type RefUnits = Record<string, string>;
+
+export function optionRefs(item: ItemDef, r: ResolvedBody, p: Params, ctx: FieldCtx, units: RefUnits = {}): OptionRefs {
   let base;
   try {
     base = item.draft(r, p);
@@ -28,6 +40,7 @@ export function optionRefs(item: ItemDef, r: ResolvedBody, p: Params, ctx: Field
     return {};
   }
   const keys = Object.keys(base.refs ?? {});
+  Object.assign(units, base.refUnits ?? {});
   const out: OptionRefs = {};
   for (const f of item.fields) {
     if ((f.kind !== 'radio' && f.kind !== 'select') || !keys.includes(f.key)) continue;

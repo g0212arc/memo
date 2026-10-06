@@ -196,9 +196,11 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
   const hemHeight = val('inseam') + val('rise') - hemBelowWaist; // 裾の床からの高さ
   const kh = val('knee_height');
   let slitLen = 0;
+  let slitRef: number | undefined; // スリットの長さの参考値（縮める前）
   if (dress) {
     const top = { low: kh * 1.15, normal: kh + (val('inseam') - kh) * 0.5, deep: kh + (val('inseam') - kh) * 0.8, custom: 0 }[p.slit];
     slitLen = p.slit === 'custom' ? (finite(p.slitCustom) ? p.slitCustom : 0) : top - hemHeight;
+    slitRef = slitLen;
     const maxLen = bHemY - hipY - 0.5;
     if (slitLen > maxLen) {
       slitLen = Math.max(0, maxLen);
@@ -342,10 +344,12 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
   const pieces: Piece[] = [front, back];
 
   // ---- 袖 ----
+  let sleeveRef: number | undefined; // 袖丈の参考値
   const frontAH = pathLength(bodice.frontArmhole);
   const backAH = pathLength(bodice.backArmhole);
   if (!sleeveless) {
     const ratio = p.sleeve === 'custom' && finite(p.sleeveCustom) ? p.sleeveCustom / val('arm_length') : p.sleeve === 'long' ? 1 : 0.3;
+    sleeveRef = ratio * val('arm_length');
     const sleeve = draftSleeve({
       frontArmholeLength: frontAH,
       backArmholeLength: backAH,
@@ -412,7 +416,7 @@ export function draftChina(r: ResolvedBody, p: ChinaParams): DraftResult {
   info.push('前の打ち合わせは見た目だけです。印の曲線（着る人の右側だけ）にパイピングや縁取りを縫い付け、端にチャイナボタンを付けると本物らしくなります');
   info.push(`背中開き: ${dress ? `首からヒップまで（${fmt(yOpen - g.backNeckDepth)}cm）、その下は縫い合わせ` : '首から裾まで'} ／ 持ち出し ${fmt(openingExt)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
-  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: dress ? hemBelowWaist : NaN } }; // トップス丈は自分で入力（ドレスの丈）では作れないので目安に出さない
+  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: dress ? hemBelowWaist : NaN, collar: ch, extWidth: openingExt, ...(slitRef !== undefined ? { slit: slitRef } : {}), ...(sleeveRef !== undefined ? { sleeve: sleeveRef } : {}) } }; // トップス丈は自分で入力（ドレスの丈）では作れないので目安に出さない
 }
 
 function flattenCubic(c: CubicSeg, n = 16): Vec[] {

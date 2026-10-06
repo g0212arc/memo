@@ -194,8 +194,9 @@ export function draftJacket(r: ResolvedBody, p: JacketParams): DraftResult {
   const double = p.breast === 'double';
   const ext = double ? clamp(chest * 0.12, 1.2, 4) : clamp(chest * 0.05, 0.6, 1.5);
   const hemY = g.frontHemY;
+  const rollRef = p.roll === 'custom' && finite(p.rollCustom) ? p.rollCustom : g.chestY + (g.waistY - g.chestY) * { small: 0.05, normal: 0.35, large: 0.7, custom: 0.35 }[p.roll];
   const breakY = clamp(
-    p.roll === 'custom' && finite(p.rollCustom) ? p.rollCustom : g.chestY + (g.waistY - g.chestY) * { small: 0.05, normal: 0.35, large: 0.7, custom: 0.35 }[p.roll],
+    rollRef,
     g.chestY * 0.6,
     hemY - 1,
   );
@@ -426,5 +427,5 @@ export function draftJacket(r: ResolvedBody, p: JacketParams): DraftResult {
   if (sleeve.widenedHem || sleeve.widenedWidth) info.push('肘が通るように袖口を広げました');
   if (g.dartApplied) info.push(`胸ダーツ ${fmt(g.bustDelta)}cm（前丈と背丈の差）`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { fit: ease.chest, length: hemBelowWaist } };
+  return { pieces, warnings, info, refs: { fit: ease.chest, length: hemBelowWaist, roll: rollRef, lapel: W } };
 }

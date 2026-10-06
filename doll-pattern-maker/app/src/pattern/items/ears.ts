@@ -93,6 +93,7 @@ function ellipse(a: number, b: number): Seg[] {
 }
 
 export function draftEars(_r: ResolvedBody, p: EarsParams): DraftResult {
+  let magRef: number | undefined; // 磁石の直径の参考値
   const warnings: string[] = [];
   const info: string[] = [];
   const head =
@@ -169,6 +170,7 @@ export function draftEars(_r: ResolvedBody, p: EarsParams): DraftResult {
     const a = (lo + hi) / 2;
     const b = a * 0.5;
     const mag = p.magnet === 'custom' && finite(p.magnetCustom) ? p.magnetCustom : Number(p.magnet === 'custom' ? '0.6' : p.magnet);
+    magRef = mag;
     pieces.push({
       id: 'ear-base',
       name: '底布（中に磁石）',
@@ -188,5 +190,5 @@ export function draftEars(_r: ResolvedBody, p: EarsParams): DraftResult {
     `根元のタック 幅 ${fmt(tw)}cm（印の V を中表につまんで縫う）／ 縁の長さ ${fmt(pathLength(outline))}cm`,
   );
   if (p.inner === 'small') info.push('内側の布は縫い代を 0.3cm くらいに切ってから折り込み、表の印の位置にまつり付けます（根元は表と一緒に縫い代に挟む）');
-  return { pieces, warnings, info };
+  return { pieces, warnings, info, refs: { head, size: h, ...(magRef !== undefined ? { magnet: magRef } : {}) } };
 }

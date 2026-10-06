@@ -187,5 +187,5 @@ export function draftBeret(_r: ResolvedBody, p: BeretParams): DraftResult {
   if (elastic) info.push(`頭の口: 三つ折りにしてゴムを通します（裁つ周り ${fmt(openCut)}cm・ゴムの長さの目安 ${fmt(opening * 0.9)}cm）`);
   else info.push(`ベルト ${fmt(opening)}cm × 仕上がりの高さ ${fmt(bandH)}cm（端を縫って輪にしてから付けます）`);
   if (p.stem) info.push('ヘタ: 細く巻いて筒にし、トップの中心の印に縫い付けます');
-  return { pieces, warnings, info, refs: { fit: ease } };
+  return { pieces, warnings, info, refs: { fit: ease, head, puff: D, panels: nPanels }, refUnits: { panels: '枚' } };
 }

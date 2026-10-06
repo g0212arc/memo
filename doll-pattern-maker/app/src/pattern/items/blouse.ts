@@ -326,7 +326,7 @@ export function draftBlouse(r: ResolvedBody, p: BlouseParams): DraftResult {
   const hemBelowWaist = p.length === 'custom' && finite(p.lengthCustom) ? p.lengthCustom : (wth ?? 0) * LENGTH_RATIO[p.length === 'custom' ? 'hip' : p.length];
   const c = draftCore(r, p, hemBelowWaist, { hem: p.hem === 'round' ? 'tail' : 'straight', waistTaper: false });
   c.info.splice(1, 0, `ブラウス ${BLOUSE_LENGTH_LABEL[p.length]} ウエストから ${fmt(hemBelowWaist)}cm ／ ${BLOUSE_SLEEVE_LABEL[p.sleeve]} ／ ${BLOUSE_COLLAR_LABEL[p.collar]}`);
-  return { pieces: c.pieces, warnings: c.warnings, info: c.info, refs: { fit: c.fitRef, length: hemBelowWaist } };
+  return { pieces: c.pieces, warnings: c.warnings, info: c.info, refs: { fit: c.fitRef, length: hemBelowWaist, puff: puffRatio(p), ...(c.frontOpen ? {} : { extWidth: c.ext }) }, refUnits: { puff: '倍' } };
 }
 
 export function draftBlouseDress(r: ResolvedBody, p: BlouseDressParams): DraftResult {
@@ -412,5 +412,5 @@ export function draftBlouseDress(r: ResolvedBody, p: BlouseDressParams): DraftRe
     pieces.push(rect('sash', 'サッシュベルト（高さ方向に二つ折りで筒に縫って返す）', '1枚', sl, sw * 2, ['縁', '端', '縁', '端']));
     info.push(`サッシュベルト ${fmt(sl)}cm × 仕上がりの幅 ${fmt(sw)}cm（ウエストで結ぶ）`);
   }
-  return { pieces, warnings, info, refs: { fit: c.fitRef, length: L } };
+  return { pieces, warnings, info, refs: { fit: c.fitRef, length: L, puff: puffRatio(p), ...(c.frontOpen ? {} : { extWidth: c.ext }) }, refUnits: { puff: '倍' } };
 }

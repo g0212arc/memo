@@ -221,5 +221,5 @@ export function draftTurtleneck(r: ResolvedBody, p: TurtleneckParams): DraftResu
   if (p.backOpening) info.push(`背中開きの持ち出し ${fmt(openingExt)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
 
-  return { pieces, warnings, info, refs: { fitBody: fitChest, fitSleeve: ease.arm, length: val('waist_to_hip') * { short: 0.3, normal: 0.8, long: 1.3 }[p.length] } };
+  return { pieces, warnings, info, refs: { fitBody: fitChest, fitSleeve: ease.arm, length: val('waist_to_hip') * { short: 0.3, normal: 0.8, long: 1.3 }[p.length], ...(p.backOpening ? { extWidth: openingExt } : {}) } };
 }

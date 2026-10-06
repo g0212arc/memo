@@ -86,6 +86,7 @@ function rect(id: string, name: string, cut: string, w: number, h: number, names
 const cross = (c: Vec, r: number): Vec[][] => [[v(c.x - r, c.y), v(c.x + r, c.y)], [v(c.x, c.y - r), v(c.x, c.y + r)]];
 
 export function draftCardigan(r: ResolvedBody, p: CardiganParams): DraftResult {
+  let buttonsRef: number | undefined; // ボタンの数の参考値
   const missing = CARDIGAN_REQUIREMENTS.filter((q) => r.values[q.key] === undefined).map((q) => q.key);
   if (missing.length > 0) throw new MissingMeasurementsError(missing);
   const val = (k: MeasurementKey) => r.values[k] as number;
@@ -201,6 +202,7 @@ export function draftCardigan(r: ResolvedBody, p: CardiganParams): DraftResult {
     frontNeckLen = pathLength(neckSegs);
     if (p.closure !== 'none') {
       const n = p.buttons === 'custom' && finite(p.buttonsCustom) ? clamp(Math.round(p.buttonsCustom), 1, 12) : clamp(Math.round(frontEdgeLen / Math.max(chest * 0.12, 1)), 2, 7);
+      buttonsRef = n;
       for (const y of ys(neckStart.y + 0.3, g.frontHemY - 0.3, n)) buttonMarks.push(...cross(v(0, y), Math.min(0.25, ext * 0.5)));
     }
     const fw = clamp(g.chestQ * 0.3, ext + 0.8, g.chestQ * 0.6);
@@ -273,6 +275,7 @@ export function draftCardigan(r: ResolvedBody, p: CardiganParams): DraftResult {
     const marks: Vec[][] = [[v(L / 2, 0), v(L / 2, bw * 2)], [v(edgeLen, 0), v(edgeLen, bw * 0.4)], [v(L - edgeLen, 0), v(L - edgeLen, bw * 0.4)]];
     if (p.closure !== 'none') {
       const n = p.buttons === 'custom' && finite(p.buttonsCustom) ? clamp(Math.round(p.buttonsCustom), 1, 12) : clamp(Math.round(edgeLen / Math.max(chest * 0.12, 1)), 2, 7);
+      buttonsRef = n;
       for (const x of ys(ribH + 0.3, edgeLen - 0.3, n)) {
         marks.push(...cross(v(x, bw * 0.5), Math.min(0.25, bw * 0.3)), ...cross(v(L - x, bw * 0.5), Math.min(0.25, bw * 0.3)));
       }
@@ -295,6 +298,6 @@ export function draftCardigan(r: ResolvedBody, p: CardiganParams): DraftResult {
   );
   if (rib) info.push(`裾リブ ${fmt(hemCirc * ribK)}cm × 仕上がりの高さ ${fmt(ribH)}cm ／ 袖口リブ 高さ ${fmt(cuffH)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''} ／ ゆとりの掛け率 ×${categoryEase.toFixed(2)}`);
-  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: totalBelow } };
+  return { pieces, warnings, info, refs: { fitBody: ease.chest, fitSleeve: ease.arm, length: totalBelow, sleeve: sleeveLen, ...(buttonsRef !== undefined ? { buttons: buttonsRef } : {}) }, refUnits: { buttons: '個' } };
 }
 

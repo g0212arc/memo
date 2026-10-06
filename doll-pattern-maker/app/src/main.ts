@@ -14,7 +14,7 @@ import { DraftResult } from './pattern/types';
 import { A4_PRINT_H, A4_PRINT_W, layoutPieces, Layout, parsePages } from './render/layout';
 import { drawCommands, Cmd, SUB_SIZE, subtitleHeight } from './render/draw';
 import { settingsEntries, wrapEntries } from './pattern/settings-text';
-import { optionRefs, OptionRefs, refFieldOf, withRef } from './pattern/refs';
+import { optionRefs, OptionRefs, refFieldOf, refNumber, RefUnits, withRef } from './pattern/refs';
 import { toSvg } from './render/svg';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -156,7 +156,9 @@ function renderPanel(cur: Current) {
     ${(() => {
       const ctx: FieldCtx = { category: cur.resolved.category, bustLarge: bustLarge(cur.resolved.values), bustRatio: bustRatio(cur.resolved.values) };
       const p = st.params[cur.item.id];
-      return renderFields(cur.item.fields, p, ctx, optionRefs(cur.item, cur.resolved, p, ctx), cur.item.id);
+      const units: RefUnits = {};
+      const refs = optionRefs(cur.item, cur.resolved, p, ctx, units);
+      return renderFields(cur.item.fields, p, ctx, refs, cur.item.id, units);
     })()}
 
     <h2>縫い代</h2>
@@ -170,14 +172,14 @@ function renderPanel(cur: Current) {
 /** 「自分で入力」に切り替える直前に選んでいた選択肢（アイテム → 項目 → 値）。入力欄のプレースホルダーに使う */
 const lastPreset: Record<string, Record<string, string>> = {};
 
-function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: FieldCtx, refs: OptionRefs = {}, itemId = ''): string {
+function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: FieldCtx, refs: OptionRefs = {}, itemId = '', units: RefUnits = {}): string {
   return fields
     .filter((f) => !f.show || f.show(p, ctx))
     .map((f) => {
       let help = f.help ? `<span class="help">${esc(f.help)}</span>` : '';
       if (f.kind === 'radio' || f.kind === 'select') {
         // ボディによって選べない選択肢は隠し、選ばれていたら先頭を選んだ表示にする（参考値があれば付ける）
-        const options = f.options.filter(([v]) => !f.available || f.available(v, ctx)).map(([v, l]) => [v, withRef(l, f.key, refs[f.key]?.[v])] as [string, string]);
+        const options = f.options.filter(([v]) => !f.available || f.available(v, ctx)).map(([v, l]) => [v, withRef(l, f.key, refs[f.key]?.[v], units[f.key])] as [string, string]);
         const selected = options.some(([v]) => v === p[f.key]) ? p[f.key] : options[0]?.[0];
         if (f.kind === 'select') {
           const opts = options.map(([v, l]) => `<option value="${v}"${selected === v ? ' selected' : ''}>${esc(l)}</option>`).join('');
@@ -197,11 +199,12 @@ function renderFields(fields: FieldSpec[], p: Record<string, unknown>, ctx: Fiel
       const g = refFieldOf(fields, f, p, ctx);
       const m = g ? refs[g.key] : undefined;
       if (g && m && (g.kind === 'radio' || g.kind === 'select')) {
-        const list = g.options.filter(([v]) => m[v] !== undefined).map(([v, l]) => `${l.replace(/（[^）]*）/g, '')} ${m[v].toFixed(1)}`);
-        help = `<span class="help">目安（cm）: ${esc(list.join('・'))}</span>${help}`;
+        const unit = units[g.key] ?? 'cm';
+        const list = g.options.filter(([v]) => m[v] !== undefined).map(([v, l]) => `${l.replace(/（[^）]*）/g, '')} ${refNumber(m[v], unit)}`);
+        help = `<span class="help">目安（${unit}）: ${esc(list.join('・'))}</span>${help}`;
         const cur = p[g.key] !== 'custom' ? String(p[g.key]) : lastPreset[itemId]?.[g.key];
         const ref = cur !== undefined ? m[cur] : undefined;
-        if (ref !== undefined) placeholder = ref.toFixed(1);
+        if (ref !== undefined) placeholder = refNumber(ref, units[g.key] ?? 'cm');
       }
       return `<div class="row"><label>${esc(f.label)}</label><input type="number" data-field="${f.key}" step="${f.step}"${f.min !== undefined ? ` min="${f.min}"` : ''}${f.max !== undefined ? ` max="${f.max}"` : ''} value="${val}"${placeholder ? ` placeholder="${esc(placeholder)}"` : ''}>${f.unit ? ` ${f.unit}` : ''}${help}</div>`;
     })

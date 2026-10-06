@@ -129,7 +129,7 @@ export function draftPleats(r: ResolvedBody, p: PleatsParams): DraftResult {
   }
   info.push('裾は先に始末してから、ひだをたたんでアイロンで押さえます');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { length: b.length } };
+  return { pieces, warnings, info, refs: { length: b.length, count: n, ...(ext > 0 ? { extWidth: ext } : {}) }, refUnits: { count: '本' } };
 }
 
 /** インバーテッド（前だけ）: セミタイトのスカートの前中心に、ひだ分（深さ×2）を足す */

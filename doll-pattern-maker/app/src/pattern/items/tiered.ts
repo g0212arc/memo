@@ -197,5 +197,5 @@ export function draftTiered(r: ResolvedBody, p: TieredParams): DraftResult {
   }
   if (lace) info.push(`裾: レースを付けます（裾の周り ${fmt(W[n - 1])}cm ＋ 重なり分）。型紙の裾は縫い代だけです`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { length: b.length } };
+  return { pieces, warnings, info, refs: { length: b.length, tiers: n, gather: ratio, ...(ext > 0 ? { extWidth: ext } : {}) }, refUnits: { tiers: '段', gather: '倍' } };
 }

@@ -188,5 +188,5 @@ export function draftVest(r: ResolvedBody, p: VestParams): DraftResult {
   info.push(`胸のゆとり ${fmt(ease.chest)}cm ／ 袖ぐり ${fmt(pathLength(arm.segs) + pathLength(bodice.back.edges.find((e) => e.name === '袖ぐり')!.segs))}cm`);
   if (g.dartApplied) info.push(`胸ダーツ ${fmt(g.bustDelta)}cm`);
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { length: hemBelowWaist } };
+  return { pieces, warnings, info, refs: { length: hemBelowWaist, buttons: rows }, refUnits: { buttons: '個' } };
 }

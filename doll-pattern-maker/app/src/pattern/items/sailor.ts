@@ -378,5 +378,5 @@ export function draftSailor(r: ResolvedBody, p: SailorParams): DraftResult {
   if (g.dartApplied) info.push(`胸ダーツ ${fmt(g.bustDelta)}cm（前丈と背丈の差）`);
   info.push('襟の中の 2 本の線は、ラインテープを付ける位置の目安です');
   info.push(`カテゴリ ${r.category ?? '未分類'}${r.categoryGuessed ? '（仮）' : ''}`);
-  return { pieces, warnings, info, refs: { fit: ease.chest, length: hemFor(chestToWaist) } };
+  return { pieces, warnings, info, refs: { fit: ease.chest, length: hemFor(chestToWaist), vDepth: vY, collarSize: collarDepth, ...(opening === 'back' ? { extWidth: openingExt } : {}) } };
 }
