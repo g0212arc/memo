@@ -15,7 +15,7 @@
 ブラウザ ─HTTPS→ ホストの nginx (443, certbot) ─proxy_pass→ 127.0.0.1:8200 ─→ コンテナの nginx ─→ dist/（HTML/JS/CSS）
 ```
 
-- `Dockerfile` の1段目（node:22-alpine）でテストとビルドを行い、2段目（nginx:alpine）には `dist/` だけを入れる。本番には Node が残らない
+- `Dockerfile` の1段目（node:22.23.4-alpine）でテストとビルドを行い、2段目（nginx-unprivileged:1.30.6-alpine）には `dist/` だけを入れる。本番には Node が残らない
 - ビルド中だけ Node が一時的に約 300MB 使う（`NODE_OPTIONS=--max-old-space-size=384` で上限を付けている）
 - アプリはサーバー側で何も保存しない（データは各ブラウザの中）。バックアップ対象はない
 
