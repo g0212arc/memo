@@ -1,0 +1,28 @@
+{
+  "schema": "doll-body/v1",
+  "name": "カオスコード（Khaos Code・特六成男）",
+  "maker": "MOOWOOART（魔屋阿特）",
+  "source": "卡俄斯代码 特六成男 尺寸数据（採寸画像）",
+  "category": "特六",
+  "measurements": {
+    "height": { "value": 31, "raw_label": "(1) 身高 31cm（図の線は首の上から足裏まで・頭なし）" },
+    "neck_circ": { "value": 5.5, "raw_label": "(2) 脖围 5.5cm（首回り）" },
+    "shoulder_width": { "value": 9.5, "raw_label": "(3) 肩宽 9.5cm（肩幅）" },
+    "arm_length": { "value": 10, "raw_label": "(4) 臂长 10cm（肩から手首まで）" },
+    "chest_circ": { "value": 18, "raw_label": "(5) 胸围 18cm（胸）" },
+    "waist_circ": { "value": 11.5, "raw_label": "(6) 腰围 11.5cm（ウエスト）" },
+    "hip_circ": { "value": 15, "raw_label": "(7) 臀围 15cm（ヒップ）" },
+    "thigh_circ": { "value": 9, "raw_label": "(8) 大腿围 9cm（太もも）" },
+    "calf_circ": { "value": 7, "raw_label": "(9) 小腿围 7cm（ふくらはぎ）" },
+    "inseam": { "value": 19, "raw_label": "(10) 腿长 19cm（股から足裏まで）" },
+    "foot_length": { "value": 4.4, "raw_label": "(11) 脚长 4.4cm（足の長さ）" },
+    "foot_width": { "value": 1.8, "raw_label": "(12) 脚宽 1.8cm（足の幅）" }
+  },
+  "unmapped": [],
+  "ambiguities": [
+    "「身高 31cm」は図の線が首の上から足裏までなので、頭なし身長として入れた",
+    "「腿长 19cm」は図の線が股の高さから足裏までなので、股下として入れた",
+    "「臂长 10cm」は図の線が肩から手首までなので、腕の長さとして入れた",
+    "画像の注記どおり手で測った値なので、少し誤差がある"
+  ]
+}
